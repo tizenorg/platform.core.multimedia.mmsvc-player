@@ -99,7 +99,6 @@ int _player_media_packet_finalize(media_packet_h pkt, int error_code,
 	return MEDIA_PACKET_FINALIZE;
 }
 
-#ifndef USE_ASM
 static int __player_convert_error_code(int code, char* func_name)
 {
 	int ret = PLAYER_ERROR_INVALID_OPERATION;
@@ -236,7 +235,6 @@ static int __player_convert_error_code(int code, char* func_name)
 	LOGE("[%s] %s(0x%08x) : core fw error(0x%x)",func_name,msg, ret, code);
 	return ret;
 }
-#endif /* USE_ASM */
 
 static void * _get_mem(player_cli_s *player, int size)
 {
@@ -1367,7 +1365,6 @@ int player_set_sound_type(player_h player, sound_type_e type)
 	return ret;
 }
 
-#ifndef USE_ASM
 int player_set_audio_policy_info(player_h player, sound_stream_info_h stream_info)
 {
 	PLAYER_INSTANCE_CHECK(player);
@@ -1410,7 +1407,6 @@ int player_set_audio_policy_info(player_h player, sound_stream_info_h stream_inf
 	return ret;
 
 }
-#endif /* USE_ASM */
 
 int player_set_audio_latency_mode(player_h player,
 				  audio_latency_mode_e latency_mode)

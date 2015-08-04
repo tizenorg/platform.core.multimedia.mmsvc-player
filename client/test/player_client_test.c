@@ -69,6 +69,7 @@ enum
 	CURRENT_STATUS_FILENAME,
 	CURRENT_STATUS_VOLUME,
 	CURRENT_STATUS_SOUND_TYPE,
+	CURRENT_STATUS_SOUND_STREAM_INFO,
 	CURRENT_STATUS_MUTE,
 	CURRENT_STATUS_POSITION_TIME,
 	CURRENT_STATUS_LOOPING,
@@ -119,6 +120,7 @@ int g_handle_num = 1;
 int g_menu_state = CURRENT_STATUS_MAINMENU;
 char g_file_list[9][256];
 gboolean quit_pushing;
+sound_stream_info_h g_stream_info_h = NULL;
 
 static void win_del(void *data, Evas_Object *obj, void *event)
 {
@@ -1183,6 +1185,12 @@ static void _player_destroy()
 		}
 	}
 
+	if (g_stream_info_h)
+	{
+		sound_manager_destroy_stream_information(g_stream_info_h);
+		g_stream_info_h = NULL;
+	}
+
 	if (g_video_pkt)
 		media_packet_destroy(g_video_pkt);
 
@@ -1335,6 +1343,32 @@ static void set_sound_type(sound_type_e type)
 	}
 	else
 		g_print("set sound type(%d) success", type);
+}
+
+void focus_callback (sound_stream_info_h stream_info, sound_stream_focus_change_reason_e reason_for_change, const char *additional_info, void *user_data)
+{
+	g_print("FOCUS callback is called, reason_for_change(%d), additional_info(%s), userdata(%p)", reason_for_change, additional_info, user_data);
+	return;
+}
+
+static void set_sound_stream_info(int type)
+{
+	if (g_stream_info_h)
+	{
+		g_print("stream information is already set, please destory handle and try again\n");
+		return;
+	}
+	if (sound_manager_create_stream_information( type, focus_callback, g_player[0], &g_stream_info_h))
+	{
+		g_print("failed to create stream_information()\n");
+		return;
+	}
+	if ( player_set_audio_policy_info(g_player[0], g_stream_info_h) != PLAYER_ERROR_NONE )
+	{
+		g_print("failed to set sound stream information(%p)\n", g_stream_info_h);
+	}
+	else
+		g_print("set stream information(%p) success", g_stream_info_h);
 }
 
 static void get_position()
@@ -1942,6 +1976,10 @@ void _interpret_main_menu(char *cmd)
 		{
 			g_menu_state = CURRENT_STATUS_SOUND_TYPE;
 		}
+		else if (strncmp(cmd, "k", 1) == 0)
+		{
+			g_menu_state = CURRENT_STATUS_SOUND_STREAM_INFO;
+		}
 		else if (strncmp(cmd, "h", 1) == 0 )
 		{
 			g_menu_state = CURRENT_STATUS_MUTE;
@@ -2196,6 +2234,10 @@ static void displaymenu()
 	{
 		g_print("*** input sound type.(0:SYSTEM 1:NOTIFICATION 2:ALARM 3:RINGTONE 4:MEDIA 5:CALL 6:VOIP 7:FIXED)\n");
 	}
+	else if (g_menu_state == CURRENT_STATUS_SOUND_STREAM_INFO)
+	{
+		g_print("*** input sound stream type.(0:MEDIA 1:SYSTEM 2:ALARM 3:NOTIFICATION 4:RINGTONE 5:CALL 6:VOIP)\n");
+	}
 	else if (g_menu_state == CURRENT_STATUS_MUTE)
 	{
 		g_print("*** input mute value.(0: Not Mute, 1: Mute) \n");
@@ -2330,6 +2372,13 @@ static void interpret (char *cmd)
 		{
 			int type = atoi(cmd);
 			set_sound_type(type);
+			reset_menu_state();
+		}
+		break;
+		case CURRENT_STATUS_SOUND_STREAM_INFO:
+		{
+			int type = atoi(cmd);
+			set_sound_stream_info(type);
 			reset_menu_state();
 		}
 		break;

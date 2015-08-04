@@ -75,10 +75,8 @@ extern int player_set_display_wl_for_mused(player_h player, player_display_type_
 #else
 extern int player_set_display_for_mused(player_h player, player_display_type_e type, unsigned int xhandle);
 #endif
-#ifndef USE_ASM
 extern int player_set_audio_policy_info_for_mused(player_h player,
 	char *stream_type, int stream_index);
-#endif
 
 int player_set_shm_stream_path_for_mused (player_h player, const char *stream_path);
 int player_get_raw_video_caps(player_h player, char **caps);
@@ -1016,7 +1014,6 @@ static int player_disp_set_sound_type(Client client)
 	return ret;
 }
 
-#ifndef USE_ASM
 static int player_disp_set_audio_policy_info(Client client)
 {
 	int ret = -1;
@@ -1036,7 +1033,6 @@ static int player_disp_set_audio_policy_info(Client client)
 
 	return ret;
 }
-#endif /* USE_ASM */
 
 static int player_disp_set_latency_mode(Client client)
 {
