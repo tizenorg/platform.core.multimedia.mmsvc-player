@@ -933,6 +933,7 @@ static void callback_destroy(callback_cb_info_s * cb_info)
 	g_return_if_fail(cb_info);
 
 	mmsvc_core_connection_close(cb_info->fd);
+	mmsvc_core_connection_close(cb_info->data_fd);
 
 	g_thread_join(cb_info->thread);
 	g_thread_unref(cb_info->thread);
