@@ -3,7 +3,7 @@
 
 Name:       mused-player
 Summary:    A Media Daemon player library in Tizen Native API
-Version:    0.1.1
+Version:    1.0.1
 Release:    0
 Group:      Multimedia/API
 License:    Apache-2.0
@@ -16,7 +16,7 @@ BuildRequires:  pkgconfig(mm-common)
 BuildRequires:  pkgconfig(mm-player)
 BuildRequires:  pkgconfig(capi-base-common)
 BuildRequires:  pkgconfig(capi-media-sound-manager)
-BuildRequires:  pkgconfig(capi-media-player)
+BuildRequires:  pkgconfig(legacy-capi-media-player)
 BuildRequires:  pkgconfig(appcore-efl)
 BuildRequires:  pkgconfig(elementary)
 BuildRequires:  pkgconfig(ecore)
@@ -83,9 +83,9 @@ rm -rf %{buildroot}
 mkdir -p %{buildroot}/usr/share/license
 mkdir -p %{buildroot}/usr/bin
 cp LICENSE.APLv2 %{buildroot}/usr/share/license/%{name}
-cp client/test/player_client_test %{buildroot}/usr/bin
-cp client/test/mused_player_media_packet_test %{buildroot}/usr/bin
-cp client/test/mused_player_es_push_test %{buildroot}/usr/bin
+cp client/test/player_test %{buildroot}/usr/bin
+cp client/test/player_media_packet_test %{buildroot}/usr/bin
+cp client/test/player_es_push_test %{buildroot}/usr/bin
 
 %make_install
 
@@ -97,18 +97,18 @@ cp client/test/mused_player_es_push_test %{buildroot}/usr/bin
 
 %files
 %manifest mused-player.manifest
-%manifest client/capi-media-player2.manifest
+%manifest client/capi-media-player.manifest
 %{_libdir}/libmused-player.so.*
-%{_libdir}/libcapi-media-player2.so.*
+%{_libdir}/libcapi-media-player.so.*
 %{_datadir}/license/%{name}
-/usr/bin/player_client_test
-/usr/bin/mused_player_media_packet_test
-/usr/bin/mused_player_es_push_test
+/usr/bin/player_test
+/usr/bin/player_media_packet_test
+/usr/bin/player_es_push_test
 
 %files devel
 %{_includedir}/media/*.h
 %{_libdir}/pkgconfig/*.pc
 %{_libdir}/libmused-player.so
-%{_libdir}/libcapi-media-player2.so
+%{_libdir}/libcapi-media-player.so
 
 
