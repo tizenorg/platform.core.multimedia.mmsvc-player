@@ -23,6 +23,6 @@ FOREACH(src ${sources})
     GET_FILENAME_COMPONENT(src_name ${src} NAME_WE)
     MESSAGE("${src_name}")
     ADD_EXECUTABLE(${src_name} ${src})
-    TARGET_LINK_LIBRARIES(${src_name} capi-media-player2 ${${client_test}_LDFLAGS})
+    TARGET_LINK_LIBRARIES(${src_name} capi-media-player ${${client_test}_LDFLAGS})
 ENDFOREACH()
 
