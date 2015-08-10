@@ -1,6 +1,6 @@
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
-SET(fw_name "capi-media-player2")
+SET(fw_name "capi-media-player")
 
 PROJECT(${fw_name})
 
@@ -10,8 +10,8 @@ SET(PREFIX ${CMAKE_INSTALL_PREFIX})
 SET(INC_DIR include)
 INCLUDE_DIRECTORIES(${INC_DIR})
 
-SET(dependents "dlog elementary evas libtbm mm-common mm-player capi-base-common capi-media-tool capi-media-sound-manager eom")
-SET(pc_dependents "dlog")
+SET(dependents "dlog elementary evas libtbm mm-common mm-playerclient capi-base-common capi-media-tool eom")
+SET(pc_dependents "dlog libtbm mm-playerclient")
 
 INCLUDE(FindPkgConfig)
 pkg_check_modules(${fw_name} REQUIRED ${dependents})
