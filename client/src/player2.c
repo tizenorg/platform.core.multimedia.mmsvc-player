@@ -2900,7 +2900,7 @@ int player_set_media_stream_info(player_h player,
 		player_stream_type_e type, media_format_h format)
 {
 	PLAYER_INSTANCE_CHECK(player);
-	PLAYER_NULL_ARG_CHECK(format);
+	g_return_val_if_fail(format, PLAYER_ERROR_INVALID_OPERATION);
 	int ret = PLAYER_ERROR_NONE;
 	player_cli_s *pc = (player_cli_s *) player;
 	mm_player_api_e api = MM_PLAYER_API_SET_MEDIA_STREAM_INFO;
