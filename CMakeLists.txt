@@ -11,7 +11,7 @@ SET(INC_DIR include)
 INCLUDE_DIRECTORIES(${INC_DIR})
 
 SET(dependents "dlog glib-2.0 libtbm mused legacy-capi-media-player mm-common")
-SET(pc_dependents "dlog glib-2.0 libtbm mused legacy-capi-media-player")
+#SET(pc_dependents "mused legacy-capi-media-player")
 
 INCLUDE(FindPkgConfig)
 pkg_check_modules(${fw_name} REQUIRED ${dependents})

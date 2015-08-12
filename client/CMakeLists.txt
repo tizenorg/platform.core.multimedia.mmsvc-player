@@ -11,7 +11,7 @@ SET(INC_DIR include)
 INCLUDE_DIRECTORIES(${INC_DIR})
 
 SET(dependents "dlog elementary evas libtbm mm-common mm-playerclient capi-base-common capi-media-tool eom")
-SET(pc_dependents "dlog libtbm mm-playerclient")
+SET(pc_dependents "libtbm capi-media-tool capi-base-common capi-media-sound-manager legacy-capi-media-player")
 
 INCLUDE(FindPkgConfig)
 pkg_check_modules(${fw_name} REQUIRED ${dependents})
