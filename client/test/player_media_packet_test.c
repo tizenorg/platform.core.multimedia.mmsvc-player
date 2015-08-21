@@ -22,7 +22,7 @@
 #include <appcore-efl.h>
 
 #define KEY_END "XF86Stop"
-#define MEDIA_FILE_PATH "/opt/usr/media/Color.mp4"
+#define MEDIA_FILE_PATH "/home/owner/content/Color.mp4"
 #ifdef PACKAGE
 #undef PACKAGE
 #endif
