@@ -155,10 +155,25 @@ typedef enum {
 	_PLAYER_EVENT_TYPE_NUM
 }_player_event_e;
 
+#ifndef USE_ECORE_FUNCTIONS
+typedef enum {
+	PLAYER_MESSAGE_NONE,
+	PLAYER_MESSAGE_PREPARED,
+	PLAYER_MESSAGE_ERROR,
+	PLAYER_MESSAGE_SEEK_DONE,
+	PLAYER_MESSAGE_EOS,
+	PLAYER_MESSAGE_LOOP_EXIT,
+	PLAYER_MESSAGE_MAX
+}_player_message_e;
+#endif
+
 typedef struct _player_s{
 	MMHandleType mm_handle;
 	const void* user_cb[_PLAYER_EVENT_TYPE_NUM];
 	void* user_data[_PLAYER_EVENT_TYPE_NUM];
+#ifdef HAVE_WAYLAND
+	void* wl_display;
+#endif
 	void* display_handle;
 	player_display_type_e display_type;
 	int state;
@@ -167,7 +182,15 @@ typedef struct _player_s{
 	bool is_display_visible;
 	bool is_progressive_download;
 	pthread_t prepare_async_thread;
+#ifdef USE_ECORE_FUNCTIONS
 	GHashTable *ecore_jobs;
+#else
+	pthread_t message_thread;
+	GQueue *message_queue;
+	GMutex message_queue_lock;
+	GCond message_queue_cond;
+	int current_message;
+#endif
 	player_error_e error_code;
 	bool is_doing_jobs;
 	media_format_h pkt_fmt;
@@ -219,7 +242,7 @@ typedef struct {
 }server_tbm_info_s;
 
 typedef struct _player_cli_s{
-	gint remote_handle;
+	intptr_t remote_handle;
 	callback_cb_info_s *cb_info;
 	player_data_s *head;
 	server_tbm_info_s server_tbm;
