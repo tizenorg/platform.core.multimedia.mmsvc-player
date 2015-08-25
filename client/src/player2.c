@@ -1146,6 +1146,10 @@ int player_prepare(player_h player)
 
 	player_msg_send(api, EXT_HANDLE(pc), sock_fd, pc->cb_info, ret_buf, ret);
 
+	mm_player_set_attribute(INT_HANDLE(pc), NULL,
+			"display_visible" , 1,
+			NULL);
+
 	if(ret == PLAYER_ERROR_NONE) {
 		player_msg_get_string(caps, ret_buf);
 		if(strlen(caps) > 0 &&
@@ -1733,6 +1737,18 @@ int player_set_display(player_h player, player_display_type_e type,
 				xhandle = elm_win_xwindow_get(obj);
 #endif
 			}
+#ifdef TIZEN_MOBILE
+			else if (type == PLAYER_DISPLAY_TYPE_EVAS && !strcmp(object_type, "image"))
+			{
+				/* evas object surface */
+				LOGI("evas surface type");
+				wl_win.type = type;
+
+				evas_object_geometry_get(obj, &wl_win.wl_window_x, &wl_win.wl_window_y,
+				                         &wl_win.wl_window_width, &wl_win.wl_window_height);
+				set_handle = display;
+			}
+#endif
 			else
 				return PLAYER_ERROR_INVALID_PARAMETER;
 		}
@@ -1879,6 +1895,7 @@ int player_get_display_rotation(player_h player,
 
 int player_set_display_visible(player_h player, bool visible)
 {
+#if 0
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
 	mm_player_api_e api = MM_PLAYER_API_SET_DISPLAY_VISIBLE;
@@ -1891,11 +1908,28 @@ int player_set_display_visible(player_h player, bool visible)
 	player_msg_send1(api, EXT_HANDLE(pc), sock_fd, pc->cb_info, ret_buf, ret,
 			INT, visible);
 	g_free(ret_buf);
+#else
+	PLAYER_INSTANCE_CHECK(player);
+	int ret = PLAYER_ERROR_NONE;
+	player_cli_s *pc = (player_cli_s *) player;
+	int value = 0;
+
+	LOGD("ENTER");
+
+	if(visible==TRUE)
+		value = 1;
+	ret = mm_player_set_attribute(INT_HANDLE(pc), NULL,
+			"display_visible" , value,
+			NULL);
+	if(ret != MM_ERROR_NONE)
+		return __player_convert_error_code(ret,(char*)__FUNCTION__);
+#endif
 	return ret;
 }
 
 int player_is_display_visible(player_h player, bool * pvisible)
 {
+#if 0
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(pvisible);
 	int ret = PLAYER_ERROR_NONE;
@@ -1913,6 +1947,27 @@ int player_is_display_visible(player_h player, bool * pvisible)
 		*pvisible = visible;
 	}
 	g_free(ret_buf);
+#else
+	PLAYER_INSTANCE_CHECK(player);
+	PLAYER_NULL_ARG_CHECK(pvisible);
+	int ret = PLAYER_ERROR_NONE;
+	player_cli_s *pc = (player_cli_s *) player;
+	int value = 0;
+
+	LOGD("ENTER");
+
+	ret = mm_player_get_attribute(INT_HANDLE(pc), NULL,
+			"display_visible", &value,
+			NULL);
+	if(ret != MM_ERROR_NONE)
+		return __player_convert_error_code(ret,(char*)__FUNCTION__);
+	else {
+		if(value)
+			*pvisible = FALSE;
+		else
+			*pvisible = TRUE;
+	}
+#endif
 	return ret;
 }
 
