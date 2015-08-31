@@ -1963,9 +1963,9 @@ int player_is_display_visible(player_h player, bool * pvisible)
 		return __player_convert_error_code(ret,(char*)__FUNCTION__);
 	else {
 		if(value)
-			*pvisible = FALSE;
-		else
 			*pvisible = TRUE;
+		else
+			*pvisible = FALSE;
 	}
 #endif
 	return ret;
