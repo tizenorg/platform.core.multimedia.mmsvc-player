@@ -68,7 +68,7 @@ typedef struct {
  * @remarks Does NOT guarantee thread safe.
  * @param[out] param the name of param is key, must be local variable. never be pointer.
  * @param[in] buf string of message buffer. has key and value
- * @parma[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
+ * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
  */
 #define player_msg_get_type(param, buf, type) \
 	mmsvc_core_msg_json_deserialize_type(#param, buf, &param, NULL, MUSED_TYPE_##type)
@@ -97,7 +97,7 @@ typedef struct {
  * @param[out] param the name of param is key, must be local variable. never be pointer.
  * @param[in] buf string of message buffer. has key and value
  * @param[in/out] len size of buffer. After retrun len is set parsed length.
- * @parma[out] e the error number.
+ * @param[out] e the error number.
  */
 #define player_msg_get_error_e(param, buf, len, e) \
 	mmsvc_core_msg_json_deserialize_len(#param, buf, &len, &param, &e, MUSED_TYPE_INT)
@@ -109,8 +109,8 @@ typedef struct {
  * @param[in] player The server side handle of media player.
  * @param[in] fd socket fd
  * @param[in] cb_info The infomation of callback.
- * @parma[out] retbuf The buffer of return message. Must be char pointer.
- * @parma[out] ret The return value from server.
+ * @param[out] retbuf The buffer of return message. Must be char pointer.
+ * @param[out] ret The return value from server.
  */
 #define player_msg_send(api, player, fd, cb_info, retbuf, ret) \
 	do{	\
@@ -134,9 +134,9 @@ typedef struct {
  * @param[in] player The server side handle of media player.
  * @param[in] fd socket fd
  * @param[in] cb_info The infomation of callback.
- * @parma[out] retbuf The buffer of return message. Must be char pointer.Must free after use.
- * @parma[out] ret The return value from server.
- * @parma[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
+ * @param[out] retbuf The buffer of return message. Must be char pointer.Must free after use.
+ * @param[out] ret The return value from server.
+ * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
  * @param[in] param the name of param is key, must be local variable. never be pointer.
  */
 #define player_msg_send1(api, player, fd, cb_info, retbuf, ret, type, param) \
@@ -163,9 +163,9 @@ typedef struct {
  * @param[in] player The server side handle of media player.
  * @param[in] fd socket fd
  * @param[in] cb_info The infomation of callback.
- * @parma[out] retbuf The buffer of return message. Must be char pointer.Must free after use.
- * @parma[out] ret The return value from server.
- * @parma[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
+ * @param[out] retbuf The buffer of return message. Must be char pointer.Must free after use.
+ * @param[out] ret The return value from server.
+ * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
  * @param[in] param# the name of param is key, must be local variable. never be pointer.
  */
 #define player_msg_send2(api, player, fd, cb_info, retbuf, ret, type1, param1, type2, param2) \
@@ -194,9 +194,9 @@ typedef struct {
  * @param[in] player The server side handle of media player.
  * @param[in] fd socket fd
  * @param[in] cb_info The infomation of callback.
- * @parma[out] retbuf The buffer of return message. Must be char pointer.Must free after use.
- * @parma[out] ret The return value from server.
- * @parma[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
+ * @param[out] retbuf The buffer of return message. Must be char pointer.Must free after use.
+ * @param[out] ret The return value from server.
+ * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
  * @param[in] param# the name of param is key, must be local variable. never be pointer.
  */
 #define player_msg_send3(api, player, fd, cb_info, retbuf, ret, type1, param1, type2, param2, type3, param3) \
@@ -227,9 +227,9 @@ typedef struct {
  * @param[in] player The server side handle of media player.
  * @param[in] fd socket fd
  * @param[in] cb_info The infomation of callback.
- * @parma[out] retbuf The buffer of return message. Must be char pointer.Must free after use.
- * @parma[out] ret The return value from server.
- * @parma[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
+ * @param[out] retbuf The buffer of return message. Must be char pointer.Must free after use.
+ * @param[out] ret The return value from server.
+ * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
  * @param[in] param# the name of param is key, must be local variable. never be pointer.
  */
 #define player_msg_send6(api, player, fd, cb_info, retbuf, ret, type1, param1, type2, param2, type3, param3, type4, param4, type5, param5, type6, param6) \
@@ -266,8 +266,8 @@ typedef struct {
  * @param[in] player The server side handle of media player.
  * @param[in] fd socket fd
  * @param[in] cb_info The infomation of callback.
- * @parma[out] retbuf The buffer of return message. Must be char pointer.Must free after use.
- * @parma[out] ret The return value from server.
+ * @param[out] retbuf The buffer of return message. Must be char pointer.Must free after use.
+ * @param[out] ret The return value from server.
  * @param[in] param the name of param is key, must be local array/pointer variable.
  * @param[in] length The size of array.
  * @param[in] datum_size The size of a array's datum.
@@ -300,8 +300,8 @@ typedef struct {
  * @param[in] player The server side handle of media player.
  * @param[in] fd socket fd
  * @param[in] cb_info The infomation of callback.
- * @parma[out] retbuf The buffer of return message. Must be char pointer.Must free after use.
- * @parma[out] ret The return value from server.
+ * @param[out] retbuf The buffer of return message. Must be char pointer.Must free after use.
+ * @param[out] ret The return value from server.
  * @param[in] param# the name of param is key, must be local array/pointer variable.
  * @param[in] length# The size of array.
  * @param[in] datum_size# The size of a array's datum.
@@ -340,7 +340,7 @@ typedef struct {
  * @param[in] api The enum of module API.
  * @param[in] player The server side handle of media player.
  * @param[in] fd socket fd
- * @parma[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
+ * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
  * @param[in] param the name of param is key, must be local variable. never be pointer.
  */
 #define player_msg_send1_async(api, player, fd, type, param) \
@@ -360,29 +360,30 @@ typedef struct {
 	}while(0)
 
 /**
- * @brief Create and send message. Does not wait server result.
+ * @brief Create and send message for callback. Does not wait server result.
  * @remarks Does NOT guarantee thread safe.
  * @param[in] api The enum of module API.
  * @param[in] player The server side handle of media player.
  * @param[in] fd socket fd
- * @parma[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
- * @param[in] param# the name of param is key, must be local variable. never be pointer.
+ * @param[out] ret set ERROR when fail to send msg.
+ * @param[in] event_type type of event (_player_event_e).
+ * @param[in] set 1 is set the user callback, 0 is unset the user callback.
  */
-#define player_msg_send2_async(api, player, fd, type1, param1, type2, param2) \
+#define player_msg_callback(api, player, fd, ret, event_type, set) \
 	do{	\
 		char *__sndMsg__; \
 		int __len__; \
-		type1 __value1__ = (type1)param1; \
-		type2 __value2__ = (type2)param2; \
+		int __value1__ = (int)event_type; \
+		int __value2__ = (int)set; \
 		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_HANDLE, player, \
-				MUSED_TYPE_##type1, #param1, __value1__, \
-				MUSED_TYPE_##type2, #param2, __value2__, \
+				MUSED_TYPE_INT, #event_type, __value1__, \
+				MUSED_TYPE_INT, #set, __value2__, \
 				0); \
 		__len__ = mmsvc_core_ipc_send_msg(fd, __sndMsg__); \
 		mmsvc_core_msg_json_factory_free(__sndMsg__); \
 		if (__len__ <= 0) { \
 			LOGE("sending message failed"); \
-			return PLAYER_ERROR_INVALID_OPERATION; \
+			ret = PLAYER_ERROR_INVALID_OPERATION; \
 		} \
 	}while(0)
 
@@ -413,7 +414,7 @@ typedef struct {
  * @param[in] api The enum of module API.
  * @param[in] ret Thre result of API.
  * @param[in] client socket client information
- * @parma[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
+ * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
  * @param[in] param the name of param is key, must be local variable. never be pointer.
  */
 #define player_msg_return1(api, ret, client, type, param) \
@@ -438,7 +439,7 @@ typedef struct {
  * @param[in] api The enum of module API.
  * @param[in] ret Thre result of API.
  * @param[in] client socket client information
- * @parma[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
+ * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
  * @param[in] param# the name of param is key, must be local variable. never be pointer.
  */
 #define player_msg_return2(api, ret, client, type1, param1, type2, param2) \
@@ -465,7 +466,7 @@ typedef struct {
  * @param[in] api The enum of module API.
  * @param[in] ret Thre result of API.
  * @param[in] client socket client information
- * @parma[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
+ * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
  * @param[in] param# the name of param is key, must be local variable. never be pointer.
  */
 #define player_msg_return3(api, ret, client, type1, param1, type2, param2, type3, param3) \
@@ -540,7 +541,7 @@ typedef struct {
  * @param[in] api The enum of module API.
  * @param[in] event The event number.
  * @param[in] client socket client information
- * @parma[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
+ * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
  * @param[in] param the name of param is key, must be local variable. never be pointer.
  */
 #define player_msg_event1(api, event, client, type, param) \
@@ -560,7 +561,7 @@ typedef struct {
  * @param[in] api The enum of module API.
  * @param[in] event The event number.
  * @param[in] client socket client information
- * @parma[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
+ * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
  * @param[in] param# the name of param is key, must be local variable. never be pointer.
  */
 #define player_msg_event2(api, event, client, type1, param1, type2, param2) \
@@ -582,7 +583,7 @@ typedef struct {
  * @param[in] api The enum of module API.
  * @param[in] event The event number.
  * @param[in] client socket client information
- * @parma[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
+ * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
  * @param[in] param# the name of param is key, must be local variable. never be pointer.
  */
 #define player_msg_event3(api, event, client, type1, param1, type2, param2, type3, param3) \
@@ -606,7 +607,7 @@ typedef struct {
  * @param[in] api The enum of module API.
  * @param[in] event The event number.
  * @param[in] client socket client information
- * @parma[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
+ * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
  * @param[in] param# the name of param is key, must be local variable. never be pointer.
  */
 #define player_msg_event4(api, event, client, type1, param1, type2, param2, type3, param3, type4, param4) \
@@ -632,7 +633,7 @@ typedef struct {
  * @param[in] api The enum of module API.
  * @param[in] event The event number.
  * @param[in] client socket client information
- * @parma[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
+ * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
  * @param[in] param# the name of param is key, must be local variable. never be pointer.
  * @param[in] arr_param the name of param is key, must be local pointer/array variable.
  * @param[in] length The size of array.
@@ -663,7 +664,7 @@ typedef struct {
  * @param[in] api The enum of module API.
  * @param[in] event The event number.
  * @param[in] client socket client information
- * @parma[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
+ * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
  * @param[in] param# the name of param is key, must be local variable. never be pointer.
  * @param[in] arr_param the name of param is key, must be local array/pointer variable.
  * @param[in] length The size of array.

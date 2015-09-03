@@ -63,7 +63,7 @@ typedef struct {
 static int _player_deinit_memory_buffer(player_cli_s *pc);
 
 int _player_media_packet_finalize(media_packet_h pkt, int error_code,
-				  void *user_data)
+		void *user_data)
 {
 	int ret = 0;
 	tbm_surface_h tsurf = NULL;
@@ -74,7 +74,7 @@ int _player_media_packet_finalize(media_packet_h pkt, int error_code,
 
 	if (pkt == NULL || user_data == NULL) {
 		LOGE("invalid parameter buffer %p, user_data %p", pkt,
-		     user_data);
+				user_data);
 		return MEDIA_PACKET_FINALIZE;
 	}
 
@@ -282,39 +282,43 @@ static int player_recv_msg(callback_cb_info_s *cb_info, int len)
 }
 
 static int __set_callback(_player_event_e type, player_h player, void *callback,
-			  void *user_data)
+		void *user_data)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(callback);
+	int ret = PLAYER_ERROR_NONE;
 	player_cli_s *handle = (player_cli_s *) player;
 	mm_player_api_e api = MM_PLAYER_API_SET_CALLBACK;
 	int sock_fd = handle->cb_info->fd;
 	int set = 1;
 
-	player_msg_send2_async(api, handle->remote_handle, sock_fd,
-			INT, type, INT, set);
+	LOGI("Event type : %d ", type);
+	player_msg_callback(api, EXT_HANDLE(handle), sock_fd, ret, type, set);
 
-	handle->cb_info->user_cb[type] = callback;
-	handle->cb_info->user_data[type] = user_data;
-	LOGI("[%s] Event type : %d ", __FUNCTION__, type);
-	return PLAYER_ERROR_NONE;
+	if(ret == PLAYER_ERROR_NONE) {
+		handle->cb_info->user_cb[type] = callback;
+		handle->cb_info->user_data[type] = user_data;
+	}
+	return ret;
 }
 
 static int __unset_callback(_player_event_e type, player_h player)
 {
 	PLAYER_INSTANCE_CHECK(player);
+	int ret = PLAYER_ERROR_NONE;
 	player_cli_s *handle = (player_cli_s *) player;
 	mm_player_api_e api = MM_PLAYER_API_SET_CALLBACK;
 	int sock_fd = handle->cb_info->fd;
 	int set = 0;
 
-	player_msg_send2_async(api, handle->remote_handle, sock_fd,
-			INT, type, INT, set);
-
+	LOGI("Event type : %d ", type);
 	handle->cb_info->user_cb[type] = NULL;
 	handle->cb_info->user_data[type] = NULL;
-	LOGI("[%s] Event type : %d ", __FUNCTION__, type);
-	return PLAYER_ERROR_NONE;
+
+	player_msg_callback(api, EXT_HANDLE(handle), sock_fd, ret, type, set);
+	ret = PLAYER_ERROR_NONE;
+
+	return ret;
 }
 
 static void set_null_user_cb(callback_cb_info_s *cb_info, _player_event_e event)
@@ -328,51 +332,53 @@ static void set_null_user_cb(callback_cb_info_s *cb_info, _player_event_e event)
 static void __prepare_cb_handler(callback_cb_info_s * cb_info, char *recvMsg)
 {
 	char caps[MM_MSG_MAX_LENGTH] = {0};
+	_player_event_e ev = _PLAYER_EVENT_TYPE_PREPARE;
 
 	if(player_msg_get_string(caps, recvMsg))
 		if(strlen(caps) > 0)
 			mm_player_mused_realize(cb_info->local_handle, caps);
 
-	((player_prepared_cb)
-	 cb_info->user_cb[_PLAYER_EVENT_TYPE_PREPARE])(
-		 cb_info->user_data[_PLAYER_EVENT_TYPE_PREPARE]);
+	((player_prepared_cb)cb_info->user_cb[ev])(cb_info->user_data[ev]);
 
-	set_null_user_cb(cb_info, _PLAYER_EVENT_TYPE_PREPARE);
+	set_null_user_cb(cb_info, ev);
 }
 
 static void __complete_cb_handler(callback_cb_info_s * cb_info, char *recvMsg)
 {
-	((player_completed_cb)
-	 cb_info->user_cb[_PLAYER_EVENT_TYPE_COMPLETE])(
-		 cb_info->user_data[_PLAYER_EVENT_TYPE_COMPLETE]);
+	_player_event_e ev = _PLAYER_EVENT_TYPE_COMPLETE;
+	((player_completed_cb)cb_info->user_cb[ev])(cb_info->user_data[ev]);
 }
 
 static void __interrupt_cb_handler(callback_cb_info_s * cb_info, char *recvMsg)
 {
 	int interrupt;
+	_player_event_e ev = _PLAYER_EVENT_TYPE_INTERRUPT;
+
 	if(player_msg_get(interrupt, recvMsg)) {
-		player_interrupted_code_e ev = interrupt;
-		((player_interrupted_cb)
-		 cb_info->user_cb[_PLAYER_EVENT_TYPE_INTERRUPT])(
-			ev, cb_info->user_data[_PLAYER_EVENT_TYPE_INTERRUPT]);
+		((player_interrupted_cb)cb_info->user_cb[ev])(
+			interrupt, cb_info->user_data[ev]);
 	}
 }
 
 static void __error_cb_handler(callback_cb_info_s * cb_info, char *recvMsg)
 {
 	int code;
+	_player_event_e ev = _PLAYER_EVENT_TYPE_ERROR;
+
 	if(player_msg_get(code, recvMsg)) {
-		((player_error_cb) cb_info->user_cb[_PLAYER_EVENT_TYPE_ERROR])(
-			code, cb_info->user_data[_PLAYER_EVENT_TYPE_ERROR]);
+		((player_error_cb) cb_info->user_cb[ev])(
+			code, cb_info->user_data[ev]);
 	}
 }
 
 static void __buffering_cb_handler(callback_cb_info_s * cb_info, char *recvMsg)
 {
 	int percent;
+	_player_event_e ev = _PLAYER_EVENT_TYPE_BUFFERING;
+
 	if(player_msg_get(percent, recvMsg)) {
-		((player_buffering_cb) cb_info->user_cb[_PLAYER_EVENT_TYPE_BUFFERING])(
-			percent, cb_info->user_data[_PLAYER_EVENT_TYPE_BUFFERING]);
+		((player_buffering_cb) cb_info->user_cb[ev])(
+			percent, cb_info->user_data[ev]);
 	}
 }
 
@@ -380,11 +386,12 @@ static void __subtitle_cb_handler(callback_cb_info_s * cb_info, char *recvMsg)
 {
 	int duration = 0;
 	char text[MM_URI_MAX_LENGTH];
+	_player_event_e ev = _PLAYER_EVENT_TYPE_SUBTITLE;
+
 	if(player_msg_get(duration, recvMsg)
 			&& player_msg_get_string(text, recvMsg)) {
-		((player_subtitle_updated_cb)
-		 cb_info->user_cb[_PLAYER_EVENT_TYPE_SUBTITLE]) (
-			duration, text, cb_info->user_data[_PLAYER_EVENT_TYPE_SUBTITLE]);
+		((player_subtitle_updated_cb)cb_info->user_cb[ev])(
+			duration, text, cb_info->user_data[ev]);
 	}
 }
 
@@ -440,10 +447,11 @@ capture_event_exit1:
 
 static void __seek_cb_handler(callback_cb_info_s * cb_info, char *recvMsg)
 {
-	((player_seek_completed_cb)cb_info->user_cb[_PLAYER_EVENT_TYPE_SEEK])
-		(cb_info->user_data[_PLAYER_EVENT_TYPE_SEEK]);
+	_player_event_e ev = _PLAYER_EVENT_TYPE_SEEK;
 
-	set_null_user_cb(cb_info, _PLAYER_EVENT_TYPE_SEEK);
+	((player_seek_completed_cb)cb_info->user_cb[ev])(cb_info->user_data[ev]);
+
+	set_null_user_cb(cb_info, ev);
 }
 
 static void __media_packet_video_frame_cb_handler(
@@ -554,6 +562,13 @@ static void __video_frame_render_error_cb_handler(
 
 static void __pd_cb_handler(callback_cb_info_s * cb_info, char *recvMsg)
 {
+	int type;
+	_player_event_e ev = _PLAYER_EVENT_TYPE_PD;
+
+	if(player_msg_get(type, recvMsg)) {
+		((player_pd_message_cb)cb_info->user_cb[ev])(
+			type, cb_info->user_data[ev]);
+	}
 }
 
 static void __supported_audio_effect_cb_handler(
@@ -1107,7 +1122,7 @@ int player_destroy(player_h player)
 }
 
 int player_prepare_async(player_h player, player_prepared_cb callback,
-			 void *user_data)
+		void *user_data)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
@@ -1120,7 +1135,8 @@ int player_prepare_async(player_h player, player_prepared_cb callback,
 	sock_fd = pc->cb_info->fd;
 
 	if (pc->cb_info->user_cb[_PLAYER_EVENT_TYPE_PREPARE]) {
-		LOGE("[%s] PLAYER_ERROR_INVALID_OPERATION (0x%08x) : preparing... we can't do any more ", __FUNCTION__, PLAYER_ERROR_INVALID_OPERATION);
+		LOGE("PLAYER_ERROR_INVALID_OPERATION (0x%08x) : preparing...",
+				PLAYER_ERROR_INVALID_OPERATION);
 		return PLAYER_ERROR_INVALID_OPERATION;
 	} else {
 		pc->cb_info->user_cb[_PLAYER_EVENT_TYPE_PREPARE] = callback;
@@ -1414,7 +1430,7 @@ int player_set_audio_policy_info(player_h player, sound_stream_info_h stream_inf
 }
 
 int player_set_audio_latency_mode(player_h player,
-				  audio_latency_mode_e latency_mode)
+		audio_latency_mode_e latency_mode)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
@@ -1432,7 +1448,7 @@ int player_set_audio_latency_mode(player_h player,
 }
 
 int player_get_audio_latency_mode(player_h player,
-				  audio_latency_mode_e * platency_mode)
+		audio_latency_mode_e * platency_mode)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(platency_mode);
@@ -1531,10 +1547,11 @@ int player_set_play_position(player_h player, int millisecond, bool accurate,
 	LOGD("ENTER");
 
 	if (pc->cb_info->user_cb[_PLAYER_EVENT_TYPE_SEEK]) {
-		LOGE("[%s] PLAYER_ERROR_SEEK_FAILED (0x%08x) : seeking... we can't do any more ", __FUNCTION__, PLAYER_ERROR_SEEK_FAILED);
+		LOGE("PLAYER_ERROR_SEEK_FAILED (0x%08x) : seeking...",
+				PLAYER_ERROR_SEEK_FAILED);
 		return PLAYER_ERROR_SEEK_FAILED;
 	} else {
-		LOGI("[%s] Event type : %d, pos : %d ", __FUNCTION__,
+		LOGI("Event type : %d, pos : %d ",
 		     _PLAYER_EVENT_TYPE_SEEK, millisecond);
 		pc->cb_info->user_cb[_PLAYER_EVENT_TYPE_SEEK] = callback;
 		pc->cb_info->user_data[_PLAYER_EVENT_TYPE_SEEK] = user_data;
@@ -1972,7 +1989,7 @@ int player_is_display_visible(player_h player, bool * pvisible)
 }
 
 int player_get_content_info(player_h player, player_content_info_e key,
-			    char **pvalue)
+		char **pvalue)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(pvalue);
@@ -2431,11 +2448,11 @@ int player_capture_video(player_h player, player_video_captured_cb callback,
 
 	LOGD("ENTER");
 	if (pc->cb_info->user_cb[_PLAYER_EVENT_TYPE_CAPTURE]) {
-		LOGE("[%s] PLAYER_ERROR_VIDEO_CAPTURE_FAILED (0x%08x) : capturing... we can't do any more ", __FUNCTION__, PLAYER_ERROR_VIDEO_CAPTURE_FAILED);
+		LOGE("PLAYER_ERROR_VIDEO_CAPTURE_FAILED (0x%08x) : capturing...",
+				PLAYER_ERROR_VIDEO_CAPTURE_FAILED);
 		return PLAYER_ERROR_VIDEO_CAPTURE_FAILED;
 	} else {
-		LOGI("[%s] Event type : %d ", __FUNCTION__,
-		     _PLAYER_EVENT_TYPE_CAPTURE);
+		LOGI("Event type : %d ", _PLAYER_EVENT_TYPE_CAPTURE);
 		pc->cb_info->user_cb[_PLAYER_EVENT_TYPE_CAPTURE] = callback;
 		pc->cb_info->user_data[_PLAYER_EVENT_TYPE_CAPTURE] = user_data;
 	}
@@ -2470,7 +2487,7 @@ int player_set_streaming_cookie(player_h player, const char *cookie, int size)
 }
 
 int player_set_streaming_user_agent(player_h player, const char *user_agent,
-				    int size)
+		int size)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(user_agent);
@@ -2490,7 +2507,7 @@ int player_set_streaming_user_agent(player_h player, const char *user_agent,
 }
 
 int player_get_streaming_download_progress(player_h player, int *pstart,
-					   int *pcurrent)
+		int *pcurrent)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(pstart);
@@ -2517,10 +2534,10 @@ int player_get_streaming_download_progress(player_h player, int *pstart,
 }
 
 int player_set_completed_cb(player_h player, player_completed_cb callback,
-			    void *user_data)
+		void *user_data)
 {
 	return __set_callback(_PLAYER_EVENT_TYPE_COMPLETE, player, callback,
-			      user_data);
+			user_data);
 }
 
 int player_unset_completed_cb(player_h player)
@@ -2529,10 +2546,10 @@ int player_unset_completed_cb(player_h player)
 }
 
 int player_set_interrupted_cb(player_h player, player_interrupted_cb callback,
-			      void *user_data)
+		void *user_data)
 {
 	return __set_callback(_PLAYER_EVENT_TYPE_INTERRUPT, player, callback,
-			      user_data);
+			user_data);
 }
 
 int player_unset_interrupted_cb(player_h player)
@@ -2544,7 +2561,7 @@ int player_set_error_cb(player_h player, player_error_cb callback,
 			void *user_data)
 {
 	return __set_callback(_PLAYER_EVENT_TYPE_ERROR, player, callback,
-			      user_data);
+			user_data);
 }
 
 int player_unset_error_cb(player_h player)
@@ -2553,10 +2570,10 @@ int player_unset_error_cb(player_h player)
 }
 
 int player_set_buffering_cb(player_h player, player_buffering_cb callback,
-			    void *user_data)
+		void *user_data)
 {
 	return __set_callback(_PLAYER_EVENT_TYPE_BUFFERING, player, callback,
-			      user_data);
+			user_data);
 }
 
 int player_unset_buffering_cb(player_h player)
@@ -2565,11 +2582,11 @@ int player_unset_buffering_cb(player_h player)
 }
 
 int player_set_subtitle_updated_cb(player_h player,
-				   player_subtitle_updated_cb callback,
-				   void *user_data)
+		player_subtitle_updated_cb callback,
+		void *user_data)
 {
 	return __set_callback(_PLAYER_EVENT_TYPE_SUBTITLE, player, callback,
-			      user_data);
+			user_data);
 }
 
 int player_unset_subtitle_updated_cb(player_h player)
@@ -2578,47 +2595,21 @@ int player_unset_subtitle_updated_cb(player_h player)
 }
 
 int player_set_progressive_download_message_cb(player_h player,
-					       player_pd_message_cb callback,
-					       void *user_data)
+		player_pd_message_cb callback,
+		void *user_data)
 {
-	PLAYER_INSTANCE_CHECK(player);
-	PLAYER_NULL_ARG_CHECK(callback);
-	player_cli_s *pc = (player_cli_s *) player;
-	mm_player_api_e api = MM_PLAYER_API_SET_CALLBACK;
-	int sock_fd = pc->cb_info->fd;
-	int set = 1;
-	_player_event_e type = _PLAYER_EVENT_TYPE_PD;
-
-	player_msg_send2_async(api, EXT_HANDLE(pc), sock_fd,
-			INT, type, INT, set);
-
-	pc->cb_info->user_cb[_PLAYER_EVENT_TYPE_PD] = callback;
-	pc->cb_info->user_data[_PLAYER_EVENT_TYPE_PD] = user_data;
-	LOGI("[%s] Event type : %d ", __FUNCTION__, _PLAYER_EVENT_TYPE_PD);
-	return PLAYER_ERROR_NONE;
+	return __set_callback(_PLAYER_EVENT_TYPE_PD, player, callback,
+			user_data);
 }
 
 int player_unset_progressive_download_message_cb(player_h player)
 {
-	PLAYER_INSTANCE_CHECK(player);
-	player_cli_s *pc = (player_cli_s *) player;
-	mm_player_api_e api = MM_PLAYER_API_SET_CALLBACK;
-	int sock_fd = pc->cb_info->fd;
-	int set = 0;
-	_player_event_e type = _PLAYER_EVENT_TYPE_PD;
-
-	player_msg_send2_async(api, EXT_HANDLE(pc), sock_fd,
-			INT, type, INT, set);
-
-	set_null_user_cb(pc->cb_info, type);
-	LOGI("[%s] Event type : %d ", __FUNCTION__, _PLAYER_EVENT_TYPE_PD);
-
-	return PLAYER_ERROR_NONE;
+	return __unset_callback(_PLAYER_EVENT_TYPE_PD, player);
 }
 
 int player_set_media_packet_video_frame_decoded_cb(player_h player,
-						   player_media_packet_video_decoded_cb
-						   callback, void *user_data)
+		player_media_packet_video_decoded_cb
+		callback, void *user_data)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(callback);
