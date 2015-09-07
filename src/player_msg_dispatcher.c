@@ -37,8 +37,6 @@
 #include "player2_private.h"
 #include "player_msg_private.h"
 
-#define SOCK_BUFFER_LENGTH 250
-#define HEADER_LENGTH 10
 #define STREAM_PATH_LENGTH 32
 #define STREAM_PATH_BASE "/tmp/mused_gst.%d"
 
@@ -289,7 +287,7 @@ static void _media_packet_video_decoded_cb(media_packet_h pkt, void *user_data)
 			INT, key[1],
 			INT, key[2],
 			INT, key[3],
-			INT, packet,
+			POINTER, packet,
 			INT, mimetype,
 			surface_info, surface_info_size, sizeof(char));
 }
@@ -1916,7 +1914,7 @@ static int player_disp_media_packet_finalize_cb(Client client)
 {
 	media_packet_h packet;
 
-	player_msg_get(packet, mmsvc_core_client_get_msg(client));
+	player_msg_get_type(packet, mmsvc_core_client_get_msg(client), POINTER);
 
 	media_packet_destroy(packet);
 

@@ -48,7 +48,7 @@ typedef struct {
 }_player_cb_data;
 
 typedef struct {
-	int remote_pkt;
+	intptr_t remote_pkt;
 	callback_cb_info_s *cb_info;
 }_media_pkt_fin_data;
 
@@ -69,7 +69,7 @@ int _player_media_packet_finalize(media_packet_h pkt, int error_code,
 	tbm_surface_h tsurf = NULL;
 	mm_player_api_e api = MM_PLAYER_API_MEDIA_PACKET_FINALIZE_CB;
 	_media_pkt_fin_data *fin_data = (_media_pkt_fin_data *)user_data;
-	int packet;
+	intptr_t packet;
 	char *sndMsg;
 
 	if (pkt == NULL || user_data == NULL) {
@@ -468,14 +468,14 @@ static void __media_packet_video_frame_cb_handler(
 	bool make_pkt_fmt = false;
 	int ret;
 	_media_pkt_fin_data *fin_data;
-	int packet;
+	intptr_t packet;
 	int i;
 
 	player_msg_get(key[0], recvMsg);
 	player_msg_get(key[1], recvMsg);
 	player_msg_get(key[2], recvMsg);
 	player_msg_get(key[3], recvMsg);
-	player_msg_get(packet, recvMsg);
+	player_msg_get_type(packet, recvMsg, POINTER);
 	player_msg_get(mimetype, recvMsg);
 	player_msg_get_array(surface_info, recvMsg);
 
@@ -1050,7 +1050,7 @@ int player_create(player_h * player)
 		char stream_path[MM_MSG_MAX_LENGTH] = {0,};
 		if(player_msg_get_type(handle, ret_buf, POINTER)) {
 			EXT_HANDLE(pc) = handle;
-			LOGD("Player create 0x%x", EXT_HANDLE(pc));
+			LOGD("Player create %p", EXT_HANDLE(pc));
 			*player = (player_h) pc;
 		}
 		if(player_msg_get_type(client_addr, ret_buf, POINTER)) {
@@ -3048,7 +3048,7 @@ int player_get_media_stream_buffer_min_threshold(player_h player,
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(ppercent);
 	player_cli_s *pc = (player_cli_s *) player;
-	mm_player_api_e api = MM_PLAYER_API_SET_MEDIA_STREAM_BUFFER_MIN_THRESHOLD;
+	mm_player_api_e api = MM_PLAYER_API_GET_MEDIA_STREAM_BUFFER_MIN_THRESHOLD;
 	int sock_fd = pc->cb_info->fd;
 	char *ret_buf = NULL;
 	uint percent;
