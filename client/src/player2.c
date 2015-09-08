@@ -38,7 +38,7 @@
 #include "mm_player_mused.h"
 #include "dlog.h"
 
-#define CALLBACK_TIME_OUT 12
+#define CALLBACK_TIME_OUT 16
 static tbm_bufmgr bufmgr;
 
 typedef struct {
@@ -976,6 +976,7 @@ static int wait_for_cb_return(mm_player_api_e api, callback_cb_info_s *cb_info,
 	msg = _get_ret_msg(api, cb_info);
 	if(!buff->recved || !msg) {
 		if (!g_cond_wait_until(&cb_info->player_cond[api], &cb_info->player_mutex, end_time)) {
+			LOGW("return msg does not received %ds", time_out);
 			g_mutex_unlock(&cb_info->player_mutex);
 			return PLAYER_ERROR_INVALID_OPERATION;
 		}
