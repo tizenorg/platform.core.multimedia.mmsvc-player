@@ -152,6 +152,7 @@ typedef enum {
 	_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_SEEK,
 	_PLAYER_EVENT_TYPE_AUDIO_STREAM_CHANGED,
 	_PLAYER_EVENT_TYPE_VIDEO_STREAM_CHANGED,
+	_PLAYER_EVENT_TYPE_VIDEO_BIN_CREATED,
 	_PLAYER_EVENT_TYPE_NUM
 }_player_event_e;
 
@@ -252,6 +253,45 @@ typedef struct _player_cli_s{
 #define INT_HANDLE(h)		((h)->cb_info->local_handle)
 /* external handle cast */
 #define EXT_HANDLE(h)		((h)->remote_handle)
+
+/**
+ * @brief Called when the video sink bin is crated.
+ * @since_tizen 3.0
+ * @param[out] caps			video sink current caps
+ * @param[out ] user_data	The user data passed from the callback registration function
+ * @see player_set_vidoe_bin_created_cb()
+ * @see player_unset_vidoe_bin_created_cb()
+ */
+typedef void (*player_video_bin_created_cb)(const char *caps, void *user_data);
+
+/**
+ * @brief Registers a callback function to be invoked when video sink bin is created.
+ * @since_tizen 3.0
+ * @param[in] player    The handle to the media player
+ * @param[in] callback The callback function to register
+ * @param[in] user_data The user data to be passed to the callback function
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @post player_video_bin_created_cb() will be invoked.
+ * @see player_unset_vidoe_bin_created_cb()
+ */
+int player_set_video_bin_created_cb(player_h player, player_video_bin_created_cb callback, void *user_data);
+
+/**
+ * @brief Unregisters a callback function to be invoked when video sink bin is created.
+ * @since_tizen 3.0
+ * @param[in] player    The handle to the media player
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @post player_video_bin_created_cb() will be invoked.
+ * @see player_unset_vidoe_bin_created_cb()
+ */
+int player_unset_video_bin_created_cb(player_h player);
+
 
 #ifdef __cplusplus
 }

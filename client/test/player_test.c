@@ -36,7 +36,7 @@
 #define PACKAGE "player_test"
 #define MAX_STRING_LEN	2048
 #define MMTS_SAMPLELIST_INI_DEFAULT_PATH "/opt/etc/mmts_filelist.ini"
-#define PLAYER_TEST_DUMP_PATH_PREFIX   "/opt/usr/media/dump_pcm_"
+#define PLAYER_TEST_DUMP_PATH_PREFIX   "/home/owner/content/dump_pcm_"
 #define INI_SAMPLE_LIST_MAX 9
 #define DEFAULT_HTTP_TIMEOUT -1
 
@@ -1303,8 +1303,16 @@ static void _player_state()
 
 static void _player_set_progressive_download()
 {
-	player_set_progressive_download_path(g_player[0], "/opt/test.pd");
+	player_set_progressive_download_path(g_player[0], "/home/owner/test.pd");
 	player_set_progressive_download_message_cb(g_player[0], progress_down_cb, (void*)g_player[0]);
+}
+
+static void _player_get_progressive_download_status()
+{
+	int bRet;
+	unsigned long curr, total;
+	bRet = player_get_progressive_download_status(g_player[0], &curr, &total);
+	g_print("player_get_progressive_download_status return[%d]           ==> [Player_Test] progressive download status : %lu/%lu\n", bRet, curr, total);
 }
 
 static void set_volume(float volume)
@@ -2099,7 +2107,7 @@ void _interpret_main_menu(char *cmd)
 		{
 			_player_prepare(FALSE); // sync
 		}
-  		else if (strncmp(cmd, "pa", 2) == 0)
+		else if (strncmp(cmd, "pa", 2) == 0)
 		{
 			_player_prepare(TRUE); // async
 		}
@@ -2115,12 +2123,16 @@ void _interpret_main_menu(char *cmd)
 		{
 			_player_set_progressive_download();
 		}
+		else if (strncmp(cmd, "gp", 2) == 0)
+		{
+			_player_get_progressive_download_status();
+		}
 		else if (strncmp(cmd, "mp", 2) == 0)
 		{
 			g_memory_playback = (g_memory_playback ? FALSE : TRUE);
 			g_print("memory playback = %d\n", g_memory_playback);
 		}
-   		else if (strncmp(cmd, "ds", 2) == 0 )
+		else if (strncmp(cmd, "ds", 2) == 0 )
 		{
 			g_menu_state = CURRENT_STATUS_DISPLAY_SURFACE_CHANGE;
 		}
@@ -2144,12 +2156,12 @@ void _interpret_main_menu(char *cmd)
 		{
 			set_pcm_spec();
 		}
-  		else
+		else
 		{
 			g_print("unknown menu \n");
 		}
 	}
- 	else
+	else
 	{
 		g_print("unknown menu \n");
 	}
@@ -2206,6 +2218,7 @@ void display_sub_basic()
 	g_print("[subtitle] ss. Select(or change) subtitle track\n");
 	g_print("[Video Capture] C. Capture \n");
 	g_print("[etc] sp. Set Progressive Download\t");
+	g_print("gp. Get Progressive Download status\n");
 	g_print("mp. memory playback\n");
 	g_print("[audio_frame_decoded_cb_ex] X3. (input) set audio_frame_decoded_cb_ex callback \n");
 	g_print("\n");

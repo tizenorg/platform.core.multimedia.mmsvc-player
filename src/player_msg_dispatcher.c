@@ -547,6 +547,7 @@ static void (*set_callback_func[_PLAYER_EVENT_TYPE_NUM])
 	_set_media_stream_audio_seek_cb,	/*_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_SEEK*/
 	NULL,	/*_PLAYER_EVENT_TYPE_AUDIO_STREAM_CHANGED*/
 	_set_video_stream_changed_cb,	/*_PLAYER_EVENT_TYPE_VIDEO_STREAM_CHANGED*/
+	NULL,	/*_PLAYER_EVENT_TYPE_VIDEO_BIN_CREATED*/
 };
 
 static int player_disp_set_callback(Client client)
@@ -578,7 +579,7 @@ static int player_disp_create(Client client)
 	char stream_path[STREAM_PATH_LENGTH];
 
 	ret = player_create(&player);
-	LOGD("handle : %p\n", player);
+	LOGD("handle : %p, client : %p", player, client);
 
 	if(ret == PLAYER_ERROR_NONE) {
 		thread_i = g_new(data_thread_info_t, 1);
@@ -1535,6 +1536,17 @@ static int player_disp_set_subtitle_position_offset(Client client)
 	return ret;
 }
 
+static void _video_bin_created_cb(const char *caps, void *user_data)
+{
+	Client client = (Client)user_data;
+	mm_player_cb_e api = MM_PLAYER_CB_EVENT;
+	_player_event_e ev = _PLAYER_EVENT_TYPE_VIDEO_BIN_CREATED;
+
+	LOGD("Enter");
+
+	player_msg_event1(api, ev, client, STRING, caps);
+}
+
 static int player_disp_set_progressive_download_path(Client client)
 {
 	int ret = -1;
@@ -1546,6 +1558,10 @@ static int player_disp_set_progressive_download_path(Client client)
 	player_msg_get_string(path, mmsvc_core_client_get_msg(client));
 
 	ret = player_set_progressive_download_path((player_h) handle, path);
+	if(ret == PLAYER_ERROR_NONE) {
+		player_set_video_bin_created_cb((player_h) handle,
+				_video_bin_created_cb, client);
+	}
 
 	player_msg_return(api, ret, client);
 
@@ -1561,13 +1577,11 @@ static int player_disp_get_progressive_download_status(Client client)
 	unsigned long total_size = 0;
 
 	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get(current, mmsvc_core_client_get_msg(client));
-	player_msg_get(total_size, mmsvc_core_client_get_msg(client));
 
 	ret = player_get_progressive_download_status((player_h) handle,
 			&current, &total_size);
 
-	player_msg_return2(api, ret, client, INT, current, INT, total_size);
+	player_msg_return2(api, ret, client, POINTER, current, POINTER, total_size);
 
 	return ret;
 }

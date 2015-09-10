@@ -666,6 +666,19 @@ static void __video_stream_changed_cb_handler(
 	}
 }
 
+static void __video_bin_created_cb_handler(
+		callback_cb_info_s * cb_info, char *recvMsg)
+{
+	char caps[MM_MSG_MAX_LENGTH] = {0};
+	if(player_msg_get_string(caps, recvMsg))
+		if(strlen(caps) > 0)
+			mm_player_mused_realize(cb_info->local_handle, caps);
+}
+
+static void dummy_user_callback()
+{
+}
+
 static void (*_user_callbacks[_PLAYER_EVENT_TYPE_NUM])
 					(callback_cb_info_s * cb_info, char *recvMsg) = {
 	__prepare_cb_handler,	/*_PLAYER_EVENT_TYPE_PREPARE*/
@@ -693,6 +706,7 @@ static void (*_user_callbacks[_PLAYER_EVENT_TYPE_NUM])
 	__media_stream_audio_seek_cb_handler,	/*_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_SEEK*/
 	NULL,	/*_PLAYER_EVENT_TYPE_AUDIO_STREAM_CHANGED*/
 	__video_stream_changed_cb_handler,	/*_PLAYER_EVENT_TYPE_VIDEO_STREAM_CHANGED*/
+	__video_bin_created_cb_handler,	/*_PLAYER_EVENT_TYPE_VIDEO_BIN_CREATED*/
 };
 
 static void _player_event_job_function(_player_cb_data *data)
@@ -2399,11 +2413,16 @@ int player_set_progressive_download_path(player_h player, const char *path)
 	player_cli_s *pc = (player_cli_s *) player;
 	int sock_fd = pc->cb_info->fd;
 	char *ret_buf = NULL;
+	int type = _PLAYER_EVENT_TYPE_VIDEO_BIN_CREATED;
 
 	LOGD("ENTER");
 
 	player_msg_send1(api, EXT_HANDLE(pc), sock_fd, pc->cb_info, ret_buf, ret,
 			STRING, path);
+	if(ret == PLAYER_ERROR_NONE) {
+		pc->cb_info->user_cb[type] = dummy_user_callback;
+		pc->cb_info->user_data[type] = NULL;
+	}
 	g_free(ret_buf);
 	return ret;
 }
@@ -2420,14 +2439,14 @@ int player_get_progressive_download_status(player_h player,
 	player_cli_s *pc = (player_cli_s *) player;
 	int sock_fd = pc->cb_info->fd;
 	char *ret_buf = NULL;
-	int current, total_size;
+	unsigned long current, total_size;
 
 	LOGD("ENTER");
 
 	player_msg_send(api, EXT_HANDLE(pc), sock_fd, pc->cb_info, ret_buf, ret);
 	if(ret == PLAYER_ERROR_NONE){
-		player_msg_get(current, ret_buf);
-		player_msg_get(total_size, ret_buf);
+		player_msg_get_type(current, ret_buf, POINTER);
+		player_msg_get_type(total_size, ret_buf, POINTER);
 		*pcurrent = current;
 		*ptotal_size = total_size;
 	}
