@@ -96,8 +96,7 @@ cp client/test/player_es_push_test %{buildroot}/usr/bin
 
 
 %files
-%manifest mused-player.manifest
-%manifest client/capi-media-player.manifest
+%manifest capi-media-player.manifest
 %{_libdir}/libmused-player.so*
 %{_libdir}/libcapi-media-player.so*
 %{_datadir}/license/%{name}
