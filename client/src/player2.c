@@ -281,6 +281,27 @@ static int player_recv_msg(callback_cb_info_s *cb_info, int len)
 	return len;
 }
 
+static void set_null_user_cb(callback_cb_info_s *cb_info, _player_event_e event)
+{
+	if(event < _PLAYER_EVENT_TYPE_NUM){
+		cb_info->user_cb[event] = NULL;
+		cb_info->user_data[event] = NULL;
+	}
+}
+
+static void set_null_user_cb_lock(callback_cb_info_s *cb_info, _player_event_e event)
+{
+	bool lock = g_thread_self() != cb_info->event_queue.thread;
+
+	if(lock)
+		g_mutex_lock(&cb_info->event_queue.mutex);
+
+	set_null_user_cb(cb_info, event);
+
+	if(lock)
+		g_mutex_unlock(&cb_info->event_queue.mutex);
+}
+
 static int __set_callback(_player_event_e type, player_h player, void *callback,
 		void *user_data)
 {
@@ -312,21 +333,12 @@ static int __unset_callback(_player_event_e type, player_h player)
 	int set = 0;
 
 	LOGI("Event type : %d ", type);
-	handle->cb_info->user_cb[type] = NULL;
-	handle->cb_info->user_data[type] = NULL;
+	set_null_user_cb_lock(handle->cb_info, type);
 
 	player_msg_callback(api, EXT_HANDLE(handle), sock_fd, ret, type, set);
 	ret = PLAYER_ERROR_NONE;
 
 	return ret;
-}
-
-static void set_null_user_cb(callback_cb_info_s *cb_info, _player_event_e event)
-{
-	if(event < _PLAYER_EVENT_TYPE_NUM){
-		cb_info->user_cb[event] = NULL;
-		cb_info->user_data[event] = NULL;
-	}
 }
 
 static void __prepare_cb_handler(callback_cb_info_s * cb_info, char *recvMsg)
@@ -711,7 +723,11 @@ static void (*_user_callbacks[_PLAYER_EVENT_TYPE_NUM])
 
 static void _player_event_job_function(_player_cb_data *data)
 {
-	_user_callbacks[data->int_data](data->cb_info, data->buf);
+	_player_event_e ev = data->int_data;
+	if(data->cb_info->user_cb[ev])
+		_user_callbacks[ev](data->cb_info, data->buf);
+	else
+		LOGW("user callback is unset. type : %d", ev);
 
 	g_free(data->buf);
 	g_free(data);
@@ -736,14 +752,11 @@ static void * _player_event_queue_loop(void *param)
 		}
 		while(1) {
 			event_data = (_player_cb_data *)g_queue_pop_head(ev->queue);
-			g_mutex_unlock(&ev->mutex);
 			if(event_data)
 				_player_event_job_function(event_data);
 			else {
-				g_mutex_lock(&ev->mutex);
 				break;
 			}
-			g_mutex_lock(&ev->mutex);
 		}
 	}
 	g_mutex_unlock(&ev->mutex);
@@ -1207,8 +1220,8 @@ int player_unprepare(player_h player)
 
 	player_msg_send(api, EXT_HANDLE(pc), sock_fd, pc->cb_info, ret_buf, ret);
 	if(ret == PLAYER_ERROR_NONE){
-		set_null_user_cb(pc->cb_info, _PLAYER_EVENT_TYPE_SEEK);
-		set_null_user_cb(pc->cb_info, _PLAYER_EVENT_TYPE_PREPARE);
+		set_null_user_cb_lock(pc->cb_info, _PLAYER_EVENT_TYPE_SEEK);
+		set_null_user_cb_lock(pc->cb_info, _PLAYER_EVENT_TYPE_PREPARE);
 		_del_mem(pc);
 		_player_deinit_memory_buffer(pc);
 	}
@@ -1520,7 +1533,7 @@ int player_stop(player_h player)
 
 	player_msg_send(api, EXT_HANDLE(pc), sock_fd, pc->cb_info, ret_buf, ret);
 	if(ret == PLAYER_ERROR_NONE) {
-		set_null_user_cb(pc->cb_info, _PLAYER_EVENT_TYPE_SEEK);
+		set_null_user_cb_lock(pc->cb_info, _PLAYER_EVENT_TYPE_SEEK);
 	}
 
 	g_free(ret_buf);
@@ -1575,10 +1588,8 @@ int player_set_play_position(player_h player, int millisecond, bool accurate,
 	player_msg_send2(api, EXT_HANDLE(pc), sock_fd, pc->cb_info, ret_buf, ret,
 			INT, pos, INT, accurate);
 
-	if (ret != PLAYER_ERROR_NONE) {
-		pc->cb_info->user_cb[_PLAYER_EVENT_TYPE_SEEK] = NULL;
-		pc->cb_info->user_data[_PLAYER_EVENT_TYPE_SEEK] = NULL;
-	}
+	if (ret != PLAYER_ERROR_NONE)
+		set_null_user_cb(pc->cb_info, _PLAYER_EVENT_TYPE_SEEK);
 
 	g_free(ret_buf);
 	return ret;
@@ -2671,7 +2682,7 @@ int player_unset_media_packet_video_frame_decoded_cb(player_h player)
 
 	LOGD("ENTER");
 
-	set_null_user_cb(pc->cb_info, type);
+	set_null_user_cb_lock(pc->cb_info, type);
 
 	player_msg_send2(api, EXT_HANDLE(pc), sock_fd, pc->cb_info, ret_buf, ret,
 			INT, type, INT, set);
@@ -2721,7 +2732,7 @@ int player_unset_video_stream_changed_cb (player_h player)
 
 	LOGD("ENTER");
 
-	set_null_user_cb(pc->cb_info, type);
+	set_null_user_cb_lock(pc->cb_info, type);
 
 	player_msg_send2(api, EXT_HANDLE(pc), sock_fd, pc->cb_info, ret_buf, ret,
 			INT, type, INT, set);
@@ -2792,7 +2803,7 @@ int player_unset_media_stream_buffer_status_cb (player_h player,
 		return PLAYER_ERROR_INVALID_PARAMETER;
 	}
 
-	set_null_user_cb(pc->cb_info, type);
+	set_null_user_cb_lock(pc->cb_info, type);
 
 	player_msg_send2(api, EXT_HANDLE(pc), sock_fd, pc->cb_info, ret_buf, ret,
 			INT, type, INT, set);
@@ -2863,7 +2874,7 @@ int player_unset_media_stream_seek_cb (player_h player,
 		return PLAYER_ERROR_INVALID_PARAMETER;
 	}
 
-	set_null_user_cb(pc->cb_info, type);
+	set_null_user_cb_lock(pc->cb_info, type);
 
 	player_msg_send2(api, EXT_HANDLE(pc), sock_fd, pc->cb_info, ret_buf, ret,
 			INT, type, INT, set);
