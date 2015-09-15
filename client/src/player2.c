@@ -17,6 +17,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include "glib.h"
 #include "tbm_bufmgr.h"
 #include "tbm_surface.h"
@@ -1037,6 +1039,7 @@ int player_create(player_h * player)
 
 	int ret = PLAYER_ERROR_NONE;
 	int sock_fd = -1;
+	int pid = getpid();
 
 	mm_player_api_e api = MM_PLAYER_API_CREATE;
 	mmsvc_api_client_e client = MMSVC_PLAYER;
@@ -1051,7 +1054,7 @@ int player_create(player_h * player)
 		ret = PLAYER_ERROR_INVALID_OPERATION;
 		goto ErrorExit;
 	}
-	player_msg_send1_async(api, (intptr_t)player, sock_fd, INT, client);
+	player_msg_send2_async(api, (intptr_t)player, sock_fd, INT, client, INT, pid);
 
 	pc = g_new0(player_cli_s, 1);
 	if (pc == NULL) {

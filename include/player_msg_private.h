@@ -360,6 +360,34 @@ typedef struct {
 	}while(0)
 
 /**
+ * @brief Create and send message. Does not wait server result.
+ * @remarks Does NOT guarantee thread safe.
+ * @param[in] api The enum of module API.
+ * @param[in] player The server side handle of media player.
+ * @param[in] fd socket fd
+ * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
+ * @param[in] param the name of param is key, must be local variable. never be pointer.
+ */
+#define player_msg_send2_async(api, player, fd, type1, param1, type2, param2) \
+	do{	\
+		char *__sndMsg__; \
+		int __len__; \
+		type1 __value1__ = (type1)param1; \
+		type2 __value2__ = (type2)param2; \
+		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_HANDLE, player, \
+				MUSED_TYPE_##type1, #param1, __value1__, \
+				MUSED_TYPE_##type2, #param2, __value2__, \
+				0); \
+		__len__ = mmsvc_core_ipc_send_msg(fd, __sndMsg__); \
+		mmsvc_core_msg_json_factory_free(__sndMsg__); \
+		if (__len__ <= 0) { \
+			LOGE("sending message failed"); \
+			return PLAYER_ERROR_INVALID_OPERATION; \
+		} \
+	}while(0)
+
+
+/**
  * @brief Create and send message for callback. Does not wait server result.
  * @remarks Does NOT guarantee thread safe.
  * @param[in] api The enum of module API.
