@@ -577,9 +577,17 @@ static int player_disp_create(Client client)
 	data_thread_info_t *thread_i;
 	static guint stream_id = 0;
 	char stream_path[STREAM_PATH_LENGTH];
+	int pid;
 
 	ret = player_create(&player);
 	LOGD("handle : %p, client : %p", player, client);
+
+	player_msg_get(pid, mmsvc_core_client_get_msg(client));
+
+	if(ret == PLAYER_ERROR_NONE)
+		ret = player_set_app_pid_sound_register(player, pid);
+	else
+		player_msg_return(api, ret, client);
 
 	if(ret == PLAYER_ERROR_NONE) {
 		thread_i = g_new(data_thread_info_t, 1);
@@ -662,6 +670,7 @@ static int player_disp_prepare_async(Client client)
 	prepare_data_t *prepare_data;
 
 	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+
 	player = (player_h) handle;
 
 	prepare_data = g_new(prepare_data_t, 1);

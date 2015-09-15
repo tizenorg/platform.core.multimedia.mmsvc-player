@@ -254,6 +254,8 @@ typedef struct _player_cli_s{
 /* external handle cast */
 #define EXT_HANDLE(h)		((h)->remote_handle)
 
+int player_set_app_pid_sound_register(player_h player, int pid);
+
 /**
  * @brief Called when the video sink bin is crated.
  * @since_tizen 3.0
