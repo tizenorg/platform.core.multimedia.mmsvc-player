@@ -633,18 +633,23 @@ static int player_disp_prepare(Client client)
 	mm_player_api_e api = MM_PLAYER_API_PREPARE;
 	player_h player;
 	char *caps = NULL;
+	int pid;
 
 	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	player_msg_get(pid, mmsvc_core_client_get_msg(client));
 
 	player = (player_h) handle;
 
-	ret = player_prepare(player);
+	ret = player_set_app_pid(player, pid);
 	if(ret == PLAYER_ERROR_NONE) {
-		ret = player_get_raw_video_caps(player, &caps);
-		if(ret == PLAYER_ERROR_NONE && caps) {
-			player_msg_return1(api, ret, client, STRING, caps);
-			g_free(caps);
-			return 1;
+		ret = player_prepare(player);
+		if(ret == PLAYER_ERROR_NONE) {
+			ret = player_get_raw_video_caps(player, &caps);
+			if(ret == PLAYER_ERROR_NONE && caps) {
+				player_msg_return1(api, ret, client, STRING, caps);
+				g_free(caps);
+				return 1;
+			}
 		}
 	}
 
@@ -660,15 +665,21 @@ static int player_disp_prepare_async(Client client)
 	mm_player_api_e api = MM_PLAYER_API_PREPARE_ASYNC;
 	player_h player;
 	prepare_data_t *prepare_data;
+	int pid;
 
 	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	player_msg_get(pid, mmsvc_core_client_get_msg(client));
+
 	player = (player_h) handle;
 
-	prepare_data = g_new(prepare_data_t, 1);
-	prepare_data->player = player;
-	prepare_data->client = client;
+	ret = player_set_app_pid(player, pid);
+	if(ret == PLAYER_ERROR_NONE) {
+		prepare_data = g_new(prepare_data_t, 1);
+		prepare_data->player = player;
+		prepare_data->client = client;
 
-	ret = player_prepare_async(player, _prepare_async_cb, prepare_data);
+		ret = player_prepare_async(player, _prepare_async_cb, prepare_data);
+	}
 
 	player_msg_return(api, ret, client);
 

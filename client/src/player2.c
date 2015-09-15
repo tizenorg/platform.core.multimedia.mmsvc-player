@@ -17,6 +17,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include "glib.h"
 #include "tbm_bufmgr.h"
 #include "tbm_surface.h"
@@ -1158,6 +1160,7 @@ int player_prepare_async(player_h player, player_prepared_cb callback,
 	player_cli_s *pc = (player_cli_s *) player;
 	int sock_fd;
 	char *ret_buf = NULL;
+	int pid = getpid();
 
 	LOGD("ENTER");
 	sock_fd = pc->cb_info->fd;
@@ -1170,7 +1173,8 @@ int player_prepare_async(player_h player, player_prepared_cb callback,
 		pc->cb_info->user_cb[_PLAYER_EVENT_TYPE_PREPARE] = callback;
 		pc->cb_info->user_data[_PLAYER_EVENT_TYPE_PREPARE] = user_data;
 	}
-	player_msg_send(api, EXT_HANDLE(pc), sock_fd, pc->cb_info, ret_buf, ret);
+	player_msg_send1(api, EXT_HANDLE(pc), sock_fd, pc->cb_info, ret_buf, ret,
+			INT, pid);
 
 	g_free(ret_buf);
 	return ret;
@@ -1185,10 +1189,12 @@ int player_prepare(player_h player)
 	int sock_fd = pc->cb_info->fd;
 	char *ret_buf = NULL;
 	char caps[MM_MSG_MAX_LENGTH] = {0};
+	int pid = getpid();
 
 	LOGD("ENTER");
 
-	player_msg_send(api, EXT_HANDLE(pc), sock_fd, pc->cb_info, ret_buf, ret);
+	player_msg_send1(api, EXT_HANDLE(pc), sock_fd, pc->cb_info, ret_buf, ret,
+			INT, pid);
 
 	mm_player_set_attribute(INT_HANDLE(pc), NULL,
 			"display_visible" , 1,
