@@ -36,6 +36,7 @@
 #include "mmsvc_core_ipc.h"
 #include "player2_private.h"
 #include "player_msg_private.h"
+#include "player_internal.h"
 
 #define STREAM_PATH_LENGTH 32
 #define STREAM_PATH_BASE "/tmp/mused_gst.%d"
@@ -291,6 +292,68 @@ static void _media_packet_video_decoded_cb(media_packet_h pkt, void *user_data)
 			INT, mimetype,
 			surface_info, surface_info_size, sizeof(char));
 }
+
+static void _audio_frame_decoded_cb(player_audio_raw_data_s *audio_frame, void *user_data)
+{
+	mm_player_cb_e api = MM_PLAYER_CB_EVENT;
+	_player_event_e ev = _PLAYER_EVENT_TYPE_AUDIO_FRAME;
+	Client client = (Client)user_data;
+	tbm_bo bo;
+	tbm_bo_handle thandle;
+	tbm_key key;
+	char checker = 1;
+	unsigned int expired = 0x0fffffff;
+	int size = 0;
+	void *data = NULL;
+	if(audio_frame) {
+		size = audio_frame->size;
+		data = audio_frame->data;
+	} else {
+		LOGE("audio frame is NULL");
+		return;
+	}
+
+	LOGD("ENTER");
+
+	bo = tbm_bo_alloc (bufmgr, size+1, TBM_BO_DEFAULT);
+	if(!bo) {
+		LOGE("TBM get error : tbm_bo_alloc return NULL");
+		return;
+	}
+	thandle = tbm_bo_map (bo, TBM_DEVICE_CPU, TBM_OPTION_WRITE);
+	if(thandle.ptr == NULL)
+	{
+		LOGE("TBM get error : handle pointer is NULL");
+		tbm_bo_unref(bo);
+		return;
+	}
+	memcpy(thandle.ptr, data, size);
+	key = tbm_bo_export(bo);
+	if(key == 0)
+	{
+		LOGE("TBM get error : export key is 0");
+		checker = 0;
+		tbm_bo_unmap(bo);
+		tbm_bo_unref(bo);
+		return;
+	}
+	/* mark to write */
+	*((char *)thandle.ptr+size) = 1;
+
+	tbm_bo_unmap(bo);
+
+	player_msg_event2_array(api, ev, client, INT, key, INT, size,
+			audio_frame, sizeof(player_audio_raw_data_s), sizeof(char));
+
+	while(checker && expired--) {
+		thandle = tbm_bo_map (bo, TBM_DEVICE_CPU, TBM_OPTION_READ);
+		checker = *((char *)thandle.ptr+size);
+		tbm_bo_unmap(bo);
+	}
+
+	tbm_bo_unref(bo);
+}
+
 
 static void _video_stream_changed_cb(
 		int width, int height, int fps, int bit_rate, void *user_data)
@@ -2126,6 +2189,45 @@ static int player_disp_get_track_language_code(Client client)
 	return ret;
 }
 
+static int player_disp_set_pcm_extraction_mode(Client client)
+{
+	int ret = -1;
+	intptr_t handle;
+	mm_player_api_e api = MM_PLAYER_API_SET_PCM_EXTRACTION_MODE;
+	int sync;
+
+	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	player_msg_get(sync, mmsvc_core_client_get_msg(client));
+
+	ret = player_set_pcm_extraction_mode((player_h) handle,
+			sync, _audio_frame_decoded_cb, client);
+
+	player_msg_return(api, ret, client);
+
+	return ret;
+}
+
+static int player_disp_set_pcm_spec(Client client)
+{
+	int ret = -1;
+	intptr_t handle;
+	mm_player_api_e api = MM_PLAYER_API_SET_PCM_SPEC;
+	char format[MM_URI_MAX_LENGTH] = { 0, };
+	int samplerate;
+	int channel;
+
+	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	player_msg_get_string(format, mmsvc_core_client_get_msg(client));
+	player_msg_get(samplerate, mmsvc_core_client_get_msg(client));
+	player_msg_get(channel, mmsvc_core_client_get_msg(client));
+
+	ret = player_set_pcm_spec((player_h)handle, format, samplerate, channel);
+
+	player_msg_return(api, ret, client);
+
+	return ret;
+}
+
 int (*dispatcher[MM_PLAYER_API_MAX]) (Client client) = {
 	player_disp_create,	/* MM_PLAYER_API_CREATE */
 		player_disp_destroy,	/* MM_PLAYER_API_DESTROY */
@@ -2197,5 +2299,7 @@ int (*dispatcher[MM_PLAYER_API_MAX]) (Client client) = {
 		player_disp_get_current_track, /* MM_PLAYER_API_GET_CURRENT_TRACK */
 		player_disp_select_track, /* MM_PLAYER_API_SELECT_TRACK */
 		player_disp_get_track_language_code, /* MM_PLAYER_API_GET_TRACK_LANGUAGE_CODE */
+		player_disp_set_pcm_extraction_mode, /* MM_PLAYER_API_SET_PCM_EXTRACTION_MODE */
+		player_disp_set_pcm_spec, /* MM_PLAYER_API_SET_PCM_SPEC */
 };
 

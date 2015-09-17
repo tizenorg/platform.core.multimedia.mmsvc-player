@@ -25,6 +25,8 @@ extern "C" {
 #include "media_format.h"
 #include "tbm_bufmgr.h"
 
+#define CALLBACK_TIME_OUT 35
+
 typedef int32_t INT;
 typedef int64_t INT64;
 typedef intptr_t POINTER;

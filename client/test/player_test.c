@@ -548,8 +548,6 @@ static void prepared_cb(void *user_data)
 	g_print("[Player_Test] prepared_cb!!!!\n");
 }
 
-/* TODO : Make internal API */
-#if 0
 static void _audio_frame_decoded_cb_ex(player_audio_raw_data_s *audio_raw_frame, void *user_data)
 {
 	player_audio_raw_data_s* audio_raw = audio_raw_frame;
@@ -559,13 +557,12 @@ static void _audio_frame_decoded_cb_ex(player_audio_raw_data_s *audio_raw_frame,
 	g_print("[Player_Test] decoded_cb_ex! channel: %d channel_mask: %" G_GUINT64_FORMAT "\n", audio_raw->channel, audio_raw->channel_mask);
 
 #ifdef DUMP_OUTBUF
-	if(audio_raw->channel_mask == 1)
+	if(audio_raw->channel_mask == 1 && fp_out1)
 		fwrite((guint8 *)audio_raw->data, 1, audio_raw->size, fp_out1);
-	else if(audio_raw->channel_mask == 2)
+	else if(audio_raw->channel_mask == 2 && fp_out2)
 		fwrite((guint8 *)audio_raw->data, 1, audio_raw->size, fp_out2);
 #endif
 }
-#endif
 
 static void progress_down_cb(player_pd_message_type_e type, void *user_data)
 {
@@ -1414,29 +1411,27 @@ static void get_duration()
 
 static void audio_frame_decoded_cb_ex()
 {
-/* TODO : Make internal API */
-#if 0
 	int ret;
 
 #if DUMP_OUTBUF
-    fp_out1 = fopen("/opt/usr/media/out1.pcm", "wb");
-    fp_out2 = fopen("/opt/usr/media/out2.pcm", "wb");
+	fp_out1 = fopen("/home/owner/content/out1.pcm", "wb");
+	fp_out2 = fopen("/home/owner/content/out2.pcm", "wb");
+	if(!fp_out1 || !fp_out2) {
+		g_print("File open error\n");
+		return;
+	}
 #endif
 
 	ret = player_set_pcm_extraction_mode(g_player[0], false, _audio_frame_decoded_cb_ex, &ret);
 	g_print("                                                            ==> [Player_Test] player_set_audio_frame_decoded_cb_ex return: %d\n", ret);
-#endif
 }
 
 static void set_pcm_spec()
 {
-/* TODO : Make internal API */
-#if 0
 	int ret = 0;
 
 	ret = player_set_pcm_spec(g_player[0], "F32LE", 44100, 2);
 	g_print("[Player_Test] set_pcm_spec return: %d\n", ret);
-#endif
 }
 
 static void get_stream_info()

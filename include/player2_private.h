@@ -16,6 +16,7 @@
 
 #ifndef __TIZEN_MEDIA_PLAYER_2_PRIVATE_H__
 #define	__TIZEN_MEDIA_PLAYER_2_PRIVATE_H__
+#include <tbm_bufmgr.h>
 #include "player.h"
 #include "mm_types.h"
 #include "mmsvc_core.h"
@@ -118,6 +119,8 @@ extern "C" {
 		MM_PLAYER_API_GET_CURRENT_TRACK,
 		MM_PLAYER_API_SELECT_TRACK,
 		MM_PLAYER_API_GET_TRACK_LANGUAGE_CODE,
+		MM_PLAYER_API_SET_PCM_EXTRACTION_MODE,
+		MM_PLAYER_API_SET_PCM_SPEC,
 		MM_PLAYER_API_MAX
 	} mm_player_api_e;
 
@@ -236,6 +239,7 @@ typedef struct _callback_cb_info {
 	player_event_queue event_queue;
 	media_format_h pkt_fmt;
 	MMHandleType local_handle;
+	tbm_bufmgr bufmgr;
 } callback_cb_info_s;
 
 typedef struct {
@@ -254,6 +258,9 @@ typedef struct _player_cli_s{
 /* external handle cast */
 #define EXT_HANDLE(h)		((h)->remote_handle)
 
+
+int wait_for_cb_return(mm_player_api_e api, callback_cb_info_s *cb_info,
+		char **ret_buf, int time_out);
 int player_sound_register(player_h player, int pid);
 
 /**

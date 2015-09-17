@@ -34,14 +34,12 @@
 #include "mmsvc_core_ipc.h"
 #include "player2_private.h"
 #include "player_msg_private.h"
+#include "player_internal.h"
 #include "sound_manager_internal.h"
 #include "mm_error.h"
 #include "mm_player.h"
 #include "mm_player_mused.h"
 #include "dlog.h"
-
-#define CALLBACK_TIME_OUT 16
-static tbm_bufmgr bufmgr;
 
 typedef struct {
 	int int_data;
@@ -424,7 +422,7 @@ static void __capture_cb_handler(callback_cb_info_s * cb_info, char *recvMsg)
 		if(!player_msg_get(key, recvMsg))
 			goto capture_event_exit1;
 
-		bo = tbm_bo_import(bufmgr, key);
+		bo = tbm_bo_import(cb_info->bufmgr, key);
 		if(bo == NULL) {
 			LOGE("TBM get error : bo is NULL");
 			goto capture_event_exit1;
@@ -498,7 +496,7 @@ static void __media_packet_video_frame_cb_handler(
 	for(i = 0; i < 4; i++) {
 		if(key[i]){
 			bo_num++;
-			bo[i] = tbm_bo_import(bufmgr, key[i]);
+			bo[i] = tbm_bo_import(cb_info->bufmgr, key[i]);
 		}
 	}
 
@@ -567,6 +565,53 @@ static void __media_packet_video_frame_cb_handler(
 static void __audio_frame_cb_handler(
 		callback_cb_info_s * cb_info, char *recvMsg)
 {
+	unsigned char *data = NULL;
+	unsigned int size = 0;
+	tbm_bo bo;
+	tbm_bo_handle thandle;
+	tbm_key key;
+	player_audio_raw_data_s audio;
+	void *audio_frame = &audio;
+
+	if(player_msg_get_array(audio_frame, recvMsg) && player_msg_get(size, recvMsg)) {
+		if(!player_msg_get(key, recvMsg))
+			return;
+
+		bo = tbm_bo_import(cb_info->bufmgr, key);
+		if(bo == NULL) {
+			LOGE("TBM get error : bo is NULL");
+			return;
+		}
+		thandle = tbm_bo_map (bo, TBM_DEVICE_CPU,
+				TBM_OPTION_WRITE | TBM_OPTION_READ);
+		if(thandle.ptr == NULL)
+		{
+			LOGE("TBM get error : handle pointer is NULL");
+			tbm_bo_unref(bo);
+			return;
+		}
+		data = g_new(unsigned char, size);
+		if(data){
+			memcpy(data, thandle.ptr, size);
+			audio.data = data;
+			audio.size = size;
+			LOGD("user callback data %p, size %d", audio.data, audio.size);
+			((player_audio_pcm_extraction_cb)
+			cb_info->user_cb[_PLAYER_EVENT_TYPE_AUDIO_FRAME]) (
+				&audio,
+				cb_info->user_data[_PLAYER_EVENT_TYPE_AUDIO_FRAME]);
+			g_free(data);
+		}
+		else
+			LOGE("g_new failure");
+
+		/* mark to read */
+		*((char *)thandle.ptr+size) = 0;
+		LOGD("Fin");
+
+		tbm_bo_unmap(bo);
+		tbm_bo_unref(bo);
+	}
 }
 
 static void __video_frame_render_error_cb_handler(
@@ -992,7 +1037,7 @@ static void callback_destroy(callback_cb_info_s * cb_info)
 	g_free(cb_info);
 }
 
-static int wait_for_cb_return(mm_player_api_e api, callback_cb_info_s *cb_info,
+int wait_for_cb_return(mm_player_api_e api, callback_cb_info_s *cb_info,
 		char **ret_buf, int time_out)
 {
 	int ret = PLAYER_ERROR_NONE;
@@ -1105,7 +1150,7 @@ int player_create(player_h * player)
 	} else
 		goto ErrorExit;
 
-	bufmgr = tbm_bufmgr_init (-1);
+	pc->cb_info->bufmgr = tbm_bufmgr_init (-1);
 
 	g_free(ret_buf);
 	return ret;
@@ -1141,9 +1186,9 @@ int player_destroy(player_h player)
 		ret = PLAYER_ERROR_INVALID_OPERATION;
 
 	_player_event_queue_destroy(pc->cb_info);
-	callback_destroy(pc->cb_info);
+	tbm_bufmgr_deinit (pc->cb_info->bufmgr);
 
-	tbm_bufmgr_deinit (bufmgr);
+	callback_destroy(pc->cb_info);
 
 	g_free(pc);
 	pc = NULL;
@@ -1273,7 +1318,7 @@ int player_set_memory_buffer(player_h player, const void *data, int size)
 		return PLAYER_ERROR_INVALID_OPERATION;
 	}
 
-	bo = tbm_bo_alloc (bufmgr, size, TBM_BO_DEFAULT);
+	bo = tbm_bo_alloc (pc->cb_info->bufmgr, size, TBM_BO_DEFAULT);
 	if(bo == NULL) {
 		LOGE("TBM get error : bo is NULL");
 		return PLAYER_ERROR_INVALID_OPERATION;
@@ -2927,7 +2972,7 @@ int player_push_media_stream(player_h player, media_packet_h packet)
 
 #ifdef __UN_USED
 	if(push_media.buf_type == PUSH_MEDIA_BUF_TYPE_TBM) {
-		bo = tbm_bo_alloc (bufmgr, push_media.size, TBM_BO_DEFAULT);
+		bo = tbm_bo_alloc (pc->cb_info->bufmgr, push_media.size, TBM_BO_DEFAULT);
 		if(bo == NULL) {
 			LOGE("TBM get error : bo is NULL");
 			return PLAYER_ERROR_INVALID_OPERATION;
