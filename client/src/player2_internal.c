@@ -35,13 +35,12 @@ int player_set_pcm_extraction_mode(player_h player,
 	int ret = PLAYER_ERROR_NONE;
 	mm_player_api_e api = MM_PLAYER_API_SET_PCM_EXTRACTION_MODE;
 	player_cli_s *pc = (player_cli_s *) player;
-	int sock_fd = pc->cb_info->fd;
 	char *ret_buf = NULL;
 	_player_event_e event = _PLAYER_EVENT_TYPE_AUDIO_FRAME;
 
 	LOGD("ENTER");
 
-	player_msg_send1(api, EXT_HANDLE(pc), sock_fd, pc->cb_info, ret_buf, ret,
+	player_msg_send1(api, pc, ret_buf, ret,
 			INT, sync);
 
 	if(ret == PLAYER_ERROR_NONE){
@@ -60,12 +59,11 @@ int player_set_pcm_spec(player_h player, const char *format, int samplerate, int
 	int ret = PLAYER_ERROR_NONE;
 	mm_player_api_e api = MM_PLAYER_API_SET_PCM_SPEC;
 	player_cli_s *pc = (player_cli_s *) player;
-	int sock_fd = pc->cb_info->fd;
 	char *ret_buf = NULL;
 
 	LOGD("ENTER");
 
-	player_msg_send3(api, EXT_HANDLE(pc), sock_fd, pc->cb_info, ret_buf, ret,
+	player_msg_send3(api, pc, ret_buf, ret,
 			STRING, format, INT, samplerate, INT, channel);
 
 	g_free(ret_buf);

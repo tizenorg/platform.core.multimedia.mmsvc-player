@@ -244,20 +244,31 @@ typedef struct _callback_cb_info {
 
 typedef struct {
 	intptr_t bo;
-}server_tbm_info_s;
+}server_info_s;
 
 typedef struct _player_cli_s{
 	intptr_t remote_handle;
 	callback_cb_info_s *cb_info;
 	player_data_s *head;
-	server_tbm_info_s server_tbm;
+	server_info_s server;
 }player_cli_s;
 
-/* Internal handle cast */
+/* Internal handle */
 #define INT_HANDLE(h)		((h)->cb_info->local_handle)
-/* external handle cast */
+/* external handlet */
 #define EXT_HANDLE(h)		((h)->remote_handle)
 
+/* player callback infomatnio */
+#define CALLBACK_INFO(h)	((h)->cb_info)
+/* MSG Channel socket fd */
+#define MSG_FD(h)			(CALLBACK_INFO(h)->fd)
+/* Data Channel socket fd */
+#define DATA_FD(h)			(CALLBACK_INFO(h)->data_fd)
+/* TBM buffer manager */
+#define TBM_BUFMGR(h)		(CALLBACK_INFO(h)->bufmgr)
+
+/* server tbm bo */
+#define SERVER_TBM_BO(h)	((h)->server.bo)
 
 int wait_for_cb_return(mm_player_api_e api, callback_cb_info_s *cb_info,
 		char **ret_buf, int time_out);

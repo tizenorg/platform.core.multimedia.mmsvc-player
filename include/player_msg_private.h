@@ -21,9 +21,10 @@
 extern "C" {
 #endif
 
-#include "mmsvc_core_msg_json.h"
-#include "media_format.h"
-#include "tbm_bufmgr.h"
+#include <mmsvc_core_msg_json.h>
+#include <media_format.h>
+#include <tbm_bufmgr.h>
+#include <player2_private.h>
 
 #define CALLBACK_TIME_OUT 35
 
@@ -108,24 +109,25 @@ typedef struct {
  * @brief Create and send message. Wait for server result.
  * @remarks Does NOT guarantee thread safe.
  * @param[in] api The enum of module API.
- * @param[in] player The server side handle of media player.
- * @param[in] fd socket fd
- * @param[in] cb_info The infomation of callback.
+ * @param[in] player The handle of capi media player.
  * @param[out] retbuf The buffer of return message. Must be char pointer.
  * @param[out] ret The return value from server.
  */
-#define player_msg_send(api, player, fd, cb_info, retbuf, ret) \
+#define player_msg_send(api, player, retbuf, ret) \
 	do{	\
 		char *__sndMsg__; \
 		int __len__; \
-		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_HANDLE, player, \
+		int __fd__; \
+		if(CALLBACK_INFO(player)) __fd__ = MSG_FD(player); \
+		else {ret = PLAYER_ERROR_INVALID_STATE;break;} \
+		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_HANDLE, EXT_HANDLE(player), \
 				0); \
-		__len__ = mmsvc_core_ipc_send_msg(fd, __sndMsg__); \
+		__len__ = mmsvc_core_ipc_send_msg(__fd__, __sndMsg__); \
 		if (__len__ <= 0) { \
 			LOGE("sending message failed"); \
 			ret = PLAYER_ERROR_INVALID_OPERATION; \
 		} else \
-			ret = wait_for_cb_return(api, cb_info, &retbuf, CALLBACK_TIME_OUT); \
+			ret = wait_for_cb_return(api, CALLBACK_INFO(player), &retbuf, CALLBACK_TIME_OUT); \
 		mmsvc_core_msg_json_factory_free(__sndMsg__); \
 	}while(0)
 
@@ -133,28 +135,29 @@ typedef struct {
  * @brief Create and send message. Wait for server result.
  * @remarks Does NOT guarantee thread safe.
  * @param[in] api The enum of module API.
- * @param[in] player The server side handle of media player.
- * @param[in] fd socket fd
- * @param[in] cb_info The infomation of callback.
+ * @param[in] player The handle of capi media player.
  * @param[out] retbuf The buffer of return message. Must be char pointer.Must free after use.
  * @param[out] ret The return value from server.
  * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
  * @param[in] param the name of param is key, must be local variable. never be pointer.
  */
-#define player_msg_send1(api, player, fd, cb_info, retbuf, ret, type, param) \
+#define player_msg_send1(api, player, retbuf, ret, type, param) \
 	do{	\
 		char *__sndMsg__; \
 		int __len__; \
+		int __fd__; \
 		type __value__ = (type)param; \
-		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_HANDLE, player, \
+		if(CALLBACK_INFO(player)) __fd__ = MSG_FD(player); \
+		else {ret = PLAYER_ERROR_INVALID_STATE;break;} \
+		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_HANDLE, EXT_HANDLE(player), \
 				MUSED_TYPE_##type, #param, __value__, \
 				0); \
-		__len__ = mmsvc_core_ipc_send_msg(fd, __sndMsg__); \
+		__len__ = mmsvc_core_ipc_send_msg(__fd__, __sndMsg__); \
 		if (__len__ <= 0) { \
 			LOGE("sending message failed"); \
 			ret = PLAYER_ERROR_INVALID_OPERATION; \
 		} else \
-			ret = wait_for_cb_return(api, cb_info, &retbuf, CALLBACK_TIME_OUT); \
+			ret = wait_for_cb_return(api, CALLBACK_INFO(player), &retbuf, CALLBACK_TIME_OUT); \
 		mmsvc_core_msg_json_factory_free(__sndMsg__); \
 	}while(0)
 
@@ -162,30 +165,31 @@ typedef struct {
  * @brief Create and send message. Wait for server result.
  * @remarks Does NOT guarantee thread safe.
  * @param[in] api The enum of module API.
- * @param[in] player The server side handle of media player.
- * @param[in] fd socket fd
- * @param[in] cb_info The infomation of callback.
+ * @param[in] player The handle of capi media player.
  * @param[out] retbuf The buffer of return message. Must be char pointer.Must free after use.
  * @param[out] ret The return value from server.
  * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
  * @param[in] param# the name of param is key, must be local variable. never be pointer.
  */
-#define player_msg_send2(api, player, fd, cb_info, retbuf, ret, type1, param1, type2, param2) \
+#define player_msg_send2(api, player, retbuf, ret, type1, param1, type2, param2) \
 	do{	\
 		char *__sndMsg__; \
 		int __len__; \
+		int __fd__; \
 		type1 __value1__ = (type1)param1; \
 		type2 __value2__ = (type2)param2; \
-		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_HANDLE, player, \
+		if(CALLBACK_INFO(player)) __fd__ = MSG_FD(player); \
+		else {ret = PLAYER_ERROR_INVALID_STATE;break;} \
+		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_HANDLE, EXT_HANDLE(player), \
 				MUSED_TYPE_##type1, #param1, __value1__, \
 				MUSED_TYPE_##type2, #param2, __value2__, \
 				0); \
-		__len__ = mmsvc_core_ipc_send_msg(fd, __sndMsg__); \
+		__len__ = mmsvc_core_ipc_send_msg(__fd__, __sndMsg__); \
 		if (__len__ <= 0) { \
 			LOGE("sending message failed"); \
 			ret = PLAYER_ERROR_INVALID_OPERATION; \
 		} else \
-			ret = wait_for_cb_return(api, cb_info, &retbuf, CALLBACK_TIME_OUT); \
+			ret = wait_for_cb_return(api, CALLBACK_INFO(player), &retbuf, CALLBACK_TIME_OUT); \
 		mmsvc_core_msg_json_factory_free(__sndMsg__); \
 	}while(0)
 
@@ -193,32 +197,33 @@ typedef struct {
  * @brief Create and send message. Wait for server result.
  * @remarks Does NOT guarantee thread safe.
  * @param[in] api The enum of module API.
- * @param[in] player The server side handle of media player.
- * @param[in] fd socket fd
- * @param[in] cb_info The infomation of callback.
+ * @param[in] player The handle of capi media player.
  * @param[out] retbuf The buffer of return message. Must be char pointer.Must free after use.
  * @param[out] ret The return value from server.
  * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
  * @param[in] param# the name of param is key, must be local variable. never be pointer.
  */
-#define player_msg_send3(api, player, fd, cb_info, retbuf, ret, type1, param1, type2, param2, type3, param3) \
+#define player_msg_send3(api, player, retbuf, ret, type1, param1, type2, param2, type3, param3) \
 	do{	\
 		char *__sndMsg__; \
 		int __len__; \
+		int __fd__; \
 		type1 __value1__ = (type1)param1; \
 		type2 __value2__ = (type2)param2; \
 		type3 __value3__ = (type3)param3; \
-		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_HANDLE, player, \
+		if(CALLBACK_INFO(player)) __fd__ = MSG_FD(player); \
+		else {ret = PLAYER_ERROR_INVALID_STATE;break;} \
+		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_HANDLE, EXT_HANDLE(player), \
 				MUSED_TYPE_##type1, #param1, __value1__, \
 				MUSED_TYPE_##type2, #param2, __value2__, \
 				MUSED_TYPE_##type3, #param3, __value3__, \
 				0); \
-		__len__ = mmsvc_core_ipc_send_msg(fd, __sndMsg__); \
+		__len__ = mmsvc_core_ipc_send_msg(__fd__, __sndMsg__); \
 		if (__len__ <= 0) { \
 			LOGE("sending message failed"); \
 			ret = PLAYER_ERROR_INVALID_OPERATION; \
 		} else \
-			ret = wait_for_cb_return(api, cb_info, &retbuf, CALLBACK_TIME_OUT); \
+			ret = wait_for_cb_return(api, CALLBACK_INFO(player), &retbuf, CALLBACK_TIME_OUT); \
 		mmsvc_core_msg_json_factory_free(__sndMsg__); \
 	}while(0)
 
@@ -226,25 +231,26 @@ typedef struct {
  * @brief Create and send message. Wait for server result.
  * @remarks Does NOT guarantee thread safe.
  * @param[in] api The enum of module API.
- * @param[in] player The server side handle of media player.
- * @param[in] fd socket fd
- * @param[in] cb_info The infomation of callback.
+ * @param[in] player The handle of capi media player.
  * @param[out] retbuf The buffer of return message. Must be char pointer.Must free after use.
  * @param[out] ret The return value from server.
  * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
  * @param[in] param# the name of param is key, must be local variable. never be pointer.
  */
-#define player_msg_send6(api, player, fd, cb_info, retbuf, ret, type1, param1, type2, param2, type3, param3, type4, param4, type5, param5, type6, param6) \
+#define player_msg_send6(api, player, retbuf, ret, type1, param1, type2, param2, type3, param3, type4, param4, type5, param5, type6, param6) \
 	do{	\
 		char *__sndMsg__; \
 		int __len__; \
+		int __fd__; \
 		type1 __value1__ = (type1)param1; \
 		type2 __value2__ = (type2)param2; \
 		type3 __value3__ = (type3)param3; \
 		type4 __value4__ = (type4)param4; \
 		type5 __value5__ = (type5)param5; \
 		type6 __value6__ = (type6)param6; \
-		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_HANDLE, player, \
+		if(CALLBACK_INFO(player)) __fd__ = MSG_FD(player); \
+		else {ret = PLAYER_ERROR_INVALID_STATE;break;} \
+		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_HANDLE, EXT_HANDLE(player), \
 				MUSED_TYPE_##type1, #param1, __value1__, \
 				MUSED_TYPE_##type2, #param2, __value2__, \
 				MUSED_TYPE_##type3, #param3, __value3__, \
@@ -252,12 +258,12 @@ typedef struct {
 				MUSED_TYPE_##type5, #param5, __value5__, \
 				MUSED_TYPE_##type6, #param6, __value6__, \
 				0); \
-		__len__ = mmsvc_core_ipc_send_msg(fd, __sndMsg__); \
+		__len__ = mmsvc_core_ipc_send_msg(__fd__, __sndMsg__); \
 		if (__len__ <= 0) { \
 			LOGE("sending message failed"); \
 			ret = PLAYER_ERROR_INVALID_OPERATION; \
 		} else \
-			ret = wait_for_cb_return(api, cb_info, &retbuf, CALLBACK_TIME_OUT); \
+			ret = wait_for_cb_return(api, CALLBACK_INFO(player), &retbuf, CALLBACK_TIME_OUT); \
 		mmsvc_core_msg_json_factory_free(__sndMsg__); \
 	}while(0)
 
@@ -265,33 +271,34 @@ typedef struct {
  * @brief Create and send message. Wait for server result.
  * @remarks Does NOT guarantee thread safe.
  * @param[in] api The enum of module API.
- * @param[in] player The server side handle of media player.
- * @param[in] fd socket fd
- * @param[in] cb_info The infomation of callback.
+ * @param[in] player The handle of capi media player.
  * @param[out] retbuf The buffer of return message. Must be char pointer.Must free after use.
  * @param[out] ret The return value from server.
  * @param[in] param the name of param is key, must be local array/pointer variable.
  * @param[in] length The size of array.
  * @param[in] datum_size The size of a array's datum.
  */
-#define player_msg_send_array(api, player, fd, cb_info, retbuf, ret, param, length, datum_size) \
+#define player_msg_send_array(api, player, retbuf, ret, param, length, datum_size) \
 	do{	\
 		char *__sndMsg__; \
 		int __len__; \
+		int __fd__; \
 		int *__value__ = (int *)param; \
-		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_HANDLE, player, \
+		if(CALLBACK_INFO(player)) __fd__ = MSG_FD(player); \
+		else {ret = PLAYER_ERROR_INVALID_STATE;break;} \
+		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_HANDLE, EXT_HANDLE(player), \
 				MUSED_TYPE_INT, #length, length, \
 				MUSED_TYPE_ARRAY, #param, \
 					datum_size == sizeof(int)? length :  \
 					length / sizeof(int) + (length % sizeof(int)?1:0), \
 					__value__, \
 				0); \
-		__len__ = mmsvc_core_ipc_send_msg(fd, __sndMsg__); \
+		__len__ = mmsvc_core_ipc_send_msg(__fd__, __sndMsg__); \
 		if (__len__ <= 0) { \
 			LOGE("sending message failed"); \
 			ret = PLAYER_ERROR_INVALID_OPERATION; \
 		} else \
-			ret = wait_for_cb_return(api, cb_info, &retbuf, CALLBACK_TIME_OUT); \
+			ret = wait_for_cb_return(api, CALLBACK_INFO(player), &retbuf, CALLBACK_TIME_OUT); \
 		mmsvc_core_msg_json_factory_free(__sndMsg__); \
 	}while(0)
 
@@ -299,22 +306,23 @@ typedef struct {
  * @brief Create and send message. Wait for server result.
  * @remarks Does NOT guarantee thread safe.
  * @param[in] api The enum of module API.
- * @param[in] player The server side handle of media player.
- * @param[in] fd socket fd
- * @param[in] cb_info The infomation of callback.
+ * @param[in] player The handle of capi media player.
  * @param[out] retbuf The buffer of return message. Must be char pointer.Must free after use.
  * @param[out] ret The return value from server.
  * @param[in] param# the name of param is key, must be local array/pointer variable.
  * @param[in] length# The size of array.
  * @param[in] datum_size# The size of a array's datum.
  */
-#define player_msg_send_array2(api, player, fd, cb_info, retbuf, ret, param1, length1, datum_size1, param2, length2, datum_size2) \
+#define player_msg_send_array2(api, player, retbuf, ret, param1, length1, datum_size1, param2, length2, datum_size2) \
 	do{	\
 		char *__sndMsg__; \
 		int __len__; \
+		int __fd__; \
 		int *__value1__ = (int *)param1; \
 		int *__value2__ = (int *)param2; \
-		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_HANDLE, player, \
+		if(CALLBACK_INFO(player)) __fd__ = MSG_FD(player); \
+		else {ret = PLAYER_ERROR_INVALID_STATE;break;} \
+		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_HANDLE, EXT_HANDLE(player), \
 				MUSED_TYPE_INT, #length1, length1, \
 				MUSED_TYPE_ARRAY, #param1, \
 					datum_size1 == sizeof(int)? length1 :  \
@@ -326,12 +334,12 @@ typedef struct {
 					length2 / sizeof(int) + (length2 % sizeof(int)?1:0), \
 					__value2__, \
 				0); \
-		__len__ = mmsvc_core_ipc_send_msg(fd, __sndMsg__); \
+		__len__ = mmsvc_core_ipc_send_msg(__fd__, __sndMsg__); \
 		if (__len__ <= 0) { \
 			LOGE("sending message failed"); \
 			ret = PLAYER_ERROR_INVALID_OPERATION; \
 		} else \
-			ret = wait_for_cb_return(api, cb_info, &retbuf, CALLBACK_TIME_OUT); \
+			ret = wait_for_cb_return(api, CALLBACK_INFO(player), &retbuf, CALLBACK_TIME_OUT); \
 		mmsvc_core_msg_json_factory_free(__sndMsg__); \
 	}while(0)
 
@@ -340,20 +348,22 @@ typedef struct {
  * @brief Create and send message. Does not wait server result.
  * @remarks Does NOT guarantee thread safe.
  * @param[in] api The enum of module API.
- * @param[in] player The server side handle of media player.
- * @param[in] fd socket fd
+ * @param[in] player The handle of capi media player.
  * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
  * @param[in] param the name of param is key, must be local variable. never be pointer.
  */
-#define player_msg_send1_async(api, player, fd, type, param) \
+#define player_msg_send1_async(api, player, type, param) \
 	do{	\
 		char *__sndMsg__; \
 		int __len__; \
+		int __fd__; \
 		type __value__ = (type)param; \
-		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_HANDLE, player, \
+		if(CALLBACK_INFO(player)) __fd__ = MSG_FD(player); \
+		else {ret = PLAYER_ERROR_INVALID_STATE;break;} \
+		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_HANDLE, EXT_HANDLE(player), \
 				MUSED_TYPE_##type, #param, __value__, \
 				0); \
-		__len__ = mmsvc_core_ipc_send_msg(fd, __sndMsg__); \
+		__len__ = mmsvc_core_ipc_send_msg(__fd__, __sndMsg__); \
 		mmsvc_core_msg_json_factory_free(__sndMsg__); \
 		if (__len__ <= 0) { \
 			LOGE("sending message failed"); \
@@ -370,7 +380,7 @@ typedef struct {
  * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
  * @param[in] param the name of param is key, must be local variable. never be pointer.
  */
-#define player_msg_send2_async(api, player, fd, type1, param1, type2, param2) \
+#define player_msg_create_handle(api, player, fd, type1, param1, type2, param2) \
 	do{	\
 		char *__sndMsg__; \
 		int __len__; \
@@ -393,23 +403,25 @@ typedef struct {
  * @brief Create and send message for callback. Does not wait server result.
  * @remarks Does NOT guarantee thread safe.
  * @param[in] api The enum of module API.
- * @param[in] player The server side handle of media player.
- * @param[in] fd socket fd
+ * @param[in] player The handle of capi media player.
  * @param[out] ret set ERROR when fail to send msg.
  * @param[in] event_type type of event (_player_event_e).
  * @param[in] set 1 is set the user callback, 0 is unset the user callback.
  */
-#define player_msg_callback(api, player, fd, ret, event_type, set) \
+#define player_msg_set_callback(api, player, ret, event_type, set) \
 	do{	\
 		char *__sndMsg__; \
 		int __len__; \
+		int __fd__; \
 		int __value1__ = (int)event_type; \
 		int __value2__ = (int)set; \
-		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_HANDLE, player, \
+		if(CALLBACK_INFO(player)) __fd__ = MSG_FD(player); \
+		else {ret = PLAYER_ERROR_INVALID_STATE;break;} \
+		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_HANDLE, EXT_HANDLE(player), \
 				MUSED_TYPE_INT, #event_type, __value1__, \
 				MUSED_TYPE_INT, #set, __value2__, \
 				0); \
-		__len__ = mmsvc_core_ipc_send_msg(fd, __sndMsg__); \
+		__len__ = mmsvc_core_ipc_send_msg(__fd__, __sndMsg__); \
 		mmsvc_core_msg_json_factory_free(__sndMsg__); \
 		if (__len__ <= 0) { \
 			LOGE("sending message failed"); \
