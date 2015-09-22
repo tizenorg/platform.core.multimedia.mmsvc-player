@@ -927,6 +927,15 @@ static ret_msg_s * _get_ret_msg(mm_player_api_e api, callback_cb_info_s *cb_info
 	return NULL;
 }
 
+static void _notify_disconnected(callback_cb_info_s *cb_info)
+{
+	int code = PLAYER_ERROR_SERVICE_DISCONNECTED;
+	_player_event_e ev = _PLAYER_EVENT_TYPE_ERROR;
+	if(!cb_info || !cb_info->user_cb[ev])
+		return;
+	((player_error_cb) cb_info->user_cb[ev])(code, cb_info->user_data[ev]);
+}
+
 static void *client_cb_handler(gpointer data)
 {
 	int api;
@@ -979,6 +988,8 @@ static void *client_cb_handler(gpointer data)
 		if (len <= 0)
 			break;
 	}
+	if (g_atomic_int_get(&cb_info->running))
+		_notify_disconnected(cb_info);
 	LOGD("client cb exit");
 
 	return NULL;
