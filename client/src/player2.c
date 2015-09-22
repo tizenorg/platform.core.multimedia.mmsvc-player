@@ -1766,6 +1766,7 @@ int player_set_display(player_h player, player_display_type_e type,
 	Ecore_Wl_Window * wl_window = NULL;
 	wl_win_msg_type wl_win;
 	char *wl_win_msg = (char *)&wl_win;
+	MMPlayerPipelineType mmPipelineType = MM_PLAYER_PIPELINE_CLIENT;
 #else
 	unsigned int xhandle = 0;
 #endif
@@ -1787,7 +1788,7 @@ int player_set_display(player_h player, player_display_type_e type,
 				wl_win.type = type;
 
 				evas_object_geometry_get(obj, &wl_win.wl_window_x, &wl_win.wl_window_y,
-				                         &wl_win.wl_window_width, &wl_win.wl_window_height);
+						&wl_win.wl_window_width, &wl_win.wl_window_height);
 
 				wl_window = elm_win_wl_window_get(obj);
 				set_handle = (void *)ecore_wl_window_surface_get(wl_window);
@@ -1795,9 +1796,11 @@ int player_set_display(player_h player, player_display_type_e type,
 				/* get wl_display */
 				set_wl_display = (void *)ecore_wl_display_get();
 
-				LOGI("xid %d, surface_id %d, surface %p(%d), win_id %d", elm_win_xwindow_get(obj),
+				LOGI("xid %d, surface_id %d, surface %p(%d), win_id %d",
+						elm_win_xwindow_get(obj),
 						ecore_wl_window_surface_id_get(wl_window),
-						ecore_wl_window_surface_get(wl_window), *(int *)ecore_wl_window_surface_get(wl_window),
+						ecore_wl_window_surface_get(wl_window),
+						*(int *)ecore_wl_window_surface_get(wl_window),
 						ecore_wl_window_id_get(wl_window));
 #else
 				/* x window overlay surface */
@@ -1813,7 +1816,7 @@ int player_set_display(player_h player, player_display_type_e type,
 				wl_win.type = type;
 
 				evas_object_geometry_get(obj, &wl_win.wl_window_x, &wl_win.wl_window_y,
-				                         &wl_win.wl_window_width, &wl_win.wl_window_height);
+						&wl_win.wl_window_width, &wl_win.wl_window_height);
 				set_handle = display;
 			}
 #endif
@@ -1837,6 +1840,7 @@ int player_set_display(player_h player, player_display_type_e type,
 
 	ret = mm_player_set_attribute(INT_HANDLE(pc), NULL,
 		"display_surface_type", type,
+		"pipeline_type", mmPipelineType,
 		"wl_display", set_wl_display,
 		sizeof(void*),
 		"display_overlay", set_handle,
@@ -1873,6 +1877,11 @@ int player_set_display_mode(player_h player, player_display_mode_e mode)
 
 	LOGD("ENTER");
 
+	ret = mm_player_set_attribute(INT_HANDLE(pc), NULL,
+			"display_method" , mode, NULL);
+	if(ret != MM_ERROR_NONE)
+		return __player_convert_error_code(ret,(char*)__FUNCTION__);
+
 	player_msg_send1(api, pc, ret_buf, ret,
 			INT, mode);
 	g_free(ret_buf);
@@ -1884,19 +1893,17 @@ int player_get_display_mode(player_h player, player_display_mode_e * pmode)
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(pmode);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_GET_DISPLAY_MODE;
 	player_cli_s *pc = (player_cli_s *) player;
-	char *ret_buf = NULL;
 	int mode = -1;
 
 	LOGD("ENTER");
 
-	player_msg_send(api, pc, ret_buf, ret);
-	if(ret == PLAYER_ERROR_NONE){
-		player_msg_get(mode, ret_buf);
-		*pmode = mode;
-	}
-	g_free(ret_buf);
+	ret = mm_player_get_attribute(INT_HANDLE(pc), NULL,
+			"display_method" , &mode, NULL);
+	if(ret != MM_ERROR_NONE)
+		return __player_convert_error_code(ret,(char*)__FUNCTION__);
+
+	*pmode = mode;
 	return ret;
 }
 
@@ -1928,6 +1935,13 @@ int player_set_display_rotation(player_h player,
 
 	LOGD("ENTER");
 
+	ret = mm_player_set_attribute(INT_HANDLE(pc), NULL,
+			"display_rotation", rotation, NULL);
+	if(ret != MM_ERROR_NONE)
+	{
+		return __player_convert_error_code(ret,(char*)__FUNCTION__);
+	}
+
 	player_msg_send1(api, pc, ret_buf, ret,
 			INT, rotation);
 	g_free(ret_buf);
@@ -1940,19 +1954,20 @@ int player_get_display_rotation(player_h player,
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(protation);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_GET_DISPLAY_ROTATION;
 	player_cli_s *pc = (player_cli_s *) player;
-	char *ret_buf = NULL;
 	int rotation = -1;
 
 	LOGD("ENTER");
 
-	player_msg_send(api, pc, ret_buf, ret);
-	if(ret == PLAYER_ERROR_NONE){
-		player_msg_get(rotation, ret_buf);
-		*protation = rotation;
+	ret = mm_player_get_attribute(INT_HANDLE(pc), NULL,
+			"display_rotation", &rotation, NULL);
+	if(ret != MM_ERROR_NONE)
+	{
+		return __player_convert_error_code(ret,(char*)__FUNCTION__);
 	}
-	g_free(ret_buf);
+
+	*protation = rotation;
+
 	return ret;
 }
 
