@@ -28,18 +28,18 @@
 #include "mm_debug.h"
 #include "mm_error.h"
 #include "mm_player.h"
-#include "mmsvc_core.h"
-#include "mmsvc_core_ipc.h"
+#include "muse_core.h"
+#include "muse_core_ipc.h"
 #include "player2_private.h"
 #include "player_msg_private.h"
 
-static int player_cmd_shutdown(Client client)
+static int player_cmd_shutdown(muse_module_t module)
 {
 	intptr_t handle;
 	player_state_e state;
 	int ret;
 
-	handle = mmsvc_core_ipc_get_handle(client);
+	handle = muse_core_ipc_get_handle(module);
 
 	ret = player_get_state((player_h) handle, &state);
 
@@ -66,7 +66,7 @@ static int player_cmd_shutdown(Client client)
 	return PLAYER_ERROR_NONE;
 }
 
-int (*cmd_dispatcher[MUSED_DOMAIN_EVENT_MAX]) (Client client) = {
-	player_cmd_shutdown, /* MUSED_DOMAIN_EVENT_SHUTDOWN */
-	NULL, /* MUSED_DOMAIN_EVENT_DEBUG_INFO_DUMP */
+int (*cmd_dispatcher[MUSE_MODULE_EVENT_MAX]) (muse_module_t module) = {
+	player_cmd_shutdown, /* MUSE_MODULE_EVENT_SHUTDOWN */
+	NULL, /* MUSE_MODULE_EVENT_DEBUG_INFO_DUMP */
 };
