@@ -33,13 +33,13 @@
 #include "player2_private.h"
 #include "player_msg_private.h"
 
-static int player_cmd_shutdown(Client client)
+static int player_cmd_shutdown(Module module)
 {
 	intptr_t handle;
 	player_state_e state;
 	int ret;
 
-	handle = mmsvc_core_ipc_get_handle(client);
+	handle = mmsvc_core_ipc_get_handle(module);
 
 	ret = player_get_state((player_h) handle, &state);
 
@@ -66,7 +66,7 @@ static int player_cmd_shutdown(Client client)
 	return PLAYER_ERROR_NONE;
 }
 
-int (*cmd_dispatcher[MUSED_DOMAIN_EVENT_MAX]) (Client client) = {
+int (*cmd_dispatcher[MUSED_DOMAIN_EVENT_MAX]) (Module module) = {
 	player_cmd_shutdown, /* MUSED_DOMAIN_EVENT_SHUTDOWN */
 	NULL, /* MUSED_DOMAIN_EVENT_DEBUG_INFO_DUMP */
 };

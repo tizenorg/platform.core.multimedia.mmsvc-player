@@ -62,7 +62,7 @@ typedef struct {
 
 typedef struct {
 	player_h player;
-	Client client;
+	Module module;
 }prepare_data_t;
 
 /*
@@ -85,13 +85,13 @@ int player_get_raw_video_caps(player_h player, char **caps);
 static int _push_media_stream(intptr_t handle, player_push_media_msg_type *push_media, char *buf);
 static gpointer _player_push_media_stream_handler(gpointer param);
 
-static void __player_callback(_player_event_e ev, Client client)
+static void __player_callback(_player_event_e ev, Module module)
 {
 	mm_player_cb_e api = MM_PLAYER_CB_EVENT;
 
 	LOGD("ENTER");
 
-	player_msg_event(api, ev, client);
+	player_msg_event(api, ev, module);
 }
 
 static void _prepare_async_cb(void *user_data)
@@ -99,7 +99,7 @@ static void _prepare_async_cb(void *user_data)
 	_player_event_e ev = _PLAYER_EVENT_TYPE_PREPARE;
 	mm_player_cb_e api = MM_PLAYER_CB_EVENT;
 	prepare_data_t *prepare_data = (prepare_data_t *)user_data;
-	Client client;
+	Module module;
 	player_h player;
 	char *caps = NULL;
 
@@ -107,75 +107,75 @@ static void _prepare_async_cb(void *user_data)
 		LOGE("user data of callback is NULL");
 		return;
 	}
-	client = prepare_data->client;
+	module = prepare_data->module;
 	player = prepare_data->player;
 	g_free(prepare_data);
 
 	if(player_get_raw_video_caps(player, &caps) == PLAYER_ERROR_NONE) {
 		if(caps) {
-			player_msg_event1(api, ev, client, STRING, caps);
+			player_msg_event1(api, ev, module, STRING, caps);
 			g_free(caps);
 			return;
 		}
 	}
-	player_msg_event(api, ev, client);
+	player_msg_event(api, ev, module);
 }
 
 static void _seek_complate_cb(void *user_data)
 {
 	_player_event_e ev = _PLAYER_EVENT_TYPE_SEEK;
-	__player_callback(ev, (Client)user_data);
+	__player_callback(ev, (Module)user_data);
 }
 
 static void _buffering_cb(int percent, void *user_data)
 {
 	mm_player_cb_e api = MM_PLAYER_CB_EVENT;
 	_player_event_e ev = _PLAYER_EVENT_TYPE_BUFFERING;
-	Client client = (Client)user_data;
+	Module module = (Module)user_data;
 
 	LOGD("ENTER");
 
-	player_msg_event1(api, ev, client, INT, percent);
+	player_msg_event1(api, ev, module, INT, percent);
 
 }
 
 static void _completed_cb(void *user_data)
 {
 	_player_event_e ev = _PLAYER_EVENT_TYPE_COMPLETE;
-	__player_callback(ev, (Client)user_data);
+	__player_callback(ev, (Module)user_data);
 }
 
 static void _interrupted_cb(player_interrupted_code_e code, void *user_data)
 {
 	mm_player_cb_e api = MM_PLAYER_CB_EVENT;
 	_player_event_e ev = _PLAYER_EVENT_TYPE_INTERRUPT;
-	Client client = (Client)user_data;
+	Module module = (Module)user_data;
 
 	LOGD("ENTER");
 
-	player_msg_event1(api, ev, client, INT, code);
+	player_msg_event1(api, ev, module, INT, code);
 }
 
 static void _error_cb(int code, void *user_data)
 {
 	mm_player_cb_e api = MM_PLAYER_CB_EVENT;
 	_player_event_e ev = _PLAYER_EVENT_TYPE_ERROR;
-	Client client = (Client)user_data;
+	Module module = (Module)user_data;
 
 	LOGD("ENTER");
 
-	player_msg_event1(api, ev, client, INT, code);
+	player_msg_event1(api, ev, module, INT, code);
 }
 
 static void _subtitle_updated_cb(unsigned long duration, char *text, void *user_data)
 {
 	mm_player_cb_e api = MM_PLAYER_CB_EVENT;
 	_player_event_e ev = _PLAYER_EVENT_TYPE_SUBTITLE;
-	Client client = (Client)user_data;
+	Module module = (Module)user_data;
 
 	LOGD("ENTER");
 
-	player_msg_event2(api, ev, client, INT, duration, STRING, text);
+	player_msg_event2(api, ev, module, INT, duration, STRING, text);
 }
 
 static void _capture_video_cb(unsigned char *data, int width, int height,
@@ -183,7 +183,7 @@ static void _capture_video_cb(unsigned char *data, int width, int height,
 {
 	mm_player_cb_e api = MM_PLAYER_CB_EVENT;
 	_player_event_e ev = _PLAYER_EVENT_TYPE_CAPTURE;
-	Client client = (Client)user_data;
+	Module module = (Module)user_data;
 	tbm_bo bo;
 	tbm_bo_handle thandle;
 	tbm_key key;
@@ -214,7 +214,7 @@ static void _capture_video_cb(unsigned char *data, int width, int height,
 	/* mark to write */
 	*((char *)thandle.ptr+size) = 1;
 
-	player_msg_event4(api, ev, client, INT, width, INT, height,
+	player_msg_event4(api, ev, module, INT, width, INT, height,
 			INT, size, INT, key);
 
 capture_event_exit2:
@@ -234,11 +234,11 @@ static void _pd_msg_cb(player_pd_message_type_e type, void *user_data)
 {
 	mm_player_cb_e api = MM_PLAYER_CB_EVENT;
 	_player_event_e ev = _PLAYER_EVENT_TYPE_PD;
-	Client client = (Client)user_data;
+	Module module = (Module)user_data;
 
 	LOGD("ENTER");
 
-	player_msg_event1(api, ev, client, INT, type);
+	player_msg_event1(api, ev, module, INT, type);
 }
 
 static void _media_packet_video_decoded_cb(media_packet_h pkt, void *user_data)
@@ -246,7 +246,7 @@ static void _media_packet_video_decoded_cb(media_packet_h pkt, void *user_data)
 	int ret;
 	mm_player_cb_e api = MM_PLAYER_CB_EVENT;
 	_player_event_e ev = _PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME;
-	Client client = (Client)user_data;
+	Module module = (Module)user_data;
 	tbm_surface_h suf;
 	tbm_bo bo[4];
 	int bo_num;
@@ -283,7 +283,7 @@ static void _media_packet_video_decoded_cb(media_packet_h pkt, void *user_data)
 	}
 	media_packet_get_format(pkt, &fmt);
 	media_format_get_video_info(fmt, &mimetype, NULL, NULL, NULL, NULL);
-	player_msg_event6_array(api, ev, client,
+	player_msg_event6_array(api, ev, module,
 			INT, key[0],
 			INT, key[1],
 			INT, key[2],
@@ -297,7 +297,7 @@ static void _audio_frame_decoded_cb(player_audio_raw_data_s *audio_frame, void *
 {
 	mm_player_cb_e api = MM_PLAYER_CB_EVENT;
 	_player_event_e ev = _PLAYER_EVENT_TYPE_AUDIO_FRAME;
-	Client client = (Client)user_data;
+	Module module = (Module)user_data;
 	tbm_bo bo;
 	tbm_bo_handle thandle;
 	tbm_key key;
@@ -342,7 +342,7 @@ static void _audio_frame_decoded_cb(player_audio_raw_data_s *audio_frame, void *
 
 	tbm_bo_unmap(bo);
 
-	player_msg_event2_array(api, ev, client, INT, key, INT, size,
+	player_msg_event2_array(api, ev, module, INT, key, INT, size,
 			audio_frame, sizeof(player_audio_raw_data_s), sizeof(char));
 
 	while(checker && expired--) {
@@ -360,9 +360,9 @@ static void _video_stream_changed_cb(
 {
 	mm_player_cb_e api = MM_PLAYER_CB_EVENT;
 	_player_event_e ev = _PLAYER_EVENT_TYPE_VIDEO_STREAM_CHANGED;
-	Client client = (Client)user_data;
+	Module module = (Module)user_data;
 
-	player_msg_event4(api, ev, client,
+	player_msg_event4(api, ev, module,
 			INT, width, INT, height, INT, fps, INT, bit_rate);
 }
 
@@ -371,9 +371,9 @@ static void _media_stream_audio_buffer_status_cb(
 {
 	mm_player_cb_e api = MM_PLAYER_CB_EVENT;
 	_player_event_e ev = _PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_BUFFER_STATUS;
-	Client client = (Client)user_data;
+	Module module = (Module)user_data;
 
-	player_msg_event1(api, ev, client, INT, status);
+	player_msg_event1(api, ev, module, INT, status);
 }
 
 static void _media_stream_video_buffer_status_cb(
@@ -381,9 +381,9 @@ static void _media_stream_video_buffer_status_cb(
 {
 	mm_player_cb_e api = MM_PLAYER_CB_EVENT;
 	_player_event_e ev = _PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_BUFFER_STATUS;
-	Client client = (Client)user_data;
+	Module module = (Module)user_data;
 
-	player_msg_event1(api, ev, client, INT, status);
+	player_msg_event1(api, ev, module, INT, status);
 }
 
 static void _media_stream_audio_seek_cb(
@@ -391,19 +391,10 @@ static void _media_stream_audio_seek_cb(
 {
 	mm_player_cb_e api = MM_PLAYER_CB_EVENT;
 	_player_event_e ev = _PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_SEEK;
-	Client client = (Client)user_data;
+	Module module = (Module)user_data;
 
-#if 0
-	unsigned upper_offset = (unsigned)((offset >> 32) & 0xffffffff);
-	unsigned lower_offset = (unsigned)(offset & 0xffffffff);
-
-	player_msg_event2(api, ev, client,
-			INT, upper_offset, INT, lower_offset);
-#else
-	player_msg_event1(api, ev, client,
+	player_msg_event1(api, ev, module,
 			INT64, offset);
-#endif
-
 }
 
 static void _media_stream_video_seek_cb(
@@ -411,64 +402,56 @@ static void _media_stream_video_seek_cb(
 {
 	mm_player_cb_e api = MM_PLAYER_CB_EVENT;
 	_player_event_e ev = _PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_SEEK;
-	Client client = (Client)user_data;
+	Module module = (Module)user_data;
 
-#if 0
-	unsigned upper_offset = (unsigned)((offset >> 32) & 0xffffffff);
-	unsigned lower_offset = (unsigned)(offset & 0xffffffff);
-
-	player_msg_event2(api, ev, client,
-			INT, upper_offset, INT, lower_offset);
-#else
-	player_msg_event1(api, ev, client,
+	player_msg_event1(api, ev, module,
 			INT64, offset);
-#endif
 }
 
-static void _set_completed_cb(player_h player, void *client, bool set)
+static void _set_completed_cb(player_h player, void *module, bool set)
 {
 	if(set)
-		player_set_completed_cb(player, _completed_cb, client);
+		player_set_completed_cb(player, _completed_cb, module);
 	else
 		player_unset_completed_cb(player);
 }
 
-static void _set_interrupted_cb(player_h player, void *client, bool set)
+static void _set_interrupted_cb(player_h player, void *module, bool set)
 {
 	if(set)
-		player_set_interrupted_cb(player, _interrupted_cb, client);
+		player_set_interrupted_cb(player, _interrupted_cb, module);
 	else
 		player_unset_interrupted_cb(player);
 }
 
-static void _set_error_cb(player_h player, void *client, bool set)
+static void _set_error_cb(player_h player, void *module, bool set)
 {
 	if(set)
-		player_set_error_cb(player, _error_cb, client);
+		player_set_error_cb(player, _error_cb, module);
 	else
 		player_unset_error_cb(player);
 }
 
-static void _set_subtitle_cb(player_h player, void *client, bool set)
+static void _set_subtitle_cb(player_h player, void *module, bool set)
 {
 	if(set)
-		player_set_subtitle_updated_cb(player, _subtitle_updated_cb, client);
+		player_set_subtitle_updated_cb(player, _subtitle_updated_cb, module);
 	else
 		player_unset_subtitle_updated_cb(player);
 }
 
-static void _set_buffering_cb(player_h player, void *client, bool set)
+static void _set_buffering_cb(player_h player, void *module, bool set)
 {
 	if(set)
-		player_set_buffering_cb(player, _buffering_cb, client);
+		player_set_buffering_cb(player, _buffering_cb, module);
 	else
 		player_unset_buffering_cb(player);
 }
 
-static void _set_pd_msg_cb(player_h player, void *client, bool set)
+static void _set_pd_msg_cb(player_h player, void *module, bool set)
 {
 	if(set)
-		player_set_progressive_download_message_cb(player, _pd_msg_cb, client);
+		player_set_progressive_download_message_cb(player, _pd_msg_cb, module);
 	else
 		player_unset_progressive_download_message_cb(player);
 }
@@ -478,16 +461,16 @@ static void _set_media_packet_video_frame_cb(player_h player,
 {
 	int ret = PLAYER_ERROR_NONE;
 	mm_player_api_e api = MM_PLAYER_API_SET_CALLBACK;
-	Client client = (Client)data;
+	Module module = (Module)data;
 
 	if(set){
 		ret = player_set_media_packet_video_frame_decoded_cb(
-				player, _media_packet_video_decoded_cb, client);
+				player, _media_packet_video_decoded_cb, module);
 	} else {
 		ret = player_unset_media_packet_video_frame_decoded_cb(player);
 	}
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 }
 
 static void _set_video_stream_changed_cb(player_h player,
@@ -495,16 +478,16 @@ static void _set_video_stream_changed_cb(player_h player,
 {
 	int ret = PLAYER_ERROR_NONE;
 	mm_player_api_e api = MM_PLAYER_API_SET_CALLBACK;
-	Client client = (Client)data;
+	Module module = (Module)data;
 
 	if(set){
 		ret = player_set_video_stream_changed_cb(
-				player, _video_stream_changed_cb, client);
+				player, _video_stream_changed_cb, module);
 	} else {
 		ret = player_unset_video_stream_changed_cb(player);
 	}
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 }
 
 static void _set_media_stream_audio_seek_cb(player_h player,
@@ -512,18 +495,18 @@ static void _set_media_stream_audio_seek_cb(player_h player,
 {
 	int ret = PLAYER_ERROR_NONE;
 	mm_player_api_e api = MM_PLAYER_API_SET_CALLBACK;
-	Client client = (Client)data;
+	Module module = (Module)data;
 
 	if(set){
 		ret = player_set_media_stream_seek_cb(
 				player, PLAYER_STREAM_TYPE_AUDIO,
-				_media_stream_audio_seek_cb, client);
+				_media_stream_audio_seek_cb, module);
 	} else {
 		ret = player_unset_media_stream_seek_cb(
 				player, PLAYER_STREAM_TYPE_AUDIO);
 	}
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 }
 
 static void _set_media_stream_video_seek_cb(player_h player,
@@ -531,18 +514,18 @@ static void _set_media_stream_video_seek_cb(player_h player,
 {
 	int ret = PLAYER_ERROR_NONE;
 	mm_player_api_e api = MM_PLAYER_API_SET_CALLBACK;
-	Client client = (Client)data;
+	Module module = (Module)data;
 
 	if(set){
 		ret = player_set_media_stream_seek_cb(
 				player, PLAYER_STREAM_TYPE_VIDEO,
-				_media_stream_video_seek_cb, client);
+				_media_stream_video_seek_cb, module);
 	} else {
 		ret = player_unset_media_stream_seek_cb(
 				player, PLAYER_STREAM_TYPE_VIDEO);
 	}
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 }
 
 static void _set_media_stream_audio_buffer_cb(player_h player,
@@ -550,18 +533,18 @@ static void _set_media_stream_audio_buffer_cb(player_h player,
 {
 	int ret = PLAYER_ERROR_NONE;
 	mm_player_api_e api = MM_PLAYER_API_SET_CALLBACK;
-	Client client = (Client)data;
+	Module module = (Module)data;
 
 	if(set){
 		ret = player_set_media_stream_buffer_status_cb(
 				player, PLAYER_STREAM_TYPE_AUDIO,
-				_media_stream_audio_buffer_status_cb, client);
+				_media_stream_audio_buffer_status_cb, module);
 	} else {
 		ret = player_unset_media_stream_buffer_status_cb(
 				player, PLAYER_STREAM_TYPE_AUDIO);
 	}
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 }
 
 static void _set_media_stream_video_buffer_cb(player_h player,
@@ -569,18 +552,18 @@ static void _set_media_stream_video_buffer_cb(player_h player,
 {
 	int ret = PLAYER_ERROR_NONE;
 	mm_player_api_e api = MM_PLAYER_API_SET_CALLBACK;
-	Client client = (Client)data;
+	Module module = (Module)data;
 
 	if(set){
 		ret = player_set_media_stream_buffer_status_cb(
 				player, PLAYER_STREAM_TYPE_VIDEO,
-				_media_stream_video_buffer_status_cb, client);
+				_media_stream_video_buffer_status_cb, module);
 	} else {
 		ret = player_unset_media_stream_buffer_status_cb(
 				player, PLAYER_STREAM_TYPE_VIDEO);
 	}
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 }
 
 static void (*set_callback_func[_PLAYER_EVENT_TYPE_NUM])
@@ -613,91 +596,92 @@ static void (*set_callback_func[_PLAYER_EVENT_TYPE_NUM])
 	NULL,	/*_PLAYER_EVENT_TYPE_VIDEO_BIN_CREATED*/
 };
 
-static int player_disp_set_callback(Client client)
+static int player_disp_set_callback(Module module)
 {
 	intptr_t handle;
 	_player_event_e type;
 	int set;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get(type, mmsvc_core_client_get_msg(client));
-	player_msg_get(set, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get(type, mmsvc_core_client_get_msg(module));
+	player_msg_get(set, mmsvc_core_client_get_msg(module));
 
 	if(type < _PLAYER_EVENT_TYPE_NUM && set_callback_func[type] != NULL){
-		set_callback_func[type]((player_h)handle, client, set);
+		set_callback_func[type]((player_h)handle, module, set);
 	}
 
 	return PLAYER_ERROR_NONE;
 }
 
-static int player_disp_create(Client client)
+static int player_disp_create(Module module)
 {
 	int ret = -1;
 	player_h player;
 	mm_player_api_e api = MM_PLAYER_API_CREATE;
 	intptr_t handle = 0;
-	intptr_t client_addr = (intptr_t)client;
+	intptr_t client_addr = (intptr_t)module;
 	data_thread_info_t *thread_i;
 	static guint stream_id = 0;
 	char stream_path[STREAM_PATH_LENGTH];
 	int pid;
 
 	ret = player_create(&player);
-	LOGD("handle : %p, client : %p", player, client);
+	LOGD("handle : %p, module : %p", player, module);
 
-	player_msg_get(pid, mmsvc_core_client_get_msg(client));
+	player_msg_get(pid, mmsvc_core_client_get_msg(module));
 
 	if(ret == PLAYER_ERROR_NONE)
 		ret = player_sound_register(player, pid);
 	else
-		player_msg_return(api, ret, client);
+		player_msg_return(api, ret, module);
 
 	if(ret == PLAYER_ERROR_NONE) {
+		handle = (intptr_t)player;
+		mmsvc_core_ipc_set_handle(module, handle);
 		thread_i = g_new(data_thread_info_t, 1);
 		thread_i->running = 1;
 		g_mutex_init(&thread_i->mutex);
 		g_cond_init(&thread_i->cond);
 		thread_i->queue = g_queue_new();
 		thread_i->thread = (gpointer) g_thread_new("push_media",
-				_player_push_media_stream_handler, client);
+				_player_push_media_stream_handler, module);
 
-		mmsvc_core_client_set_cust_data(client, thread_i);
+		mmsvc_core_client_set_cust_data(module, thread_i);
 
-		bufmgr = tbm_bufmgr_init (-1);
+		mmsvc_core_ipc_get_bufmgr(&bufmgr);
 
 		stream_id = mmsvc_core_get_atomic_uint();
 		snprintf(stream_path, STREAM_PATH_LENGTH, STREAM_PATH_BASE, stream_id);
 		unlink(stream_path);
 		ret = player_set_shm_stream_path_for_mused(player, stream_path);
 
-		handle = (intptr_t)player;
-		player_msg_return3(api, ret, client,
-				POINTER, handle, POINTER, client_addr, STRING, stream_path);
+		player_msg_return2(api, ret, module,
+				POINTER, client_addr, STRING, stream_path);
 	}
 	else
-		player_msg_return(api, ret, client);
+		player_msg_return(api, ret, module);
 
-	return 1;
+	return ret;
 }
 
-static int player_disp_set_uri(Client client)
+static int player_disp_set_uri(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_SET_URI;
 	char uri[MM_URI_MAX_LENGTH] = { 0, };
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get_string(uri, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get_string(uri, mmsvc_core_client_get_msg(module));
 
 	ret = player_set_uri((player_h) handle, uri);
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
-	return 1;
+	return ret;
 }
 
-static int player_disp_prepare(Client client)
+static int player_disp_prepare(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
@@ -705,7 +689,7 @@ static int player_disp_prepare(Client client)
 	player_h player;
 	char *caps = NULL;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	handle = mmsvc_core_ipc_get_handle(module);
 
 	player = (player_h) handle;
 
@@ -713,18 +697,18 @@ static int player_disp_prepare(Client client)
 	if(ret == PLAYER_ERROR_NONE) {
 		ret = player_get_raw_video_caps(player, &caps);
 		if(ret == PLAYER_ERROR_NONE && caps) {
-			player_msg_return1(api, ret, client, STRING, caps);
+			player_msg_return1(api, ret, module, STRING, caps);
 			g_free(caps);
-			return 1;
+			return ret;
 		}
 	}
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
-	return 1;
+	return ret;
 }
 
-static int player_disp_prepare_async(Client client)
+static int player_disp_prepare_async(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
@@ -732,50 +716,50 @@ static int player_disp_prepare_async(Client client)
 	player_h player;
 	prepare_data_t *prepare_data;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	handle = mmsvc_core_ipc_get_handle(module);
 
 	player = (player_h) handle;
 
 	prepare_data = g_new(prepare_data_t, 1);
 	prepare_data->player = player;
-	prepare_data->client = client;
+	prepare_data->module = module;
 
 	ret = player_prepare_async(player, _prepare_async_cb, prepare_data);
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
-	return 1;
+	return ret;
 }
 
-static int player_disp_unprepare(Client client)
+static int player_disp_unprepare(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_UNPREPARE;
 	player_h player;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	handle = mmsvc_core_ipc_get_handle(module);
 	player = (player_h) handle;
 
 	ret = player_unprepare(player);
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
-	return 1;
+	return ret;
 }
 
-static int player_disp_destroy(Client client)
+static int player_disp_destroy(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_DESTROY;
 	data_thread_info_t *thread_i;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	handle = mmsvc_core_ipc_get_handle(module);
 
 	ret = player_destroy((player_h) handle);
 
-	thread_i = (data_thread_info_t *)mmsvc_core_client_get_cust_data(client);
+	thread_i = (data_thread_info_t *)mmsvc_core_client_get_cust_data(module);
 	thread_i->running = 0;
 	g_cond_signal(&thread_i->cond);
 
@@ -785,9 +769,8 @@ static int player_disp_destroy(Client client)
 	g_mutex_clear(&thread_i->mutex);
 	g_cond_clear(&thread_i->cond);
 	g_free(thread_i);
-	mmsvc_core_client_set_cust_data(client, NULL);
+	mmsvc_core_client_set_cust_data(module, NULL);
 
-	tbm_bufmgr_deinit (bufmgr);
 	if(audio_format) {
 		media_format_unref(audio_format);
 		audio_format = NULL;
@@ -797,57 +780,57 @@ static int player_disp_destroy(Client client)
 		video_format = NULL;
 	}
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
-	return 1;
+	return ret;
 }
 
-static int player_disp_start(Client client)
+static int player_disp_start(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_START;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	handle = mmsvc_core_ipc_get_handle(module);
 
 	ret = player_start((player_h) handle);
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
-	return 1;
+	return ret;
 }
 
-static int player_disp_stop(Client client)
+static int player_disp_stop(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_STOP;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	handle = mmsvc_core_ipc_get_handle(module);
 
 	ret = player_stop((player_h) handle);
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
 	return ret;
 }
 
-static int player_disp_pause(Client client)
+static int player_disp_pause(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_PAUSE;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	handle = mmsvc_core_ipc_get_handle(module);
 
 	ret = player_pause((player_h) handle);
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
 	return ret;
 }
 
-static int player_disp_set_memory_buffer(Client client)
+static int player_disp_set_memory_buffer(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
@@ -858,15 +841,15 @@ static int player_disp_set_memory_buffer(Client client)
 	int size;
 	intptr_t bo_addr;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get(key, mmsvc_core_client_get_msg(client));
-	player_msg_get(size, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get(key, mmsvc_core_client_get_msg(module));
+	player_msg_get(size, mmsvc_core_client_get_msg(module));
 
 	bo = tbm_bo_import(bufmgr, key);
 	if(bo == NULL) {
 		LOGE("TBM get error : bo is NULL");
 		ret = PLAYER_ERROR_INVALID_OPERATION;
-		player_msg_return(api, ret, client);
+		player_msg_return(api, ret, module);
 		return ret;
 	}
 	thandle = tbm_bo_map (bo, TBM_DEVICE_CPU, TBM_OPTION_READ);
@@ -874,25 +857,23 @@ static int player_disp_set_memory_buffer(Client client)
 	{
 		LOGE("TBM get error : handle pointer is NULL");
 		ret = PLAYER_ERROR_INVALID_OPERATION;
-		player_msg_return(api, ret, client);
+		player_msg_return(api, ret, module);
 		return ret;
 	}
 
 	bo_addr = (intptr_t)bo;
 	ret = player_set_memory_buffer((player_h) handle, thandle.ptr, size);
-	player_msg_return1(api, ret, client, INT, bo_addr);
+	player_msg_return1(api, ret, module, INT, bo_addr);
 
 	return ret;
 }
 
-static int player_disp_deinit_memory_buffer(Client client)
+static int player_disp_deinit_memory_buffer(Module module)
 {
-	intptr_t handle;
 	intptr_t bo_addr;
 	tbm_bo bo;
 
-	if( player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER)
-			&& player_msg_get(bo_addr, mmsvc_core_client_get_msg(client))) {
+	if(player_msg_get(bo_addr, mmsvc_core_client_get_msg(module))) {
 
 		bo = (tbm_bo)bo_addr;
 
@@ -903,58 +884,58 @@ static int player_disp_deinit_memory_buffer(Client client)
 	return PLAYER_ERROR_NONE;
 }
 
-static int player_disp_set_volume(Client client)
+static int player_disp_set_volume(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_SET_VOLUME;
 	double left, right;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get(left, mmsvc_core_client_get_msg(client));
-	player_msg_get(right, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get(left, mmsvc_core_client_get_msg(module));
+	player_msg_get(right, mmsvc_core_client_get_msg(module));
 
 	ret = player_set_volume((player_h) handle, (float)left, (float)right);
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
-	return 1;
+	return ret;
 }
 
-static int player_disp_get_volume(Client client)
+static int player_disp_get_volume(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_GET_VOLUME;
 	float left, right;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	handle = mmsvc_core_ipc_get_handle(module);
 
 	ret = player_get_volume((player_h) handle, &left, &right);
 
-	player_msg_return2(api, ret, client, DOUBLE, left, DOUBLE, right);
+	player_msg_return2(api, ret, module, DOUBLE, left, DOUBLE, right);
 
-	return 1;
+	return ret;
 }
 
-static int player_disp_get_state(Client client)
+static int player_disp_get_state(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_GET_STATE;
 	player_state_e state;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	handle = mmsvc_core_ipc_get_handle(module);
 
 	ret = player_get_state((player_h) handle, &state);
 
-	player_msg_return1(api, ret, client, INT, state);
+	player_msg_return1(api, ret, module, INT, state);
 
-	return 1;
+	return ret;
 }
 
 
-static int player_disp_set_play_position(Client client)
+static int player_disp_set_play_position(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
@@ -962,34 +943,34 @@ static int player_disp_set_play_position(Client client)
 	int pos;
 	int accurate;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get(pos, mmsvc_core_client_get_msg(client));
-	player_msg_get(accurate, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get(pos, mmsvc_core_client_get_msg(module));
+	player_msg_get(accurate, mmsvc_core_client_get_msg(module));
 
-	ret = player_set_play_position((player_h) handle, pos, accurate, _seek_complate_cb ,client);
+	ret = player_set_play_position((player_h) handle, pos, accurate, _seek_complate_cb ,module);
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
-	return 1;
+	return ret;
 }
 
-static int player_disp_get_play_position(Client client)
+static int player_disp_get_play_position(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_GET_PLAY_POSITION;
 	int pos;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	handle = mmsvc_core_ipc_get_handle(module);
 
 	ret = player_get_play_position((player_h) handle, &pos);
 
-	player_msg_return1(api, ret, client, INT, pos);
+	player_msg_return1(api, ret, module, INT, pos);
 
-	return 1;
+	return ret;
 }
 
-static int player_disp_set_display(Client client)
+static int player_disp_set_display(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
@@ -1002,90 +983,90 @@ static int player_disp_set_display(Client client)
 	unsigned int xhandle;
 #endif
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	handle = mmsvc_core_ipc_get_handle(module);
 #ifdef HAVE_WAYLAND
-	player_msg_get_array(wl_win_msg, mmsvc_core_client_get_msg(client));
+	player_msg_get_array(wl_win_msg, mmsvc_core_client_get_msg(module));
 
 	ret = player_set_display_wl_for_mused((player_h) handle, wl_win.type, wl_win.surface,
 			wl_win.wl_window_x, wl_win.wl_window_y, wl_win.wl_window_width, wl_win.wl_window_height);
 #else
-	player_msg_get(type, mmsvc_core_client_get_msg(client));
-	player_msg_get(xhandle, mmsvc_core_client_get_msg(client));
+	player_msg_get(type, mmsvc_core_client_get_msg(module));
+	player_msg_get(xhandle, mmsvc_core_client_get_msg(module));
 
 	ret = player_set_display_for_mused((player_h) handle, type, xhandle);
 #endif
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
-	return 1;
+	return ret;
 }
 
-static int player_disp_set_mute(Client client)
+static int player_disp_set_mute(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_SET_MUTE;
 	int mute;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get(mute, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get(mute, mmsvc_core_client_get_msg(module));
 
 	ret = player_set_mute((player_h) handle, (bool)mute);
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
 	return ret;
 }
 
-static int player_disp_is_muted(Client client)
+static int player_disp_is_muted(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_IS_MUTED;
 	bool mute;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	handle = mmsvc_core_ipc_get_handle(module);
 
 	ret = player_is_muted((player_h) handle, &mute);
 
-	player_msg_return1(api, ret, client, INT, mute);
+	player_msg_return1(api, ret, module, INT, mute);
 
 	return ret;
 }
 
-static int player_disp_get_duration(Client client)
+static int player_disp_get_duration(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_GET_DURATION;
 	int duration = 0;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	handle = mmsvc_core_ipc_get_handle(module);
 
 	ret = player_get_duration((player_h) handle, &duration);
 
-	player_msg_return1(api, ret, client, INT, duration);
+	player_msg_return1(api, ret, module, INT, duration);
 
 	return ret;
 }
 
-static int player_disp_set_sound_type(Client client)
+static int player_disp_set_sound_type(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_SET_SOUND_TYPE;
 	int type;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get(type, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get(type, mmsvc_core_client_get_msg(module));
 
 	ret = player_set_sound_type((player_h) handle, (sound_type_e)type);
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
 	return ret;
 }
 
-static int player_disp_set_audio_policy_info(Client client)
+static int player_disp_set_audio_policy_info(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
@@ -1093,203 +1074,203 @@ static int player_disp_set_audio_policy_info(Client client)
 	int stream_index;
 	char stream_type[MM_URI_MAX_LENGTH] = { 0, };
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get(stream_index, mmsvc_core_client_get_msg(client));
-	player_msg_get_string(stream_type, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get(stream_index, mmsvc_core_client_get_msg(module));
+	player_msg_get_string(stream_type, mmsvc_core_client_get_msg(module));
 
 	ret = player_set_audio_policy_info_for_mused((player_h) handle,
 			stream_type, stream_index);
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
 	return ret;
 }
 
-static int player_disp_set_latency_mode(Client client)
+static int player_disp_set_latency_mode(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_SET_AUDIO_LATENCY_MODE;
 	int latency_mode;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get(latency_mode, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get(latency_mode, mmsvc_core_client_get_msg(module));
 
 	ret = player_set_audio_latency_mode((player_h) handle,
 			(audio_latency_mode_e)latency_mode);
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
 	return ret;
 }
 
-static int player_disp_get_latency_mode(Client client)
+static int player_disp_get_latency_mode(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_GET_AUDIO_LATENCY_MODE;
 	audio_latency_mode_e latency_mode;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	handle = mmsvc_core_ipc_get_handle(module);
 
 	ret = player_get_audio_latency_mode((player_h) handle, &latency_mode);
 
-	player_msg_return1(api, ret, client, INT, latency_mode);
+	player_msg_return1(api, ret, module, INT, latency_mode);
 
 	return ret;
 }
 
-static int player_disp_set_looping(Client client)
+static int player_disp_set_looping(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_SET_LOOPING;
 	int looping;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get(looping, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get(looping, mmsvc_core_client_get_msg(module));
 
 	ret = player_set_looping((player_h) handle, (bool)looping);
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
 	return ret;
 }
 
-static int player_disp_is_looping(Client client)
+static int player_disp_is_looping(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_IS_LOOPING;
 	bool looping;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	handle = mmsvc_core_ipc_get_handle(module);
 
 	ret = player_is_looping((player_h) handle, &looping);
 
-	player_msg_return1(api, ret, client, INT, looping);
+	player_msg_return1(api, ret, module, INT, looping);
 
 	return ret;
 }
 
-static int player_disp_set_display_mode(Client client)
+static int player_disp_set_display_mode(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_SET_DISPLAY_MODE;
 	int mode = 0;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get(mode, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get(mode, mmsvc_core_client_get_msg(module));
 
 	ret = player_set_display_mode((player_h) handle, (player_display_mode_e)mode);
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
 	return ret;
 }
 
-static int player_disp_get_display_mode(Client client)
+static int player_disp_get_display_mode(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_GET_DISPLAY_MODE;
 	player_display_mode_e mode = 0;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	handle = mmsvc_core_ipc_get_handle(module);
 
 	ret = player_get_display_mode((player_h) handle, &mode);
 
-	player_msg_return1(api, ret, client, INT, mode);
+	player_msg_return1(api, ret, module, INT, mode);
 
 	return ret;
 }
 
-static int player_disp_set_playback_rate(Client client)
+static int player_disp_set_playback_rate(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_SET_PLAYBACK_RATE;
 	double rate = 0;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get(rate, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get(rate, mmsvc_core_client_get_msg(module));
 
 	ret = player_set_playback_rate((player_h) handle, (float)rate);
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
 	return ret;
 }
 
-static int player_disp_set_display_rotation(Client client)
+static int player_disp_set_display_rotation(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_SET_DISPLAY_ROTATION;
 	int rotation = 0;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get(rotation, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get(rotation, mmsvc_core_client_get_msg(module));
 
 	ret = player_set_display_rotation((player_h) handle,
 			(player_display_rotation_e)rotation);
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
 	return ret;
 }
 
-static int player_disp_get_display_rotation(Client client)
+static int player_disp_get_display_rotation(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_GET_DISPLAY_ROTATION;
 	player_display_rotation_e rotation;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	handle = mmsvc_core_ipc_get_handle(module);
 
 	ret = player_get_display_rotation((player_h) handle, &rotation);
 
-	player_msg_return1(api, ret, client, INT, rotation);
+	player_msg_return1(api, ret, module, INT, rotation);
 
 	return ret;
 }
 
-static int player_disp_set_display_visible(Client client)
+static int player_disp_set_display_visible(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_SET_DISPLAY_VISIBLE;
 	int visible = 0;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get(visible, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get(visible, mmsvc_core_client_get_msg(module));
 
 	ret = player_set_display_visible((player_h) handle, visible);
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
 	return ret;
 }
 
-static int player_disp_is_display_visible(Client client)
+static int player_disp_is_display_visible(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_IS_DISPLAY_VISIBLE;
 	bool visible = 0;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	handle = mmsvc_core_ipc_get_handle(module);
 
 	ret = player_is_display_visible((player_h) handle, &visible);
 
-	player_msg_return1(api, ret, client, INT, visible);
+	player_msg_return1(api, ret, module, INT, visible);
 
 	return ret;
 }
 
-static int player_disp_get_content_info(Client client)
+static int player_disp_get_content_info(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
@@ -1297,23 +1278,23 @@ static int player_disp_get_content_info(Client client)
 	char *value;
 	player_content_info_e key;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get(key, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get(key, mmsvc_core_client_get_msg(module));
 
 	ret = player_get_content_info((player_h) handle, key, &value);
 
 	if(ret == PLAYER_ERROR_NONE) {
-		player_msg_return1(api, ret, client, STRING, value);
+		player_msg_return1(api, ret, module, STRING, value);
 		free(value);
 	}
 	else
-		player_msg_return(api, ret, client);
+		player_msg_return(api, ret, module);
 
 
-	return 1;
+	return ret;
 }
 
-static int player_disp_get_codec_info(Client client)
+static int player_disp_get_codec_info(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
@@ -1321,24 +1302,24 @@ static int player_disp_get_codec_info(Client client)
 	char *video_codec;
 	char *audio_codec;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	handle = mmsvc_core_ipc_get_handle(module);
 
 	ret = player_get_codec_info((player_h) handle, &audio_codec, &video_codec);
 
 	if(ret == PLAYER_ERROR_NONE) {
-		player_msg_return2(api, ret, client,
+		player_msg_return2(api, ret, module,
 				STRING, audio_codec, STRING, video_codec);
 
 		free(audio_codec);
 		free(video_codec);
 	}
 	else
-		player_msg_return(api, ret, client);
+		player_msg_return(api, ret, module);
 
-	return 1;
+	return ret;
 }
 
-static int player_disp_get_audio_stream_info(Client client)
+static int player_disp_get_audio_stream_info(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
@@ -1347,18 +1328,18 @@ static int player_disp_get_audio_stream_info(Client client)
 	int channel = 0;
 	int bit_rate = 0;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	handle = mmsvc_core_ipc_get_handle(module);
 
 	ret = player_get_audio_stream_info((player_h) handle,
 			&sample_rate, &channel, &bit_rate);
 
-	player_msg_return3(api, ret, client,
+	player_msg_return3(api, ret, module,
 			INT, sample_rate, INT, channel, INT, bit_rate);
 
-	return 1;
+	return ret;
 }
 
-static int player_disp_get_video_stream_info(Client client)
+static int player_disp_get_video_stream_info(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
@@ -1366,17 +1347,17 @@ static int player_disp_get_video_stream_info(Client client)
 	int fps = 0;
 	int bit_rate = 0;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	handle = mmsvc_core_ipc_get_handle(module);
 
 	ret = player_get_video_stream_info((player_h) handle, &fps, &bit_rate);
 
-	player_msg_return2(api, ret, client,
+	player_msg_return2(api, ret, module,
 			INT, fps, INT, bit_rate);
 
-	return 1;
+	return ret;
 }
 
-static int player_disp_get_video_size(Client client)
+static int player_disp_get_video_size(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
@@ -1384,17 +1365,17 @@ static int player_disp_get_video_size(Client client)
 	int width = 0;
 	int height = 0;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	handle = mmsvc_core_ipc_get_handle(module);
 
 	ret = player_get_video_size((player_h) handle, &width, &height);
 
-	player_msg_return2(api, ret, client,
+	player_msg_return2(api, ret, module,
 			INT, width, INT, height);
 
-	return 1;
+	return ret;
 }
 
-static int player_disp_get_album_art(Client client)
+static int player_disp_get_album_art(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
@@ -1402,37 +1383,37 @@ static int player_disp_get_album_art(Client client)
 	void *album_art;
 	int size;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	handle = mmsvc_core_ipc_get_handle(module);
 
 	ret = player_get_album_art((player_h) handle, &album_art, &size);
 
 	if(ret == PLAYER_ERROR_NONE) {
-		player_msg_return_array(api, ret, client,
+		player_msg_return_array(api, ret, module,
 				album_art, size, sizeof(char));
 	}
 	else
-		player_msg_return(api, ret, client);
+		player_msg_return(api, ret, module);
 
-	return 1;
+	return ret;
 }
 
-static int player_disp_get_eq_bands_count(Client client)
+static int player_disp_get_eq_bands_count(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_AUDIO_EFFECT_GET_EQUALIZER_BANDS_COUNT;
 	int count;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	handle = mmsvc_core_ipc_get_handle(module);
 
 	ret = player_audio_effect_get_equalizer_bands_count((player_h) handle, &count);
 
-	player_msg_return1(api, ret, client, INT, count);
+	player_msg_return1(api, ret, module, INT, count);
 
 	return ret;
 }
 
-static int player_disp_set_eq_all_bands(Client client)
+static int player_disp_set_eq_all_bands(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
@@ -1440,207 +1421,207 @@ static int player_disp_set_eq_all_bands(Client client)
 	int *band_levels;
 	int length;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get(length, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get(length, mmsvc_core_client_get_msg(module));
 	band_levels = (int *)g_try_new(int, length);
 
 	if(band_levels) {
-		player_msg_get_array(band_levels, mmsvc_core_client_get_msg(client));
+		player_msg_get_array(band_levels, mmsvc_core_client_get_msg(module));
 		ret = player_audio_effect_set_equalizer_all_bands((player_h) handle, band_levels, length);
 		g_free(band_levels);
 	}
 	else
 		ret = PLAYER_ERROR_INVALID_OPERATION;
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
 	return ret;
 }
 
-static int player_disp_set_eq_band_level(Client client)
+static int player_disp_set_eq_band_level(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_AUDIO_EFFECT_SET_EQUALIZER_BAND_LEVEL;
 	int index, level;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get(index, mmsvc_core_client_get_msg(client));
-	player_msg_get(level, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get(index, mmsvc_core_client_get_msg(module));
+	player_msg_get(level, mmsvc_core_client_get_msg(module));
 
 	ret = player_audio_effect_set_equalizer_band_level((player_h) handle, index, level);
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
 	return ret;
 }
 
-static int player_disp_get_eq_band_level(Client client)
+static int player_disp_get_eq_band_level(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_AUDIO_EFFECT_GET_EQUALIZER_BAND_LEVEL;
 	int index, level;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get(index, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get(index, mmsvc_core_client_get_msg(module));
 
 	ret = player_audio_effect_get_equalizer_band_level((player_h) handle, index, &level);
 
-	player_msg_return1(api, ret, client, INT, level);
+	player_msg_return1(api, ret, module, INT, level);
 
 	return ret;
 }
 
-static int player_disp_get_eq_level_range(Client client)
+static int player_disp_get_eq_level_range(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_AUDIO_EFFECT_GET_EQUALIZER_LEVEL_RANGE;
 	int min, max;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	handle = mmsvc_core_ipc_get_handle(module);
 
 	ret = player_audio_effect_get_equalizer_level_range((player_h) handle, &min, &max);
 
-	player_msg_return2(api, ret, client, INT, min, INT, max);
+	player_msg_return2(api, ret, module, INT, min, INT, max);
 
 	return ret;
 }
 
-static int player_disp_get_eq_band_frequency(Client client)
+static int player_disp_get_eq_band_frequency(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_AUDIO_EFFECT_GET_EQUALIZER_BAND_FREQUENCY;
 	int index, frequency;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get(index, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get(index, mmsvc_core_client_get_msg(module));
 
 	ret = player_audio_effect_get_equalizer_band_frequency((player_h) handle, index, &frequency);
 
-	player_msg_return1(api, ret, client, INT, frequency);
+	player_msg_return1(api, ret, module, INT, frequency);
 
 	return ret;
 }
 
-static int player_disp_get_eq_band_frequency_range(Client client)
+static int player_disp_get_eq_band_frequency_range(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_AUDIO_EFFECT_GET_EQUALIZER_BAND_FREQUENCY_RANGE;
 	int index, range;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get(index, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get(index, mmsvc_core_client_get_msg(module));
 
 	ret = player_audio_effect_get_equalizer_band_frequency_range((player_h) handle,
 			index, &range);
 
-	player_msg_return1(api, ret, client, INT, range);
+	player_msg_return1(api, ret, module, INT, range);
 
 	return ret;
 }
 
-static int player_disp_eq_clear(Client client)
+static int player_disp_eq_clear(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_AUDIO_EFFECT_EQUALIZER_CLEAR;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	handle = mmsvc_core_ipc_get_handle(module);
 
 	ret = player_audio_effect_equalizer_clear((player_h) handle);
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
 	return ret;
 }
 
-static int player_disp_eq_is_available(Client client)
+static int player_disp_eq_is_available(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_AUDIO_EFFECT_EQUALIZER_IS_AVAILABLE;
 	bool available;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	handle = mmsvc_core_ipc_get_handle(module);
 
 	ret = player_audio_effect_equalizer_is_available((player_h) handle, &available);
 
-	player_msg_return1(api, ret, client, INT, available);
+	player_msg_return1(api, ret, module, INT, available);
 
 	return ret;
 }
 
-static int player_disp_set_subtitle_path(Client client)
+static int player_disp_set_subtitle_path(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_SET_SUBTITLE_PATH;
 	char path[MM_URI_MAX_LENGTH] = { 0, };
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get_string(path, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get_string(path, mmsvc_core_client_get_msg(module));
 
 	ret = player_set_subtitle_path((player_h) handle, path);
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
 	return ret;
 }
 
-static int player_disp_set_subtitle_position_offset(Client client)
+static int player_disp_set_subtitle_position_offset(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_SET_SUBTITLE_POSITION_OFFSET;
 	int millisecond;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get(millisecond, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get(millisecond, mmsvc_core_client_get_msg(module));
 
 	ret = player_set_subtitle_position_offset((player_h) handle, millisecond);
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
 	return ret;
 }
 
 static void _video_bin_created_cb(const char *caps, void *user_data)
 {
-	Client client = (Client)user_data;
+	Module module = (Module)user_data;
 	mm_player_cb_e api = MM_PLAYER_CB_EVENT;
 	_player_event_e ev = _PLAYER_EVENT_TYPE_VIDEO_BIN_CREATED;
 
 	LOGD("Enter");
 
-	player_msg_event1(api, ev, client, STRING, caps);
+	player_msg_event1(api, ev, module, STRING, caps);
 }
 
-static int player_disp_set_progressive_download_path(Client client)
+static int player_disp_set_progressive_download_path(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_SET_PROGRESSIVE_DOWNLOAD_PATH;
 	char path[MM_URI_MAX_LENGTH] = { 0, };
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get_string(path, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get_string(path, mmsvc_core_client_get_msg(module));
 
 	ret = player_set_progressive_download_path((player_h) handle, path);
 	if(ret == PLAYER_ERROR_NONE) {
 		player_set_video_bin_created_cb((player_h) handle,
-				_video_bin_created_cb, client);
+				_video_bin_created_cb, module);
 	}
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
 	return ret;
 }
 
-static int player_disp_get_progressive_download_status(Client client)
+static int player_disp_get_progressive_download_status(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
@@ -1648,32 +1629,32 @@ static int player_disp_get_progressive_download_status(Client client)
 	unsigned long current = 0;
 	unsigned long total_size = 0;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	handle = mmsvc_core_ipc_get_handle(module);
 
 	ret = player_get_progressive_download_status((player_h) handle,
 			&current, &total_size);
 
-	player_msg_return2(api, ret, client, POINTER, current, POINTER, total_size);
+	player_msg_return2(api, ret, module, POINTER, current, POINTER, total_size);
 
 	return ret;
 }
 
-static int player_disp_capture_video(Client client)
+static int player_disp_capture_video(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_CAPTURE_VIDEO;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	handle = mmsvc_core_ipc_get_handle(module);
 
-	ret = player_capture_video((player_h) handle, _capture_video_cb, client);
+	ret = player_capture_video((player_h) handle, _capture_video_cb, module);
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
 	return ret;
 }
 
-static int player_disp_set_streaming_cookie(Client client)
+static int player_disp_set_streaming_cookie(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
@@ -1681,23 +1662,23 @@ static int player_disp_set_streaming_cookie(Client client)
 	char *cookie = NULL;
 	int size;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get(size, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get(size, mmsvc_core_client_get_msg(module));
 	cookie = (char *)g_try_new(char, size+1);
 	if(cookie) {
-		player_msg_get_string(cookie, mmsvc_core_client_get_msg(client));
+		player_msg_get_string(cookie, mmsvc_core_client_get_msg(module));
 		ret = player_set_streaming_cookie((player_h) handle, cookie, size);
 		g_free(cookie);
 	}
 	else
 		ret = PLAYER_ERROR_INVALID_OPERATION;
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
 	return ret;
 }
 
-static int player_disp_set_streaming_user_agent(Client client)
+static int player_disp_set_streaming_user_agent(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
@@ -1705,53 +1686,53 @@ static int player_disp_set_streaming_user_agent(Client client)
 	char *user_agent;
 	int size;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get(size, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get(size, mmsvc_core_client_get_msg(module));
 	user_agent = (char *)g_try_new(char, size+1);
 	if(user_agent) {
-		player_msg_get_string(user_agent, mmsvc_core_client_get_msg(client));
+		player_msg_get_string(user_agent, mmsvc_core_client_get_msg(module));
 		ret = player_set_streaming_user_agent((player_h) handle, user_agent, size);
 		g_free(user_agent);
 	}
 	else
 		ret = PLAYER_ERROR_INVALID_OPERATION;
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
 	return ret;
 }
 
-static int player_disp_get_streaming_download_progress(Client client)
+static int player_disp_get_streaming_download_progress(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_GET_STREAMING_DOWNLOAD_PROGRESS;
 	int start, current;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
+	handle = mmsvc_core_ipc_get_handle(module);
 
 	ret = player_get_streaming_download_progress((player_h) handle, &start, &current);
 
-	player_msg_return2(api, ret, client, INT, start, INT, current);
+	player_msg_return2(api, ret, module, INT, start, INT, current);
 
 	return ret;
 }
 
 static gpointer _player_push_media_stream_handler(gpointer param)
 {
-	Client client = (Client)param;
+	Module module = (Module)param;
 	char *buf;
 	push_data_q_t *qData;
 	player_push_media_msg_type push_media;
 
 	LOGD("Enter");
 
-	if(!client){
+	if(!module){
 		LOGE("Null parameter");
 		return NULL;
 	}
 	data_thread_info_t *thread_i =
-		(data_thread_info_t *)mmsvc_core_client_get_cust_data(client);
+		(data_thread_info_t *)mmsvc_core_client_get_cust_data(module);
 	if(!thread_i){
 		LOGE("Null parameter");
 		return NULL;
@@ -1772,7 +1753,7 @@ static gpointer _player_push_media_stream_handler(gpointer param)
 				push_media.mimetype = qData->mimetype;
 				push_media.pts = qData->pts;
 				push_media.size = qData->size;
-				buf = mmsvc_core_ipc_get_data(client);
+				buf = mmsvc_core_ipc_get_data(module);
 				if(buf) {
 					_push_media_stream(qData->handle, &push_media, buf);
 					mmsvc_core_ipc_delete_data(buf);
@@ -1859,7 +1840,7 @@ static int _push_media_stream(intptr_t handle, player_push_media_msg_type *push_
 	return ret;
 }
 
-static int player_disp_push_media_stream(Client client)
+static int player_disp_push_media_stream(Module module)
 {
 	int ret = MEDIA_FORMAT_ERROR_NONE;
 	intptr_t handle;
@@ -1870,8 +1851,8 @@ static int player_disp_push_media_stream(Client client)
 	tbm_bo_handle thandle;
 	char *buf = NULL;
 
-	if(!player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER) ||
-		!player_msg_get_array(push_media_msg, mmsvc_core_client_get_msg(client))) {
+	handle = mmsvc_core_ipc_get_handle(module);
+	if(!player_msg_get_array(push_media_msg, mmsvc_core_client_get_msg(module))) {
 		ret = PLAYER_ERROR_INVALID_OPERATION;
 		goto push_media_stream_exit1;
 	}
@@ -1897,11 +1878,11 @@ static int player_disp_push_media_stream(Client client)
 			ret = PLAYER_ERROR_OUT_OF_MEMORY;
 			goto push_media_stream_exit1;
 		}
-		player_msg_get_array(buf, mmsvc_core_client_get_msg(client));
+		player_msg_get_array(buf, mmsvc_core_client_get_msg(module));
 	} else if(push_media.buf_type == PUSH_MEDIA_BUF_TYPE_RAW) {
 		push_data_q_t *qData = g_new(push_data_q_t, 1);
 		data_thread_info_t *thread_i =
-			(data_thread_info_t *)mmsvc_core_client_get_cust_data(client);
+			(data_thread_info_t *)mmsvc_core_client_get_cust_data(module);
 		if(!qData) {
 			ret = PLAYER_ERROR_OUT_OF_MEMORY;
 			goto push_media_stream_exit1;
@@ -1928,11 +1909,11 @@ push_media_stream_exit2:
 		g_free(buf);
 
 push_media_stream_exit1:
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 	return ret;
 }
 
-static int player_disp_set_media_stream_info(Client client)
+static int player_disp_set_media_stream_info(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
@@ -1948,18 +1929,18 @@ static int player_disp_set_media_stream_info(Client client)
 	int bit;
 	media_format_h format;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get(mimetype, mmsvc_core_client_get_msg(client));
-	player_msg_get(type, mmsvc_core_client_get_msg(client));
-	player_msg_get(avg_bps, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get(mimetype, mmsvc_core_client_get_msg(module));
+	player_msg_get(type, mmsvc_core_client_get_msg(module));
+	player_msg_get(avg_bps, mmsvc_core_client_get_msg(module));
 	if(type == PLAYER_STREAM_TYPE_VIDEO) {
-		player_msg_get(width, mmsvc_core_client_get_msg(client));
-		player_msg_get(height, mmsvc_core_client_get_msg(client));
-		player_msg_get(max_bps, mmsvc_core_client_get_msg(client));
+		player_msg_get(width, mmsvc_core_client_get_msg(module));
+		player_msg_get(height, mmsvc_core_client_get_msg(module));
+		player_msg_get(max_bps, mmsvc_core_client_get_msg(module));
 	} else if(type == PLAYER_STREAM_TYPE_AUDIO) {
-		player_msg_get(channel, mmsvc_core_client_get_msg(client));
-		player_msg_get(samplerate, mmsvc_core_client_get_msg(client));
-		player_msg_get(bit, mmsvc_core_client_get_msg(client));
+		player_msg_get(channel, mmsvc_core_client_get_msg(module));
+		player_msg_get(samplerate, mmsvc_core_client_get_msg(module));
+		player_msg_get(bit, mmsvc_core_client_get_msg(module));
 	} else {
 		ret = PLAYER_ERROR_INVALID_PARAMETER;
 		goto set_media_stream_info_exit;
@@ -1992,22 +1973,22 @@ static int player_disp_set_media_stream_info(Client client)
 	ret = player_set_media_stream_info((player_h)handle, type, format);
 
 set_media_stream_info_exit:
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 	return ret;
 }
 
-static int player_disp_media_packet_finalize_cb(Client client)
+static int player_disp_media_packet_finalize_cb(Module module)
 {
 	media_packet_h packet;
 
-	player_msg_get_type(packet, mmsvc_core_client_get_msg(client), POINTER);
+	player_msg_get_type(packet, mmsvc_core_client_get_msg(module), POINTER);
 
 	media_packet_destroy(packet);
 
 	return PLAYER_ERROR_NONE;
 }
 
-static int player_disp_set_media_stream_buffer_max_size(Client client)
+static int player_disp_set_media_stream_buffer_max_size(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
@@ -2016,26 +1997,26 @@ static int player_disp_set_media_stream_buffer_max_size(Client client)
 	unsigned long long max_size;
 	//unsigned upper_max_size, lower_max_size;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get(type, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get(type, mmsvc_core_client_get_msg(module));
 #if 0
-	player_msg_get(upper_max_size, mmsvc_core_client_get_msg(client));
-	player_msg_get(lower_max_size, mmsvc_core_client_get_msg(client));
+	player_msg_get(upper_max_size, mmsvc_core_client_get_msg(module));
+	player_msg_get(lower_max_size, mmsvc_core_client_get_msg(module));
 
 	max_size = (((unsigned long long)upper_max_size << 32) & 0xffffffff00000000)
 		| (lower_max_size & 0xffffffff);
 #else
-	player_msg_get_type(max_size, mmsvc_core_client_get_msg(client), INT64);
+	player_msg_get_type(max_size, mmsvc_core_client_get_msg(module), INT64);
 #endif
 
 	ret = player_set_media_stream_buffer_max_size((player_h) handle, type, max_size);
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
 	return ret;
 }
 
-static int player_disp_get_media_stream_buffer_max_size(Client client)
+static int player_disp_get_media_stream_buffer_max_size(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
@@ -2044,28 +2025,28 @@ static int player_disp_get_media_stream_buffer_max_size(Client client)
 	unsigned long long max_size;
 	//unsigned upper_max_size, lower_max_size;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get(type, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get(type, mmsvc_core_client_get_msg(module));
 
 	ret = player_get_media_stream_buffer_max_size((player_h) handle, type, &max_size);
 	if(ret == PLAYER_ERROR_NONE) {
 #if 0
 		upper_max_size = (unsigned)((max_size >> 32) & 0xffffffff);
 		lower_max_size = (unsigned)(max_size & 0xffffffff);
-		player_msg_return2(api, ret, client,
+		player_msg_return2(api, ret, module,
 				INT, upper_max_size, INT, lower_max_size);
 #else
-		player_msg_return1(api, ret, client,
+		player_msg_return1(api, ret, module,
 				INT64, max_size);
 #endif
 	}
 	else
-		player_msg_return(api, ret, client);
+		player_msg_return(api, ret, module);
 
 	return ret;
 }
 
-static int player_disp_set_media_stream_buffer_min_threshold(Client client)
+static int player_disp_set_media_stream_buffer_min_threshold(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
@@ -2073,18 +2054,18 @@ static int player_disp_set_media_stream_buffer_min_threshold(Client client)
 	player_stream_type_e type;
 	unsigned percent;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get(type, mmsvc_core_client_get_msg(client));
-	player_msg_get(percent, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get(type, mmsvc_core_client_get_msg(module));
+	player_msg_get(percent, mmsvc_core_client_get_msg(module));
 
 	ret = player_set_media_stream_buffer_min_threshold((player_h) handle, type, percent);
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
 	return ret;
 }
 
-static int player_disp_get_media_stream_buffer_min_threshold(Client client)
+static int player_disp_get_media_stream_buffer_min_threshold(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
@@ -2092,20 +2073,20 @@ static int player_disp_get_media_stream_buffer_min_threshold(Client client)
 	player_stream_type_e type;
 	unsigned percent;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get(type, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get(type, mmsvc_core_client_get_msg(module));
 
 	ret = player_get_media_stream_buffer_min_threshold((player_h) handle, type, &percent);
 	if(ret == PLAYER_ERROR_NONE) {
-		player_msg_return1(api, ret, client, INT, percent);
+		player_msg_return1(api, ret, module, INT, percent);
 	}
 	else
-		player_msg_return(api, ret, client);
+		player_msg_return(api, ret, module);
 
 	return ret;
 }
 
-static int player_disp_get_track_count(Client client)
+static int player_disp_get_track_count(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
@@ -2113,20 +2094,20 @@ static int player_disp_get_track_count(Client client)
 	player_stream_type_e type;
 	int count;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get(type, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get(type, mmsvc_core_client_get_msg(module));
 
 	ret = player_get_track_count((player_h) handle, type, &count);
 	if(ret == PLAYER_ERROR_NONE) {
-		player_msg_return1(api, ret, client, INT, count);
+		player_msg_return1(api, ret, module, INT, count);
 	}
 	else
-		player_msg_return(api, ret, client);
+		player_msg_return(api, ret, module);
 
 	return ret;
 }
 
-static int player_disp_get_current_track(Client client)
+static int player_disp_get_current_track(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
@@ -2134,20 +2115,20 @@ static int player_disp_get_current_track(Client client)
 	player_stream_type_e type;
 	int index;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get(type, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get(type, mmsvc_core_client_get_msg(module));
 
 	ret = player_get_current_track((player_h) handle, type, &index);
 	if(ret == PLAYER_ERROR_NONE) {
-		player_msg_return1(api, ret, client, INT, index);
+		player_msg_return1(api, ret, module, INT, index);
 	}
 	else
-		player_msg_return(api, ret, client);
+		player_msg_return(api, ret, module);
 
 	return ret;
 }
 
-static int player_disp_select_track(Client client)
+static int player_disp_select_track(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
@@ -2155,17 +2136,17 @@ static int player_disp_select_track(Client client)
 	player_stream_type_e type;
 	int index;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get(type, mmsvc_core_client_get_msg(client));
-	player_msg_get(index, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get(type, mmsvc_core_client_get_msg(module));
+	player_msg_get(index, mmsvc_core_client_get_msg(module));
 
 	ret = player_select_track((player_h) handle, type, index);
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
 	return ret;
 }
 
-static int player_disp_get_track_language_code(Client client)
+static int player_disp_get_track_language_code(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
@@ -2175,39 +2156,39 @@ static int player_disp_get_track_language_code(Client client)
 	char *code;
 	const int code_len=2;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get(type, mmsvc_core_client_get_msg(client));
-	player_msg_get(index, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get(type, mmsvc_core_client_get_msg(module));
+	player_msg_get(index, mmsvc_core_client_get_msg(module));
 
 	ret = player_get_track_language_code((player_h) handle, type, index, &code);
 	if(ret == PLAYER_ERROR_NONE) {
-		player_msg_return_array(api, ret, client, code, code_len, sizeof(char));
+		player_msg_return_array(api, ret, module, code, code_len, sizeof(char));
 	}
 	else
-		player_msg_return(api, ret, client);
+		player_msg_return(api, ret, module);
 
 	return ret;
 }
 
-static int player_disp_set_pcm_extraction_mode(Client client)
+static int player_disp_set_pcm_extraction_mode(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
 	mm_player_api_e api = MM_PLAYER_API_SET_PCM_EXTRACTION_MODE;
 	int sync;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get(sync, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get(sync, mmsvc_core_client_get_msg(module));
 
 	ret = player_set_pcm_extraction_mode((player_h) handle,
-			sync, _audio_frame_decoded_cb, client);
+			sync, _audio_frame_decoded_cb, module);
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
 	return ret;
 }
 
-static int player_disp_set_pcm_spec(Client client)
+static int player_disp_set_pcm_spec(Module module)
 {
 	int ret = -1;
 	intptr_t handle;
@@ -2216,19 +2197,19 @@ static int player_disp_set_pcm_spec(Client client)
 	int samplerate;
 	int channel;
 
-	player_msg_get_type(handle, mmsvc_core_client_get_msg(client), POINTER);
-	player_msg_get_string(format, mmsvc_core_client_get_msg(client));
-	player_msg_get(samplerate, mmsvc_core_client_get_msg(client));
-	player_msg_get(channel, mmsvc_core_client_get_msg(client));
+	handle = mmsvc_core_ipc_get_handle(module);
+	player_msg_get_string(format, mmsvc_core_client_get_msg(module));
+	player_msg_get(samplerate, mmsvc_core_client_get_msg(module));
+	player_msg_get(channel, mmsvc_core_client_get_msg(module));
 
 	ret = player_set_pcm_spec((player_h)handle, format, samplerate, channel);
 
-	player_msg_return(api, ret, client);
+	player_msg_return(api, ret, module);
 
 	return ret;
 }
 
-int (*dispatcher[MM_PLAYER_API_MAX]) (Client client) = {
+int (*dispatcher[MM_PLAYER_API_MAX]) (Module module) = {
 	player_disp_create,	/* MM_PLAYER_API_CREATE */
 		player_disp_destroy,	/* MM_PLAYER_API_DESTROY */
 		player_disp_prepare,	/* MM_PLAYER_API_PREPARE */
@@ -2244,9 +2225,7 @@ int (*dispatcher[MM_PLAYER_API_MAX]) (Client client) = {
 		player_disp_set_volume,	/* MM_PLAYER_API_SET_VOLUME */
 		player_disp_get_volume,	/* MM_PLAYER_API_GET_VOLUME */
 		player_disp_set_sound_type,		/* MM_PLAYER_API_SET_SOUND_TYPE */
-#ifndef USE_ASM
 		player_disp_set_audio_policy_info, /* MM_PLAYER_API_SET_AUDIO_POLICY_INFO */
-#endif
 		player_disp_set_latency_mode,		/* MM_PLAYER_API_SET_AUDIO_LATENCY_MODE */
 		player_disp_get_latency_mode,		/* MM_PLAYER_API_GET_AUDIO_LATENCY_MODE */
 		player_disp_set_play_position,		/* MM_PLAYER_API_SET_PLAY_POSITION */
