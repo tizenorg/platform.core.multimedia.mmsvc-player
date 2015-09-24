@@ -97,7 +97,7 @@ cp client/test/player_es_push_test %{buildroot}/usr/bin
 
 %files
 %manifest capi-media-player.manifest
-%{_libdir}/libmused-player.so*
+%{_libdir}/libmuse-player.so*
 %{_libdir}/libcapi-media-player.so*
 %{_datadir}/license/%{name}
 /usr/bin/player_test

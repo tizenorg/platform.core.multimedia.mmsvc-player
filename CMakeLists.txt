@@ -1,6 +1,6 @@
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
-SET(fw_name "mused-player")
+SET(fw_name "muse-player")
 
 PROJECT(${fw_name})
 
@@ -11,7 +11,6 @@ SET(INC_DIR include)
 INCLUDE_DIRECTORIES(${INC_DIR})
 
 SET(dependents "dlog glib-2.0 libtbm mused legacy-capi-media-player mm-common")
-#SET(pc_dependents "mused legacy-capi-media-player")
 
 INCLUDE(FindPkgConfig)
 pkg_check_modules(${fw_name} REQUIRED ${dependents})
