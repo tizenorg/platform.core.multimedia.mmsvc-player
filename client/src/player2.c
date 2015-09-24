@@ -29,9 +29,9 @@
 #ifdef HAVE_WAYLAND
 #include "Ecore_Wayland.h"
 #endif
-#include "mmsvc_core.h"
-#include "mmsvc_core_msg_json.h"
-#include "mmsvc_core_ipc.h"
+#include "muse_core.h"
+#include "muse_core_msg_json.h"
+#include "muse_core_ipc.h"
 #include "player2_private.h"
 #include "player_msg_private.h"
 #include "player_internal.h"
@@ -67,7 +67,7 @@ int _player_media_packet_finalize(media_packet_h pkt, int error_code,
 {
 	int ret = 0;
 	tbm_surface_h tsurf = NULL;
-	mm_player_api_e api = MM_PLAYER_API_MEDIA_PACKET_FINALIZE_CB;
+	muse_player_api_e api = MUSE_PLAYER_API_MEDIA_PACKET_FINALIZE_CB;
 	_media_pkt_fin_data *fin_data = (_media_pkt_fin_data *)user_data;
 	intptr_t packet;
 	char *sndMsg;
@@ -90,9 +90,9 @@ int _player_media_packet_finalize(media_packet_h pkt, int error_code,
 	}
 
 	packet = fin_data->remote_pkt;
-	sndMsg = mmsvc_core_msg_json_factory_new(api, "packet", packet, 0);
-	mmsvc_core_ipc_send_msg(fin_data->cb_info->fd, sndMsg);
-	mmsvc_core_msg_json_factory_free(sndMsg);
+	sndMsg = muse_core_msg_json_factory_new(api, MUSE_TYPE_POINTER, "packet", packet, 0);
+	muse_core_ipc_send_msg(fin_data->cb_info->fd, sndMsg);
+	muse_core_msg_json_factory_free(sndMsg);
 
 	g_free(fin_data);
 
@@ -265,17 +265,17 @@ static int player_recv_msg(callback_cb_info_s *cb_info, int len)
 	msg_buff_s *buff = &cb_info->buff;
 	char *new;
 
-	if(len && buff->bufLen - MM_MSG_MAX_LENGTH <= len) {
+	if(len && buff->bufLen - MUSE_MSG_MAX_LENGTH <= len) {
 		LOGD("realloc Buffer %d -> %d, Msg Length %d",
-				buff->bufLen, buff->bufLen + MM_MSG_MAX_LENGTH, len);
-		buff->bufLen += MM_MSG_MAX_LENGTH;
+				buff->bufLen, buff->bufLen + MUSE_MSG_MAX_LENGTH, len);
+		buff->bufLen += MUSE_MSG_MAX_LENGTH;
 		new = g_renew(char, buff->recvMsg, buff->bufLen);
 		if(new && new != buff->recvMsg){
 			buff->recvMsg = new;
 		}
 	}
 
-	recvLen = mmsvc_core_ipc_recv_msg(cb_info->fd, buff->recvMsg + len);
+	recvLen = muse_core_ipc_recv_msg(cb_info->fd, buff->recvMsg + len);
 	len += recvLen;
 
 	return len;
@@ -309,7 +309,7 @@ static int __set_callback(_player_event_e type, player_h player, void *callback,
 	PLAYER_NULL_ARG_CHECK(callback);
 	int ret = PLAYER_ERROR_NONE;
 	player_cli_s *pc = (player_cli_s *) player;
-	mm_player_api_e api = MM_PLAYER_API_SET_CALLBACK;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_CALLBACK;
 	int set = 1;
 
 	LOGI("Event type : %d ", type);
@@ -327,7 +327,7 @@ static int __unset_callback(_player_event_e type, player_h player)
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
 	player_cli_s *pc = (player_cli_s *) player;
-	mm_player_api_e api = MM_PLAYER_API_SET_CALLBACK;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_CALLBACK;
 	int set = 0;
 
 	LOGI("Event type : %d ", type);
@@ -341,7 +341,7 @@ static int __unset_callback(_player_event_e type, player_h player)
 
 static void __prepare_cb_handler(callback_cb_info_s * cb_info, char *recvMsg)
 {
-	char caps[MM_MSG_MAX_LENGTH] = {0};
+	char caps[MUSE_MSG_MAX_LENGTH] = {0};
 	_player_event_e ev = _PLAYER_EVENT_TYPE_PREPARE;
 
 	if(player_msg_get_string(caps, recvMsg))
@@ -395,7 +395,7 @@ static void __buffering_cb_handler(callback_cb_info_s * cb_info, char *recvMsg)
 static void __subtitle_cb_handler(callback_cb_info_s * cb_info, char *recvMsg)
 {
 	int duration = 0;
-	char text[MM_URI_MAX_LENGTH];
+	char text[MUSE_URI_MAX_LENGTH];
 	_player_event_e ev = _PLAYER_EVENT_TYPE_SUBTITLE;
 
 	if(player_msg_get(duration, recvMsg)
@@ -726,7 +726,7 @@ static void __video_stream_changed_cb_handler(
 static void __video_bin_created_cb_handler(
 		callback_cb_info_s * cb_info, char *recvMsg)
 {
-	char caps[MM_MSG_MAX_LENGTH] = {0};
+	char caps[MUSE_MSG_MAX_LENGTH] = {0};
 	if(player_msg_get_string(caps, recvMsg))
 		if(strlen(caps) > 0)
 			mm_player_mused_realize(cb_info->local_handle, caps);
@@ -882,7 +882,7 @@ static void _user_callback_handler(callback_cb_info_s * cb_info,
 	}
 }
 
-static void _add_ret_msg(mm_player_api_e api, callback_cb_info_s *cb_info,
+static void _add_ret_msg(muse_player_api_e api, callback_cb_info_s *cb_info,
 		int offset, int parse_len)
 {
 	ret_msg_s *msg = NULL;
@@ -907,7 +907,7 @@ static void _add_ret_msg(mm_player_api_e api, callback_cb_info_s *cb_info,
 		LOGE("g_new failure");
 }
 
-static ret_msg_s * _get_ret_msg(mm_player_api_e api, callback_cb_info_s *cb_info)
+static ret_msg_s * _get_ret_msg(muse_player_api_e api, callback_cb_info_s *cb_info)
 {
 	ret_msg_s *msg = cb_info->buff.retMsgHead;
 	ret_msg_s *prev = NULL;
@@ -935,11 +935,11 @@ static void *client_cb_handler(gpointer data)
 	int offset = 0;
 	callback_cb_info_s *cb_info = data;
 	char *recvMsg = cb_info->buff.recvMsg;
-	mused_msg_parse_err_e err;
+	muse_core_msg_parse_err_e err;
 
 	while (g_atomic_int_get(&cb_info->running)) {
 		len = 0;
-		err = MUSED_MSG_PARSE_ERROR_NONE;
+		err = MUSE_MSG_PARSE_ERROR_NONE;
 		do {
 			len = player_recv_msg(cb_info, len);
 			if (len <= 0)
@@ -948,19 +948,19 @@ static void *client_cb_handler(gpointer data)
 			parse_len = len;
 			offset = 0;
 			while(offset < len){
-				api = MM_PLAYER_API_MAX;
+				api = MUSE_PLAYER_API_MAX;
 				if(player_msg_get_error_e(api, recvMsg + offset, parse_len, err)) {
-					if(api < MM_PLAYER_API_MAX){
+					if(api < MUSE_PLAYER_API_MAX){
 						g_mutex_lock(&cb_info->player_mutex);
 						cb_info->buff.recved++;
 						_add_ret_msg(api, cb_info, offset, parse_len);
 						g_cond_signal(&cb_info->player_cond[api]);
 						g_mutex_unlock(&cb_info->player_mutex);
-						if (api == MM_PLAYER_API_DESTROY) {
+						if (api == MUSE_PLAYER_API_DESTROY) {
 							g_atomic_int_set(&cb_info->running, 0);
 						}
 					}
-					else if(api == MM_PLAYER_CB_EVENT) {
+					else if(api == MUSE_PLAYER_CB_EVENT) {
 						int event;
 						char *buffer;
 						g_mutex_lock(&cb_info->player_mutex);
@@ -975,7 +975,7 @@ static void *client_cb_handler(gpointer data)
 				offset += parse_len;
 				parse_len = len - parse_len;
 			}
-		}while(err == MUSED_MSG_PARSE_ERROR_CONTINUE);
+		}while(err == MUSE_MSG_PARSE_ERROR_CONTINUE);
 		if (len <= 0)
 			break;
 	}
@@ -996,12 +996,12 @@ static callback_cb_info_s *callback_new(gint sockfd)
 	memset(cb_info, 0, sizeof(callback_cb_info_s));
 
 	g_mutex_init(&cb_info->player_mutex);
-	for(i=0; i<MM_PLAYER_API_MAX; i++)
+	for(i=0; i<MUSE_PLAYER_API_MAX; i++)
 		g_cond_init(&cb_info->player_cond[i]);
 
 	buff = &cb_info->buff;
-	buff->recvMsg = g_new(char, MM_MSG_MAX_LENGTH+1);
-	buff->bufLen = MM_MSG_MAX_LENGTH+1;
+	buff->recvMsg = g_new(char, MUSE_MSG_MAX_LENGTH+1);
+	buff->bufLen = MUSE_MSG_MAX_LENGTH+1;
 	buff->recved = 0;
 	buff->retMsgHead = NULL;
 
@@ -1019,8 +1019,8 @@ static void callback_destroy(callback_cb_info_s * cb_info)
 	int i;
 	g_return_if_fail(cb_info);
 
-	mmsvc_core_connection_close(cb_info->fd);
-	mmsvc_core_connection_close(cb_info->data_fd);
+	muse_core_connection_close(cb_info->fd);
+	muse_core_connection_close(cb_info->data_fd);
 
 	g_thread_join(cb_info->thread);
 	g_thread_unref(cb_info->thread);
@@ -1028,14 +1028,14 @@ static void callback_destroy(callback_cb_info_s * cb_info)
 	LOGI("%p Callback destroyed", cb_info->thread);
 
 	g_mutex_clear(&cb_info->player_mutex);
-	for(i=0; i<MM_PLAYER_API_MAX; i++)
+	for(i=0; i<MUSE_PLAYER_API_MAX; i++)
 		g_cond_clear(&cb_info->player_cond[i]);
 
 	g_free(cb_info->buff.recvMsg);
 	g_free(cb_info);
 }
 
-int wait_for_cb_return(mm_player_api_e api, callback_cb_info_s *cb_info,
+int wait_for_cb_return(muse_player_api_e api, callback_cb_info_s *cb_info,
 		char **ret_buf, int time_out)
 {
 	int ret = PLAYER_ERROR_NONE;
@@ -1084,20 +1084,20 @@ int player_create(player_h * player)
 	int sock_fd = -1;
 	int pid = getpid();
 
-	mm_player_api_e api = MM_PLAYER_API_CREATE;
-	mmsvc_api_client_e client = MMSVC_PLAYER;
+	muse_player_api_e api = MUSE_PLAYER_API_CREATE;
+	muse_core_api_module_e module = MUSE_PLAYER;
 	player_cli_s *pc = NULL;
 	char *ret_buf = NULL;
 
 	LOGD("ENTER");
 
-	sock_fd = mmsvc_core_client_new();
+	sock_fd = muse_core_client_new();
 	if(sock_fd < 0){
 		LOGE("connection failure %d", errno);
 		ret = PLAYER_ERROR_INVALID_OPERATION;
 		goto ErrorExit;
 	}
-	player_msg_create_handle(api, (intptr_t)player, sock_fd, INT, client, INT, pid);
+	player_msg_create_handle(api, sock_fd, INT, module, INT, pid);
 
 	pc = g_new0(player_cli_s, 1);
 	if (pc == NULL) {
@@ -1119,19 +1119,14 @@ int player_create(player_h * player)
 
 	ret = wait_for_cb_return(api, pc->cb_info, &ret_buf, CALLBACK_TIME_OUT);
 	if (ret == PLAYER_ERROR_NONE) {
-		intptr_t handle;
-		intptr_t client_addr;
-		char stream_path[MM_MSG_MAX_LENGTH] = {0,};
-		if(player_msg_get_type(handle, ret_buf, POINTER)) {
-			EXT_HANDLE(pc) = handle;
-			LOGD("Player create %p", EXT_HANDLE(pc));
-			*player = (player_h) pc;
-		}
-		if(player_msg_get_type(client_addr, ret_buf, POINTER)) {
-			pc->cb_info->data_fd = mmsvc_core_client_new_data_ch();
-			mmsvc_core_send_client_addr(client_addr, pc->cb_info->data_fd);
-			LOGD("Data channel fd %d, server side client info addr %p",
-					pc->cb_info->data_fd, client_addr);
+		intptr_t module_addr;
+		char stream_path[MUSE_MSG_MAX_LENGTH] = {0,};
+		*player = (player_h) pc;
+		if(player_msg_get_type(module_addr, ret_buf, POINTER)) {
+			pc->cb_info->data_fd = muse_core_client_new_data_ch();
+			muse_core_send_client_addr(module_addr, pc->cb_info->data_fd);
+			LOGD("Data channel fd %d, muse module addr %p",
+					pc->cb_info->data_fd, module_addr);
 		}
 
 		if(mm_player_mused_create(&INT_HANDLE(pc)) != MM_ERROR_NONE) {
@@ -1171,7 +1166,7 @@ int player_destroy(player_h player)
 	PLAYER_INSTANCE_CHECK(player);
 
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_DESTROY;
+	muse_player_api_e api = MUSE_PLAYER_API_DESTROY;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 
@@ -1199,7 +1194,7 @@ int player_prepare_async(player_h player, player_prepared_cb callback,
 {
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_PREPARE_ASYNC;
+	muse_player_api_e api = MUSE_PLAYER_API_PREPARE_ASYNC;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 
@@ -1223,10 +1218,10 @@ int player_prepare(player_h player)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_PREPARE;
+	muse_player_api_e api = MUSE_PLAYER_API_PREPARE;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
-	char caps[MM_MSG_MAX_LENGTH] = {0};
+	char caps[MUSE_MSG_MAX_LENGTH] = {0};
 
 	LOGD("ENTER");
 
@@ -1251,7 +1246,7 @@ int player_unprepare(player_h player)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_UNPREPARE;
+	muse_player_api_e api = MUSE_PLAYER_API_UNPREPARE;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 
@@ -1279,7 +1274,7 @@ int player_set_uri(player_h player, const char *uri)
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(uri);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_SET_URI;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_URI;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 
@@ -1297,7 +1292,7 @@ int player_set_memory_buffer(player_h player, const void *data, int size)
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(data);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_SET_MEMORY_BUFFER;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_MEMORY_BUFFER;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 	tbm_bo bo;
@@ -1351,7 +1346,7 @@ static int _player_deinit_memory_buffer(player_cli_s *pc)
 {
 	PLAYER_INSTANCE_CHECK(pc);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_DEINIT_MEMORY_BUFFER;
+	muse_player_api_e api = MUSE_PLAYER_API_DEINIT_MEMORY_BUFFER;
 	intptr_t bo_addr = SERVER_TBM_BO(pc);
 
 	if(!bo_addr)
@@ -1368,7 +1363,7 @@ int player_get_state(player_h player, player_state_e * pstate)
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(pstate);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_GET_STATE;
+	muse_player_api_e api = MUSE_PLAYER_API_GET_STATE;
 	player_cli_s *pc = (player_cli_s *) player;
 	int state;
 	char *ret_buf = NULL;
@@ -1392,7 +1387,7 @@ int player_set_volume(player_h player, float left, float right)
 	PLAYER_CHECK_CONDITION(left>=0 && left <= 1.0 ,PLAYER_ERROR_INVALID_PARAMETER,"PLAYER_ERROR_INVALID_PARAMETER" );
 	PLAYER_CHECK_CONDITION(right>=0 && right <= 1.0 ,PLAYER_ERROR_INVALID_PARAMETER, "PLAYER_ERROR_INVALID_PARAMETER" );
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_SET_VOLUME;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_VOLUME;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 
@@ -1410,7 +1405,7 @@ int player_get_volume(player_h player, float *pleft, float *pright)
 	PLAYER_NULL_ARG_CHECK(pleft);
 	PLAYER_NULL_ARG_CHECK(pright);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_GET_VOLUME;
+	muse_player_api_e api = MUSE_PLAYER_API_GET_VOLUME;
 	player_cli_s *pc = (player_cli_s *) player;
 	double left = -1;
 	double right = -1;
@@ -1435,7 +1430,7 @@ int player_set_sound_type(player_h player, sound_type_e type)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_SET_SOUND_TYPE;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_SOUND_TYPE;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 
@@ -1451,7 +1446,7 @@ int player_set_audio_policy_info(player_h player, sound_stream_info_h stream_inf
 {
 	PLAYER_INSTANCE_CHECK(player);
 
-	mm_player_api_e api = MM_PLAYER_API_SET_AUDIO_POLICY_INFO;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_AUDIO_POLICY_INFO;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 
@@ -1494,7 +1489,7 @@ int player_set_audio_latency_mode(player_h player,
 {
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_SET_AUDIO_LATENCY_MODE;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_AUDIO_LATENCY_MODE;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 
@@ -1512,7 +1507,7 @@ int player_get_audio_latency_mode(player_h player,
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(platency_mode);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_GET_AUDIO_LATENCY_MODE;
+	muse_player_api_e api = MUSE_PLAYER_API_GET_AUDIO_LATENCY_MODE;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 	int latency_mode = -1;
@@ -1535,7 +1530,7 @@ int player_start(player_h player)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_START;
+	muse_player_api_e api = MUSE_PLAYER_API_START;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 
@@ -1551,7 +1546,7 @@ int player_stop(player_h player)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_STOP;
+	muse_player_api_e api = MUSE_PLAYER_API_STOP;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 
@@ -1570,7 +1565,7 @@ int player_pause(player_h player)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_PAUSE;
+	muse_player_api_e api = MUSE_PLAYER_API_PAUSE;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 
@@ -1589,7 +1584,7 @@ int player_set_play_position(player_h player, int millisecond, bool accurate,
 			"PLAYER_ERROR_INVALID_PARAMETER");
 
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_SET_PLAY_POSITION;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_PLAY_POSITION;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 	int pos = millisecond;
@@ -1623,7 +1618,7 @@ int player_get_play_position(player_h player, int *millisecond)
 	PLAYER_NULL_ARG_CHECK(millisecond);
 
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_GET_PLAY_POSITION;
+	muse_player_api_e api = MUSE_PLAYER_API_GET_PLAY_POSITION;
 	player_cli_s *pc = (player_cli_s *) player;
 	int pos;
 	char *ret_buf = NULL;
@@ -1645,7 +1640,7 @@ int player_set_mute(player_h player, bool muted)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_SET_MUTE;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_MUTE;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 	int mute = (int)muted;
@@ -1663,7 +1658,7 @@ int player_is_muted(player_h player, bool * muted)
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(muted);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_IS_MUTED;
+	muse_player_api_e api = MUSE_PLAYER_API_IS_MUTED;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 	int mute = -1;
@@ -1684,7 +1679,7 @@ int player_set_looping(player_h player, bool looping)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_SET_LOOPING;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_LOOPING;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 
@@ -1701,7 +1696,7 @@ int player_is_looping(player_h player, bool * plooping)
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(plooping);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_IS_LOOPING;
+	muse_player_api_e api = MUSE_PLAYER_API_IS_LOOPING;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 	int looping = 0;
@@ -1722,7 +1717,7 @@ int player_get_duration(player_h player, int *pduration)
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(pduration);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_GET_DURATION;
+	muse_player_api_e api = MUSE_PLAYER_API_GET_DURATION;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 	int duration = 0;
@@ -1744,7 +1739,7 @@ int player_set_display(player_h player, player_display_type_e type,
 {
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_SET_DISPLAY;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_DISPLAY;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 	Evas_Object *obj = NULL;
@@ -1856,7 +1851,7 @@ int player_set_display_mode(player_h player, player_display_mode_e mode)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_SET_DISPLAY_MODE;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_DISPLAY_MODE;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 
@@ -1894,7 +1889,7 @@ int player_set_playback_rate(player_h player, float rate)
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_CHECK_CONDITION(rate>=-5.0 && rate <= 5.0 ,PLAYER_ERROR_INVALID_PARAMETER,"PLAYER_ERROR_INVALID_PARAMETER" );
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_SET_PLAYBACK_RATE;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_PLAYBACK_RATE;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 
@@ -1911,7 +1906,7 @@ int player_set_display_rotation(player_h player,
 {
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_SET_DISPLAY_ROTATION;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_DISPLAY_ROTATION;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 
@@ -1994,10 +1989,10 @@ int player_get_content_info(player_h player, player_content_info_e key,
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(pvalue);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_GET_CONTENT_INFO;
+	muse_player_api_e api = MUSE_PLAYER_API_GET_CONTENT_INFO;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
-	char value[MM_MSG_MAX_LENGTH] = {0,};
+	char value[MUSE_MSG_MAX_LENGTH] = {0,};
 
 	LOGD("ENTER");
 
@@ -2005,7 +2000,7 @@ int player_get_content_info(player_h player, player_content_info_e key,
 			INT, key);
 	if(ret == PLAYER_ERROR_NONE){
 		player_msg_get_string(value, ret_buf);
-		*pvalue = strndup(value, MM_MSG_MAX_LENGTH);
+		*pvalue = strndup(value, MUSE_MSG_MAX_LENGTH);
 	}
 	g_free(ret_buf);
 	return ret;
@@ -2018,11 +2013,11 @@ int player_get_codec_info(player_h player, char **paudio_codec,
 	PLAYER_NULL_ARG_CHECK(paudio_codec);
 	PLAYER_NULL_ARG_CHECK(pvideo_codec);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_GET_CODEC_INFO;
+	muse_player_api_e api = MUSE_PLAYER_API_GET_CODEC_INFO;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
-	char video_codec[MM_MSG_MAX_LENGTH] = {0,};
-	char audio_codec[MM_MSG_MAX_LENGTH] = {0,};
+	char video_codec[MUSE_MSG_MAX_LENGTH] = {0,};
+	char audio_codec[MUSE_MSG_MAX_LENGTH] = {0,};
 
 	LOGD("ENTER");
 
@@ -2030,8 +2025,8 @@ int player_get_codec_info(player_h player, char **paudio_codec,
 	if(ret == PLAYER_ERROR_NONE){
 		player_msg_get_string(video_codec, ret_buf);
 		player_msg_get_string(audio_codec, ret_buf);
-		*pvideo_codec = strndup(video_codec, MM_MSG_MAX_LENGTH);
-		*paudio_codec = strndup(audio_codec, MM_MSG_MAX_LENGTH);
+		*pvideo_codec = strndup(video_codec, MUSE_MSG_MAX_LENGTH);
+		*paudio_codec = strndup(audio_codec, MUSE_MSG_MAX_LENGTH);
 	}
 	g_free(ret_buf);
 	return ret;
@@ -2045,7 +2040,7 @@ int player_get_audio_stream_info(player_h player, int *psample_rate,
 	PLAYER_NULL_ARG_CHECK(pchannel);
 	PLAYER_NULL_ARG_CHECK(pbit_rate);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_GET_AUDIO_STREAM_INFO;
+	muse_player_api_e api = MUSE_PLAYER_API_GET_AUDIO_STREAM_INFO;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 	int sample_rate = 0;
@@ -2073,7 +2068,7 @@ int player_get_video_stream_info(player_h player, int *pfps, int *pbit_rate)
 	PLAYER_NULL_ARG_CHECK(pfps);
 	PLAYER_NULL_ARG_CHECK(pbit_rate);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_GET_VIDEO_STREAM_INFO;
+	muse_player_api_e api = MUSE_PLAYER_API_GET_VIDEO_STREAM_INFO;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 	int fps = 0;
@@ -2098,7 +2093,7 @@ int player_get_video_size(player_h player, int *pwidth, int *pheight)
 	PLAYER_NULL_ARG_CHECK(pwidth);
 	PLAYER_NULL_ARG_CHECK(pheight);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_GET_VIDEO_SIZE;
+	muse_player_api_e api = MUSE_PLAYER_API_GET_VIDEO_SIZE;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 	int width = 0;
@@ -2123,7 +2118,7 @@ int player_get_album_art(player_h player, void **palbum_art, int *psize)
 	PLAYER_NULL_ARG_CHECK(palbum_art);
 	PLAYER_NULL_ARG_CHECK(psize);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_GET_ALBUM_ART;
+	muse_player_api_e api = MUSE_PLAYER_API_GET_ALBUM_ART;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 	char *album_art;
@@ -2153,7 +2148,7 @@ int player_audio_effect_get_equalizer_bands_count(player_h player, int *pcount)
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(pcount);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_AUDIO_EFFECT_GET_EQUALIZER_BANDS_COUNT;
+	muse_player_api_e api = MUSE_PLAYER_API_AUDIO_EFFECT_GET_EQUALIZER_BANDS_COUNT;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 	int count;
@@ -2175,7 +2170,7 @@ int player_audio_effect_set_equalizer_all_bands(player_h player,
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(band_levels);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_AUDIO_EFFECT_SET_EQUALIZER_ALL_BANDS;
+	muse_player_api_e api = MUSE_PLAYER_API_AUDIO_EFFECT_SET_EQUALIZER_ALL_BANDS;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 
@@ -2194,7 +2189,7 @@ int player_audio_effect_set_equalizer_band_level(player_h player, int index,
 {
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_AUDIO_EFFECT_SET_EQUALIZER_BAND_LEVEL;
+	muse_player_api_e api = MUSE_PLAYER_API_AUDIO_EFFECT_SET_EQUALIZER_BAND_LEVEL;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 
@@ -2213,7 +2208,7 @@ int player_audio_effect_get_equalizer_band_level(player_h player, int index,
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(plevel);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_AUDIO_EFFECT_GET_EQUALIZER_BAND_LEVEL;
+	muse_player_api_e api = MUSE_PLAYER_API_AUDIO_EFFECT_GET_EQUALIZER_BAND_LEVEL;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 	int level;
@@ -2237,7 +2232,7 @@ int player_audio_effect_get_equalizer_level_range(player_h player, int *pmin,
 	PLAYER_NULL_ARG_CHECK(pmin);
 	PLAYER_NULL_ARG_CHECK(pmax);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_AUDIO_EFFECT_GET_EQUALIZER_LEVEL_RANGE;
+	muse_player_api_e api = MUSE_PLAYER_API_AUDIO_EFFECT_GET_EQUALIZER_LEVEL_RANGE;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 	int min,max;
@@ -2261,7 +2256,7 @@ int player_audio_effect_get_equalizer_band_frequency(player_h player, int index,
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(pfrequency);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_AUDIO_EFFECT_GET_EQUALIZER_BAND_FREQUENCY;
+	muse_player_api_e api = MUSE_PLAYER_API_AUDIO_EFFECT_GET_EQUALIZER_BAND_FREQUENCY;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 	int frequency;
@@ -2284,7 +2279,7 @@ int player_audio_effect_get_equalizer_band_frequency_range(player_h player,
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(prange);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_AUDIO_EFFECT_GET_EQUALIZER_BAND_FREQUENCY_RANGE;
+	muse_player_api_e api = MUSE_PLAYER_API_AUDIO_EFFECT_GET_EQUALIZER_BAND_FREQUENCY_RANGE;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 	int range;
@@ -2305,7 +2300,7 @@ int player_audio_effect_equalizer_clear(player_h player)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_AUDIO_EFFECT_EQUALIZER_CLEAR;
+	muse_player_api_e api = MUSE_PLAYER_API_AUDIO_EFFECT_EQUALIZER_CLEAR;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 
@@ -2322,7 +2317,7 @@ int player_audio_effect_equalizer_is_available(player_h player,
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(pavailable);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_AUDIO_EFFECT_EQUALIZER_IS_AVAILABLE;
+	muse_player_api_e api = MUSE_PLAYER_API_AUDIO_EFFECT_EQUALIZER_IS_AVAILABLE;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 	int available;
@@ -2342,7 +2337,7 @@ int player_set_subtitle_path(player_h player, const char *path)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_SET_SUBTITLE_PATH;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_SUBTITLE_PATH;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 
@@ -2358,7 +2353,7 @@ int player_set_subtitle_position_offset(player_h player, int millisecond)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_SET_SUBTITLE_POSITION_OFFSET;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_SUBTITLE_POSITION_OFFSET;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 
@@ -2376,7 +2371,7 @@ int player_set_progressive_download_path(player_h player, const char *path)
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(path);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_SET_PROGRESSIVE_DOWNLOAD_PATH;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_PROGRESSIVE_DOWNLOAD_PATH;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 	int type = _PLAYER_EVENT_TYPE_VIDEO_BIN_CREATED;
@@ -2401,7 +2396,7 @@ int player_get_progressive_download_status(player_h player,
 	PLAYER_NULL_ARG_CHECK(pcurrent);
 	PLAYER_NULL_ARG_CHECK(ptotal_size);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_GET_PROGRESSIVE_DOWNLOAD_STATUS;
+	muse_player_api_e api = MUSE_PLAYER_API_GET_PROGRESSIVE_DOWNLOAD_STATUS;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 	unsigned long current, total_size;
@@ -2426,7 +2421,7 @@ int player_capture_video(player_h player, player_video_captured_cb callback,
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(callback);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_CAPTURE_VIDEO;
+	muse_player_api_e api = MUSE_PLAYER_API_CAPTURE_VIDEO;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 
@@ -2457,7 +2452,7 @@ int player_set_streaming_cookie(player_h player, const char *cookie, int size)
 	PLAYER_NULL_ARG_CHECK(cookie);
 	PLAYER_CHECK_CONDITION(size>=0,PLAYER_ERROR_INVALID_PARAMETER,"PLAYER_ERROR_INVALID_PARAMETER" );
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_SET_STREAMING_COOKIE;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_STREAMING_COOKIE;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 
@@ -2476,7 +2471,7 @@ int player_set_streaming_user_agent(player_h player, const char *user_agent,
 	PLAYER_NULL_ARG_CHECK(user_agent);
 	PLAYER_CHECK_CONDITION(size>=0,PLAYER_ERROR_INVALID_PARAMETER,"PLAYER_ERROR_INVALID_PARAMETER" );
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_SET_STREAMING_COOKIE;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_STREAMING_COOKIE;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 
@@ -2495,7 +2490,7 @@ int player_get_streaming_download_progress(player_h player, int *pstart,
 	PLAYER_NULL_ARG_CHECK(pstart);
 	PLAYER_NULL_ARG_CHECK(pcurrent);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_GET_STREAMING_DOWNLOAD_PROGRESS;
+	muse_player_api_e api = MUSE_PLAYER_API_GET_STREAMING_DOWNLOAD_PROGRESS;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 	int start, current;
@@ -2596,7 +2591,7 @@ int player_set_media_packet_video_frame_decoded_cb(player_h player,
 	PLAYER_NULL_ARG_CHECK(callback);
 	int ret = PLAYER_ERROR_NONE;
 	player_cli_s *pc = (player_cli_s *) player;
-	mm_player_api_e api = MM_PLAYER_API_SET_CALLBACK;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_CALLBACK;
 	char *ret_buf = NULL;
 	_player_event_e type = _PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME;
 	int set = 1;
@@ -2623,7 +2618,7 @@ int player_unset_media_packet_video_frame_decoded_cb(player_h player)
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
 	player_cli_s *pc = (player_cli_s *) player;
-	mm_player_api_e api = MM_PLAYER_API_SET_CALLBACK;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_CALLBACK;
 	char *ret_buf = NULL;
 	_player_event_e type = _PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME;
 	int set = 0;
@@ -2646,7 +2641,7 @@ int player_set_video_stream_changed_cb (player_h player,
 	PLAYER_NULL_ARG_CHECK(callback);
 	int ret = PLAYER_ERROR_NONE;
 	player_cli_s *pc = (player_cli_s *) player;
-	mm_player_api_e api = MM_PLAYER_API_SET_CALLBACK;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_CALLBACK;
 	char *ret_buf = NULL;
 	_player_event_e type = _PLAYER_EVENT_TYPE_VIDEO_STREAM_CHANGED;
 	int set = 1;
@@ -2671,7 +2666,7 @@ int player_unset_video_stream_changed_cb (player_h player)
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
 	player_cli_s *pc = (player_cli_s *) player;
-	mm_player_api_e api = MM_PLAYER_API_SET_CALLBACK;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_CALLBACK;
 	char *ret_buf = NULL;
 	_player_event_e type = _PLAYER_EVENT_TYPE_VIDEO_STREAM_CHANGED;
 	int set = 0;
@@ -2696,7 +2691,7 @@ int player_set_media_stream_buffer_status_cb ( player_h player,
 	PLAYER_NULL_ARG_CHECK(callback);
 	int ret = PLAYER_ERROR_NONE;
 	player_cli_s *pc = (player_cli_s *) player;
-	mm_player_api_e api = MM_PLAYER_API_SET_CALLBACK;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_CALLBACK;
 	char *ret_buf = NULL;
 	_player_event_e type;
 	int set = 1;
@@ -2731,7 +2726,7 @@ int player_unset_media_stream_buffer_status_cb (player_h player,
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
 	player_cli_s *pc = (player_cli_s *) player;
-	mm_player_api_e api = MM_PLAYER_API_SET_CALLBACK;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_CALLBACK;
 	char *ret_buf = NULL;
 	_player_event_e type;
 	int set = 0;
@@ -2765,7 +2760,7 @@ int player_set_media_stream_seek_cb (player_h player,
 	PLAYER_NULL_ARG_CHECK(callback);
 	int ret = PLAYER_ERROR_NONE;
 	player_cli_s *pc = (player_cli_s *) player;
-	mm_player_api_e api = MM_PLAYER_API_SET_CALLBACK;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_CALLBACK;
 	char *ret_buf = NULL;
 	_player_event_e type;
 	int set = 1;
@@ -2800,7 +2795,7 @@ int player_unset_media_stream_seek_cb (player_h player,
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
 	player_cli_s *pc = (player_cli_s *) player;
-	mm_player_api_e api = MM_PLAYER_API_SET_CALLBACK;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_CALLBACK;
 	char *ret_buf = NULL;
 	_player_event_e type;
 	int set = 0;
@@ -2832,7 +2827,7 @@ int player_push_media_stream(player_h player, media_packet_h packet)
 	PLAYER_NULL_ARG_CHECK(packet);
 	int ret = PLAYER_ERROR_NONE;
 	player_cli_s *pc = (player_cli_s *) player;
-	mm_player_api_e api = MM_PLAYER_API_PUSH_MEDIA_STREAM;
+	muse_player_api_e api = MUSE_PLAYER_API_PUSH_MEDIA_STREAM;
 	char *ret_buf = NULL;
 	player_push_media_msg_type push_media;
 	char *push_media_msg = (char *)&push_media;
@@ -2897,7 +2892,7 @@ int player_push_media_stream(player_h player, media_packet_h packet)
 	} else
 #endif
 	if(push_media.buf_type == PUSH_MEDIA_BUF_TYPE_RAW) {
-		mmsvc_core_ipc_push_data(pc->cb_info->data_fd, buf, push_media.size, push_media.pts);
+		muse_core_ipc_push_data(pc->cb_info->data_fd, buf, push_media.size, push_media.pts);
 		player_msg_send_array(api, pc, ret_buf, ret,
 				push_media_msg, msg_size, sizeof(char));
 	}
@@ -2921,7 +2916,7 @@ int player_set_media_stream_info(player_h player,
 	g_return_val_if_fail(format, PLAYER_ERROR_INVALID_OPERATION);
 	int ret = PLAYER_ERROR_NONE;
 	player_cli_s *pc = (player_cli_s *) player;
-	mm_player_api_e api = MM_PLAYER_API_SET_MEDIA_STREAM_INFO;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_MEDIA_STREAM_INFO;
 	char *ret_buf = NULL;
 	media_format_mimetype_e mimetype;
 	int width;
@@ -2956,7 +2951,7 @@ int player_set_media_stream_buffer_max_size(player_h player,
 	int ret = PLAYER_ERROR_NONE;
 	PLAYER_INSTANCE_CHECK(player);
 	player_cli_s *pc = (player_cli_s *) player;
-	mm_player_api_e api = MM_PLAYER_API_SET_MEDIA_STREAM_BUFFER_MAX_SIZE;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_MEDIA_STREAM_BUFFER_MAX_SIZE;
 	char *ret_buf = NULL;
 
 	LOGD("ENTER");
@@ -2975,7 +2970,7 @@ int player_get_media_stream_buffer_max_size(player_h player,
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(pmax_size);
 	player_cli_s *pc = (player_cli_s *) player;
-	mm_player_api_e api = MM_PLAYER_API_GET_MEDIA_STREAM_BUFFER_MAX_SIZE;
+	muse_player_api_e api = MUSE_PLAYER_API_GET_MEDIA_STREAM_BUFFER_MAX_SIZE;
 	char *ret_buf = NULL;
 	unsigned long long max_size;
 
@@ -2997,7 +2992,7 @@ int player_set_media_stream_buffer_min_threshold(player_h player,
 	int ret = PLAYER_ERROR_NONE;
 	PLAYER_INSTANCE_CHECK(player);
 	player_cli_s *pc = (player_cli_s *) player;
-	mm_player_api_e api = MM_PLAYER_API_SET_MEDIA_STREAM_BUFFER_MIN_THRESHOLD;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_MEDIA_STREAM_BUFFER_MIN_THRESHOLD;
 	char *ret_buf = NULL;
 
 	LOGD("ENTER");
@@ -3016,7 +3011,7 @@ int player_get_media_stream_buffer_min_threshold(player_h player,
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(ppercent);
 	player_cli_s *pc = (player_cli_s *) player;
-	mm_player_api_e api = MM_PLAYER_API_GET_MEDIA_STREAM_BUFFER_MIN_THRESHOLD;
+	muse_player_api_e api = MUSE_PLAYER_API_GET_MEDIA_STREAM_BUFFER_MIN_THRESHOLD;
 	char *ret_buf = NULL;
 	uint percent;
 
@@ -3039,7 +3034,7 @@ int player_get_track_count(player_h player, player_stream_type_e type, int *pcou
 	PLAYER_NULL_ARG_CHECK(pcount);
 	int ret = PLAYER_ERROR_NONE;
 	player_cli_s *pc = (player_cli_s *) player;
-	mm_player_api_e api = MM_PLAYER_API_GET_TRACK_COUNT;
+	muse_player_api_e api = MUSE_PLAYER_API_GET_TRACK_COUNT;
 	char *ret_buf = NULL;
 	int count;
 
@@ -3062,7 +3057,7 @@ int player_get_current_track(player_h player, player_stream_type_e type, int *pi
 	PLAYER_NULL_ARG_CHECK(pindex);
 	int ret = PLAYER_ERROR_NONE;
 	player_cli_s *pc = (player_cli_s *) player;
-	mm_player_api_e api = MM_PLAYER_API_GET_CURRENT_TRACK;
+	muse_player_api_e api = MUSE_PLAYER_API_GET_CURRENT_TRACK;
 	char *ret_buf = NULL;
 	int index;
 
@@ -3084,7 +3079,7 @@ int player_select_track(player_h player, player_stream_type_e type, int index)
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
 	player_cli_s *pc = (player_cli_s *) player;
-	mm_player_api_e api = MM_PLAYER_API_SELECT_TRACK;
+	muse_player_api_e api = MUSE_PLAYER_API_SELECT_TRACK;
 	char *ret_buf = NULL;
 
 	LOGD("ENTER");
@@ -3102,9 +3097,9 @@ int player_get_track_language_code(player_h player, player_stream_type_e type, i
 	PLAYER_NULL_ARG_CHECK(pcode);
 	int ret = PLAYER_ERROR_NONE;
 	player_cli_s *pc = (player_cli_s *) player;
-	mm_player_api_e api = MM_PLAYER_API_GET_TRACK_LANGUAGE_CODE;
+	muse_player_api_e api = MUSE_PLAYER_API_GET_TRACK_LANGUAGE_CODE;
 	char *ret_buf = NULL;
-	char code[MM_MSG_MAX_LENGTH] = {0,};
+	char code[MUSE_MSG_MAX_LENGTH] = {0,};
 	const int code_len=2;
 
 	LOGD("ENTER");

@@ -21,7 +21,7 @@
 extern "C" {
 #endif
 
-#include <mmsvc_core_msg_json.h>
+#include <muse_core_msg_json.h>
 #include <media_format.h>
 #include <tbm_bufmgr.h>
 #include <player2_private.h>
@@ -64,7 +64,7 @@ typedef struct {
  * @param[in] buf string of message buffer. has key and value
  */
 #define player_msg_get(param, buf) \
-	mmsvc_core_msg_json_deserialize(#param, buf, &param, NULL)
+	muse_core_msg_json_deserialize(#param, buf, NULL, &param, NULL, MUSE_TYPE_ANY)
 
 /**
  * @brief Get value from Message.
@@ -74,7 +74,7 @@ typedef struct {
  * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
  */
 #define player_msg_get_type(param, buf, type) \
-	mmsvc_core_msg_json_deserialize_type(#param, buf, &param, NULL, MUSED_TYPE_##type)
+	muse_core_msg_json_deserialize(#param, buf, NULL, &param, NULL, MUSE_TYPE_##type)
 
 /**
  * @brief Get value from Message.
@@ -83,7 +83,7 @@ typedef struct {
  * @param[in] buf string of message buffer. has key and value
  */
 #define player_msg_get_string(param, buf) \
-	mmsvc_core_msg_json_deserialize(#param, buf, param, NULL)
+	muse_core_msg_json_deserialize(#param, buf, NULL, param, NULL, MUSE_TYPE_ANY)
 
 /**
  * @brief Get value from Message.
@@ -92,7 +92,7 @@ typedef struct {
  * @param[in] buf string of message buffer. has key and value
  */
 #define player_msg_get_array(param, buf) \
-	mmsvc_core_msg_json_deserialize(#param, buf, param, NULL)
+	muse_core_msg_json_deserialize(#param, buf, NULL, param, NULL, MUSE_TYPE_ANY)
 
 /**
  * @brief Get value from Message.
@@ -103,7 +103,7 @@ typedef struct {
  * @param[out] e the error number.
  */
 #define player_msg_get_error_e(param, buf, len, e) \
-	mmsvc_core_msg_json_deserialize_len(#param, buf, &len, &param, &e, MUSED_TYPE_INT)
+	muse_core_msg_json_deserialize(#param, buf, &len, &param, &e, MUSE_TYPE_INT)
 
 /**
  * @brief Create and send message. Wait for server result.
@@ -120,15 +120,15 @@ typedef struct {
 		int __fd__; \
 		if(CALLBACK_INFO(player)) __fd__ = MSG_FD(player); \
 		else {ret = PLAYER_ERROR_INVALID_STATE;break;} \
-		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_HANDLE, EXT_HANDLE(player), \
+		__sndMsg__ = muse_core_msg_json_factory_new(api, \
 				0); \
-		__len__ = mmsvc_core_ipc_send_msg(__fd__, __sndMsg__); \
+		__len__ = muse_core_ipc_send_msg(__fd__, __sndMsg__); \
 		if (__len__ <= 0) { \
 			LOGE("sending message failed"); \
 			ret = PLAYER_ERROR_INVALID_OPERATION; \
 		} else \
 			ret = wait_for_cb_return(api, CALLBACK_INFO(player), &retbuf, CALLBACK_TIME_OUT); \
-		mmsvc_core_msg_json_factory_free(__sndMsg__); \
+		muse_core_msg_json_factory_free(__sndMsg__); \
 	}while(0)
 
 /**
@@ -149,16 +149,16 @@ typedef struct {
 		type __value__ = (type)param; \
 		if(CALLBACK_INFO(player)) __fd__ = MSG_FD(player); \
 		else {ret = PLAYER_ERROR_INVALID_STATE;break;} \
-		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_HANDLE, EXT_HANDLE(player), \
-				MUSED_TYPE_##type, #param, __value__, \
+		__sndMsg__ = muse_core_msg_json_factory_new(api, \
+				MUSE_TYPE_##type, #param, __value__, \
 				0); \
-		__len__ = mmsvc_core_ipc_send_msg(__fd__, __sndMsg__); \
+		__len__ = muse_core_ipc_send_msg(__fd__, __sndMsg__); \
 		if (__len__ <= 0) { \
 			LOGE("sending message failed"); \
 			ret = PLAYER_ERROR_INVALID_OPERATION; \
 		} else \
 			ret = wait_for_cb_return(api, CALLBACK_INFO(player), &retbuf, CALLBACK_TIME_OUT); \
-		mmsvc_core_msg_json_factory_free(__sndMsg__); \
+		muse_core_msg_json_factory_free(__sndMsg__); \
 	}while(0)
 
 /**
@@ -180,17 +180,17 @@ typedef struct {
 		type2 __value2__ = (type2)param2; \
 		if(CALLBACK_INFO(player)) __fd__ = MSG_FD(player); \
 		else {ret = PLAYER_ERROR_INVALID_STATE;break;} \
-		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_HANDLE, EXT_HANDLE(player), \
-				MUSED_TYPE_##type1, #param1, __value1__, \
-				MUSED_TYPE_##type2, #param2, __value2__, \
+		__sndMsg__ = muse_core_msg_json_factory_new(api, \
+				MUSE_TYPE_##type1, #param1, __value1__, \
+				MUSE_TYPE_##type2, #param2, __value2__, \
 				0); \
-		__len__ = mmsvc_core_ipc_send_msg(__fd__, __sndMsg__); \
+		__len__ = muse_core_ipc_send_msg(__fd__, __sndMsg__); \
 		if (__len__ <= 0) { \
 			LOGE("sending message failed"); \
 			ret = PLAYER_ERROR_INVALID_OPERATION; \
 		} else \
 			ret = wait_for_cb_return(api, CALLBACK_INFO(player), &retbuf, CALLBACK_TIME_OUT); \
-		mmsvc_core_msg_json_factory_free(__sndMsg__); \
+		muse_core_msg_json_factory_free(__sndMsg__); \
 	}while(0)
 
 /**
@@ -213,18 +213,18 @@ typedef struct {
 		type3 __value3__ = (type3)param3; \
 		if(CALLBACK_INFO(player)) __fd__ = MSG_FD(player); \
 		else {ret = PLAYER_ERROR_INVALID_STATE;break;} \
-		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_HANDLE, EXT_HANDLE(player), \
-				MUSED_TYPE_##type1, #param1, __value1__, \
-				MUSED_TYPE_##type2, #param2, __value2__, \
-				MUSED_TYPE_##type3, #param3, __value3__, \
+		__sndMsg__ = muse_core_msg_json_factory_new(api, \
+				MUSE_TYPE_##type1, #param1, __value1__, \
+				MUSE_TYPE_##type2, #param2, __value2__, \
+				MUSE_TYPE_##type3, #param3, __value3__, \
 				0); \
-		__len__ = mmsvc_core_ipc_send_msg(__fd__, __sndMsg__); \
+		__len__ = muse_core_ipc_send_msg(__fd__, __sndMsg__); \
 		if (__len__ <= 0) { \
 			LOGE("sending message failed"); \
 			ret = PLAYER_ERROR_INVALID_OPERATION; \
 		} else \
-			ret = wait_for_cb_return(api, CALLBACK_INFO(player), &retbuf, CALLBACK_TIME_OUT); \
 		mmsvc_core_msg_json_factory_free(__sndMsg__); \
+			ret = wait_for_cb_return(api, CALLBACK_INFO(player), &retbuf, CALLBACK_TIME_OUT); \
 	}while(0)
 
 /**
@@ -250,21 +250,21 @@ typedef struct {
 		type6 __value6__ = (type6)param6; \
 		if(CALLBACK_INFO(player)) __fd__ = MSG_FD(player); \
 		else {ret = PLAYER_ERROR_INVALID_STATE;break;} \
-		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_HANDLE, EXT_HANDLE(player), \
-				MUSED_TYPE_##type1, #param1, __value1__, \
-				MUSED_TYPE_##type2, #param2, __value2__, \
-				MUSED_TYPE_##type3, #param3, __value3__, \
-				MUSED_TYPE_##type4, #param4, __value4__, \
-				MUSED_TYPE_##type5, #param5, __value5__, \
-				MUSED_TYPE_##type6, #param6, __value6__, \
+		__sndMsg__ = muse_core_msg_json_factory_new(api, \
+				MUSE_TYPE_##type1, #param1, __value1__, \
+				MUSE_TYPE_##type2, #param2, __value2__, \
+				MUSE_TYPE_##type3, #param3, __value3__, \
+				MUSE_TYPE_##type4, #param4, __value4__, \
+				MUSE_TYPE_##type5, #param5, __value5__, \
+				MUSE_TYPE_##type6, #param6, __value6__, \
 				0); \
-		__len__ = mmsvc_core_ipc_send_msg(__fd__, __sndMsg__); \
+		__len__ = muse_core_ipc_send_msg(__fd__, __sndMsg__); \
 		if (__len__ <= 0) { \
 			LOGE("sending message failed"); \
 			ret = PLAYER_ERROR_INVALID_OPERATION; \
 		} else \
 			ret = wait_for_cb_return(api, CALLBACK_INFO(player), &retbuf, CALLBACK_TIME_OUT); \
-		mmsvc_core_msg_json_factory_free(__sndMsg__); \
+		muse_core_msg_json_factory_free(__sndMsg__); \
 	}while(0)
 
 /**
@@ -286,20 +286,20 @@ typedef struct {
 		int *__value__ = (int *)param; \
 		if(CALLBACK_INFO(player)) __fd__ = MSG_FD(player); \
 		else {ret = PLAYER_ERROR_INVALID_STATE;break;} \
-		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_HANDLE, EXT_HANDLE(player), \
-				MUSED_TYPE_INT, #length, length, \
-				MUSED_TYPE_ARRAY, #param, \
+		__sndMsg__ = muse_core_msg_json_factory_new(api, \
+				MUSE_TYPE_INT, #length, length, \
+				MUSE_TYPE_ARRAY, #param, \
 					datum_size == sizeof(int)? length :  \
 					length / sizeof(int) + (length % sizeof(int)?1:0), \
 					__value__, \
 				0); \
-		__len__ = mmsvc_core_ipc_send_msg(__fd__, __sndMsg__); \
+		__len__ = muse_core_ipc_send_msg(__fd__, __sndMsg__); \
 		if (__len__ <= 0) { \
 			LOGE("sending message failed"); \
 			ret = PLAYER_ERROR_INVALID_OPERATION; \
 		} else \
 			ret = wait_for_cb_return(api, CALLBACK_INFO(player), &retbuf, CALLBACK_TIME_OUT); \
-		mmsvc_core_msg_json_factory_free(__sndMsg__); \
+		muse_core_msg_json_factory_free(__sndMsg__); \
 	}while(0)
 
 /**
@@ -322,25 +322,25 @@ typedef struct {
 		int *__value2__ = (int *)param2; \
 		if(CALLBACK_INFO(player)) __fd__ = MSG_FD(player); \
 		else {ret = PLAYER_ERROR_INVALID_STATE;break;} \
-		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_HANDLE, EXT_HANDLE(player), \
-				MUSED_TYPE_INT, #length1, length1, \
-				MUSED_TYPE_ARRAY, #param1, \
+		__sndMsg__ = muse_core_msg_json_factory_new(api, \
+				MUSE_TYPE_INT, #length1, length1, \
+				MUSE_TYPE_ARRAY, #param1, \
 					datum_size1 == sizeof(int)? length1 :  \
 					length1 / sizeof(int) + (length1 % sizeof(int)?1:0), \
 					__value1__, \
-				MUSED_TYPE_INT, #length2, length2, \
-				MUSED_TYPE_ARRAY, #param2, \
+				MUSE_TYPE_INT, #length2, length2, \
+				MUSE_TYPE_ARRAY, #param2, \
 					datum_size2 == sizeof(int)? length2 :  \
 					length2 / sizeof(int) + (length2 % sizeof(int)?1:0), \
 					__value2__, \
 				0); \
-		__len__ = mmsvc_core_ipc_send_msg(__fd__, __sndMsg__); \
+		__len__ = muse_core_ipc_send_msg(__fd__, __sndMsg__); \
 		if (__len__ <= 0) { \
 			LOGE("sending message failed"); \
 			ret = PLAYER_ERROR_INVALID_OPERATION; \
 		} else \
 			ret = wait_for_cb_return(api, CALLBACK_INFO(player), &retbuf, CALLBACK_TIME_OUT); \
-		mmsvc_core_msg_json_factory_free(__sndMsg__); \
+		muse_core_msg_json_factory_free(__sndMsg__); \
 	}while(0)
 
 
@@ -360,11 +360,11 @@ typedef struct {
 		type __value__ = (type)param; \
 		if(CALLBACK_INFO(player)) __fd__ = MSG_FD(player); \
 		else {ret = PLAYER_ERROR_INVALID_STATE;break;} \
-		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_HANDLE, EXT_HANDLE(player), \
-				MUSED_TYPE_##type, #param, __value__, \
+		__sndMsg__ = muse_core_msg_json_factory_new(api, \
+				MUSE_TYPE_##type, #param, __value__, \
 				0); \
-		__len__ = mmsvc_core_ipc_send_msg(__fd__, __sndMsg__); \
-		mmsvc_core_msg_json_factory_free(__sndMsg__); \
+		__len__ = muse_core_ipc_send_msg(__fd__, __sndMsg__); \
+		muse_core_msg_json_factory_free(__sndMsg__); \
 		if (__len__ <= 0) { \
 			LOGE("sending message failed"); \
 			return PLAYER_ERROR_INVALID_OPERATION; \
@@ -380,18 +380,18 @@ typedef struct {
  * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
  * @param[in] param the name of param is key, must be local variable. never be pointer.
  */
-#define player_msg_create_handle(api, player, fd, type1, param1, type2, param2) \
+#define player_msg_create_handle(api, fd, type1, param1, type2, param2) \
 	do{	\
 		char *__sndMsg__; \
 		int __len__; \
 		type1 __value1__ = (type1)param1; \
 		type2 __value2__ = (type2)param2; \
-		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_HANDLE, player, \
-				MUSED_TYPE_##type1, #param1, __value1__, \
-				MUSED_TYPE_##type2, #param2, __value2__, \
+		__sndMsg__ = muse_core_msg_json_factory_new(api, \
+				MUSE_TYPE_##type1, #param1, __value1__, \
+				MUSE_TYPE_##type2, #param2, __value2__, \
 				0); \
-		__len__ = mmsvc_core_ipc_send_msg(fd, __sndMsg__); \
-		mmsvc_core_msg_json_factory_free(__sndMsg__); \
+		__len__ = muse_core_ipc_send_msg(fd, __sndMsg__); \
+		muse_core_msg_json_factory_free(__sndMsg__); \
 		if (__len__ <= 0) { \
 			LOGE("sending message failed"); \
 			return PLAYER_ERROR_INVALID_OPERATION; \
@@ -417,12 +417,12 @@ typedef struct {
 		int __value2__ = (int)set; \
 		if(CALLBACK_INFO(player)) __fd__ = MSG_FD(player); \
 		else {ret = PLAYER_ERROR_INVALID_STATE;break;} \
-		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_HANDLE, EXT_HANDLE(player), \
-				MUSED_TYPE_INT, #event_type, __value1__, \
-				MUSED_TYPE_INT, #set, __value2__, \
+		__sndMsg__ = muse_core_msg_json_factory_new(api, \
+				MUSE_TYPE_INT, #event_type, __value1__, \
+				MUSE_TYPE_INT, #set, __value2__, \
 				0); \
-		__len__ = mmsvc_core_ipc_send_msg(__fd__, __sndMsg__); \
-		mmsvc_core_msg_json_factory_free(__sndMsg__); \
+		__len__ = muse_core_ipc_send_msg(__fd__, __sndMsg__); \
+		muse_core_msg_json_factory_free(__sndMsg__); \
 		if (__len__ <= 0) { \
 			LOGE("sending message failed"); \
 			ret = PLAYER_ERROR_INVALID_OPERATION; \
@@ -434,20 +434,21 @@ typedef struct {
  * @remarks Does NOT guarantee thread safe.
  * @param[in] api The enum of module API.
  * @param[in] ret Thre result of API.
- * @param[in] client socket client information
+ * @param[in] module mused module information
  */
-#define player_msg_return(api, ret, client) \
+#define player_msg_return(api, ret, module) \
 	do{	\
 		char *__sndMsg__; \
 		int __len__; \
-		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_RETURN, ret, \
+		__sndMsg__ = muse_core_msg_json_factory_new(api, \
+				MUSE_TYPE_INT, MUSE_PARAM_RETURN, ret, \
 				0); \
-		__len__ = mmsvc_core_ipc_send_msg(mmsvc_core_client_get_msg_fd(client), __sndMsg__); \
+		__len__ = muse_core_ipc_send_msg(muse_core_client_get_msg_fd(module), __sndMsg__); \
 		if (__len__ <= 0) { \
 			LOGE("sending message failed"); \
 			ret = PLAYER_ERROR_INVALID_OPERATION; \
 		} \
-		mmsvc_core_msg_json_factory_free(__sndMsg__); \
+		muse_core_msg_json_factory_free(__sndMsg__); \
 	}while(0)
 
 /**
@@ -455,24 +456,25 @@ typedef struct {
  * @remarks Does NOT guarantee thread safe.
  * @param[in] api The enum of module API.
  * @param[in] ret Thre result of API.
- * @param[in] client socket client information
+ * @param[in] module mused module information
  * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
  * @param[in] param the name of param is key, must be local variable. never be pointer.
  */
-#define player_msg_return1(api, ret, client, type, param) \
+#define player_msg_return1(api, ret, module, type, param) \
 	do{	\
 		char *__sndMsg__; \
 		int __len__; \
 		type __value__ = (type)param; \
-		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_RETURN, ret, \
-				MUSED_TYPE_##type, #param, __value__, \
+		__sndMsg__ = muse_core_msg_json_factory_new(api, \
+				MUSE_TYPE_INT, MUSE_PARAM_RETURN, ret, \
+				MUSE_TYPE_##type, #param, __value__, \
 				0); \
-		__len__ = mmsvc_core_ipc_send_msg(mmsvc_core_client_get_msg_fd(client), __sndMsg__); \
+		__len__ = muse_core_ipc_send_msg(muse_core_client_get_msg_fd(module), __sndMsg__); \
 		if (__len__ <= 0) { \
 			LOGE("sending message failed"); \
 			ret = PLAYER_ERROR_INVALID_OPERATION; \
 		} \
-		mmsvc_core_msg_json_factory_free(__sndMsg__); \
+		muse_core_msg_json_factory_free(__sndMsg__); \
 	}while(0)
 
 /**
@@ -480,26 +482,27 @@ typedef struct {
  * @remarks Does NOT guarantee thread safe.
  * @param[in] api The enum of module API.
  * @param[in] ret Thre result of API.
- * @param[in] client socket client information
+ * @param[in] module mused module information
  * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
  * @param[in] param# the name of param is key, must be local variable. never be pointer.
  */
-#define player_msg_return2(api, ret, client, type1, param1, type2, param2) \
+#define player_msg_return2(api, ret, module, type1, param1, type2, param2) \
 	do{	\
 		char *__sndMsg__; \
 		int __len__; \
 		type1 __value1__ = (type1)param1; \
 		type2 __value2__ = (type2)param2; \
-		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_RETURN, ret, \
-				MUSED_TYPE_##type1, #param1, __value1__, \
-				MUSED_TYPE_##type2, #param2, __value2__, \
+		__sndMsg__ = muse_core_msg_json_factory_new(api, \
+				MUSE_TYPE_INT, MUSE_PARAM_RETURN, ret, \
+				MUSE_TYPE_##type1, #param1, __value1__, \
+				MUSE_TYPE_##type2, #param2, __value2__, \
 				0); \
-		__len__ = mmsvc_core_ipc_send_msg(mmsvc_core_client_get_msg_fd(client), __sndMsg__); \
+		__len__ = muse_core_ipc_send_msg(muse_core_client_get_msg_fd(module), __sndMsg__); \
 		if (__len__ <= 0) { \
 			LOGE("sending message failed"); \
 			ret = PLAYER_ERROR_INVALID_OPERATION; \
 		} \
-		mmsvc_core_msg_json_factory_free(__sndMsg__); \
+		muse_core_msg_json_factory_free(__sndMsg__); \
 	}while(0)
 
 /**
@@ -507,28 +510,29 @@ typedef struct {
  * @remarks Does NOT guarantee thread safe.
  * @param[in] api The enum of module API.
  * @param[in] ret Thre result of API.
- * @param[in] client socket client information
+ * @param[in] module mused module information
  * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
  * @param[in] param# the name of param is key, must be local variable. never be pointer.
  */
-#define player_msg_return3(api, ret, client, type1, param1, type2, param2, type3, param3) \
+#define player_msg_return3(api, ret, module, type1, param1, type2, param2, type3, param3) \
 	do{	\
 		char *__sndMsg__; \
 		int __len__; \
 		type1 __value1__ = (type1)param1; \
 		type2 __value2__ = (type2)param2; \
 		type3 __value3__ = (type3)param3; \
-		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_RETURN, ret, \
-				MUSED_TYPE_##type1, #param1, __value1__, \
-				MUSED_TYPE_##type2, #param2, __value2__, \
-				MUSED_TYPE_##type3, #param3, __value3__, \
+		__sndMsg__ = muse_core_msg_json_factory_new(api, \
+				MUSE_TYPE_INT, MUSE_PARAM_RETURN, ret, \
+				MUSE_TYPE_##type1, #param1, __value1__, \
+				MUSE_TYPE_##type2, #param2, __value2__, \
+				MUSE_TYPE_##type3, #param3, __value3__, \
 				0); \
-		__len__ = mmsvc_core_ipc_send_msg(mmsvc_core_client_get_msg_fd(client), __sndMsg__); \
+		__len__ = muse_core_ipc_send_msg(muse_core_client_get_msg_fd(module), __sndMsg__); \
 		if (__len__ <= 0) { \
 			LOGE("sending message failed"); \
 			ret = PLAYER_ERROR_INVALID_OPERATION; \
 		} \
-		mmsvc_core_msg_json_factory_free(__sndMsg__); \
+		muse_core_msg_json_factory_free(__sndMsg__); \
 	}while(0)
 
 /**
@@ -536,29 +540,30 @@ typedef struct {
  * @remarks Does NOT guarantee thread safe.
  * @param[in] api The enum of module API.
  * @param[in] ret Thre result of API.
- * @param[in] client socket client information
+ * @param[in] module mused module information
  * @param[in] param the name of param is key, must be local array/pointer variable.
  * @param[in] length The size of array.
  * @param[in] datum_size The size of a array's datum.
  */
-#define player_msg_return_array(api, ret, client, param, length, datum_size) \
+#define player_msg_return_array(api, ret, module, param, length, datum_size) \
 	do{	\
 		char *__sndMsg__; \
 		int __len__; \
 		int *__value__ = (int *)param; \
-		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_RETURN, ret, \
-				MUSED_TYPE_INT, #length, length, \
-				MUSED_TYPE_ARRAY, #param, \
+		__sndMsg__ = muse_core_msg_json_factory_new(api, \
+				MUSE_TYPE_INT, MUSE_PARAM_RETURN, ret, \
+				MUSE_TYPE_INT, #length, length, \
+				MUSE_TYPE_ARRAY, #param, \
 					datum_size == sizeof(int)? length :  \
 					length / sizeof(int) + (length % sizeof(int)?1:0), \
 					__value__, \
 				0); \
-		__len__ = mmsvc_core_ipc_send_msg(mmsvc_core_client_get_msg_fd(client), __sndMsg__); \
+		__len__ = muse_core_ipc_send_msg(muse_core_client_get_msg_fd(module), __sndMsg__); \
 		if (__len__ <= 0) { \
 			LOGE("sending message failed"); \
 			ret = PLAYER_ERROR_INVALID_OPERATION; \
 		} \
-		mmsvc_core_msg_json_factory_free(__sndMsg__); \
+		muse_core_msg_json_factory_free(__sndMsg__); \
 	}while(0)
 
 /**
@@ -566,15 +571,16 @@ typedef struct {
  * @remarks Does NOT guarantee thread safe.
  * @param[in] api The enum of module API.
  * @param[in] event The event number.
- * @param[in] client socket client information
+ * @param[in] module mused module information
  */
-#define player_msg_event(api, event, client) \
+#define player_msg_event(api, event, module) \
 	do{	\
 		char *__sndMsg__; \
-		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_EVENT, event, \
+		__sndMsg__ = muse_core_msg_json_factory_new(api, \
+				MUSE_TYPE_INT, MUSE_PARAM_EVENT, event, \
 				0); \
-		mmsvc_core_ipc_send_msg(mmsvc_core_client_get_msg_fd(client), __sndMsg__); \
-		mmsvc_core_msg_json_factory_free(__sndMsg__); \
+		muse_core_ipc_send_msg(muse_core_client_get_msg_fd(module), __sndMsg__); \
+		muse_core_msg_json_factory_free(__sndMsg__); \
 	}while(0)
 
 /**
@@ -582,19 +588,20 @@ typedef struct {
  * @remarks Does NOT guarantee thread safe.
  * @param[in] api The enum of module API.
  * @param[in] event The event number.
- * @param[in] client socket client information
+ * @param[in] module mused module information
  * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
  * @param[in] param the name of param is key, must be local variable. never be pointer.
  */
-#define player_msg_event1(api, event, client, type, param) \
+#define player_msg_event1(api, event, module, type, param) \
 	do{	\
 		char *__sndMsg__; \
 		type __value__ = (type)param; \
-		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_EVENT, event, \
-				MUSED_TYPE_##type, #param, __value__, \
+		__sndMsg__ = muse_core_msg_json_factory_new(api, \
+				MUSE_TYPE_INT, MUSE_PARAM_EVENT, event, \
+				MUSE_TYPE_##type, #param, __value__, \
 				0); \
-		mmsvc_core_ipc_send_msg(mmsvc_core_client_get_msg_fd(client), __sndMsg__); \
-		mmsvc_core_msg_json_factory_free(__sndMsg__); \
+		muse_core_ipc_send_msg(muse_core_client_get_msg_fd(module), __sndMsg__); \
+		muse_core_msg_json_factory_free(__sndMsg__); \
 	}while(0)
 
 /**
@@ -602,21 +609,22 @@ typedef struct {
  * @remarks Does NOT guarantee thread safe.
  * @param[in] api The enum of module API.
  * @param[in] event The event number.
- * @param[in] client socket client information
+ * @param[in] module mused module information
  * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
  * @param[in] param# the name of param is key, must be local variable. never be pointer.
  */
-#define player_msg_event2(api, event, client, type1, param1, type2, param2) \
+#define player_msg_event2(api, event, module, type1, param1, type2, param2) \
 	do{	\
 		char *__sndMsg__; \
 		type1 __value1__ = (type1)param1; \
 		type2 __value2__ = (type2)param2; \
-		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_EVENT, event, \
-				MUSED_TYPE_##type1, #param1, __value1__, \
-				MUSED_TYPE_##type2, #param2, __value2__, \
+		__sndMsg__ = muse_core_msg_json_factory_new(api, \
+				MUSE_TYPE_INT, MUSE_PARAM_EVENT, event, \
+				MUSE_TYPE_##type1, #param1, __value1__, \
+				MUSE_TYPE_##type2, #param2, __value2__, \
 				0); \
-		mmsvc_core_ipc_send_msg(mmsvc_core_client_get_msg_fd(client), __sndMsg__); \
-		mmsvc_core_msg_json_factory_free(__sndMsg__); \
+		muse_core_ipc_send_msg(muse_core_client_get_msg_fd(module), __sndMsg__); \
+		muse_core_msg_json_factory_free(__sndMsg__); \
 	}while(0)
 
 /**
@@ -624,23 +632,24 @@ typedef struct {
  * @remarks Does NOT guarantee thread safe.
  * @param[in] api The enum of module API.
  * @param[in] event The event number.
- * @param[in] client socket client information
+ * @param[in] module mused module information
  * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
  * @param[in] param# the name of param is key, must be local variable. never be pointer.
  */
-#define player_msg_event3(api, event, client, type1, param1, type2, param2, type3, param3) \
+#define player_msg_event3(api, event, module, type1, param1, type2, param2, type3, param3) \
 	do{	\
 		char *__sndMsg__; \
 		type1 __value1__ = (type1)param1; \
 		type2 __value2__ = (type2)param2; \
 		type3 __value3__ = (type3)param3; \
-		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_EVENT, event, \
-				MUSED_TYPE_##type1, #param1, __value1__, \
-				MUSED_TYPE_##type2, #param2, __value2__, \
-				MUSED_TYPE_##type3, #param3, __value3__, \
+		__sndMsg__ = muse_core_msg_json_factory_new(api, \
+				MUSE_TYPE_INT, MUSE_PARAM_EVENT, event, \
+				MUSE_TYPE_##type1, #param1, __value1__, \
+				MUSE_TYPE_##type2, #param2, __value2__, \
+				MUSE_TYPE_##type3, #param3, __value3__, \
 				0); \
-		mmsvc_core_ipc_send_msg(mmsvc_core_client_get_msg_fd(client), __sndMsg__); \
-		mmsvc_core_msg_json_factory_free(__sndMsg__); \
+		muse_core_ipc_send_msg(muse_core_client_get_msg_fd(module), __sndMsg__); \
+		muse_core_msg_json_factory_free(__sndMsg__); \
 	}while(0)
 
 /**
@@ -648,25 +657,26 @@ typedef struct {
  * @remarks Does NOT guarantee thread safe.
  * @param[in] api The enum of module API.
  * @param[in] event The event number.
- * @param[in] client socket client information
+ * @param[in] module mused module information
  * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
  * @param[in] param# the name of param is key, must be local variable. never be pointer.
  */
-#define player_msg_event4(api, event, client, type1, param1, type2, param2, type3, param3, type4, param4) \
+#define player_msg_event4(api, event, module, type1, param1, type2, param2, type3, param3, type4, param4) \
 	do{	\
 		char *__sndMsg__; \
 		type1 __value1__ = (type1)param1; \
 		type2 __value2__ = (type2)param2; \
 		type3 __value3__ = (type3)param3; \
 		type4 __value4__ = (type4)param4; \
-		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_EVENT, event, \
-				MUSED_TYPE_##type1, #param1, __value1__, \
-				MUSED_TYPE_##type2, #param2, __value2__, \
-				MUSED_TYPE_##type3, #param3, __value3__, \
-				MUSED_TYPE_##type4, #param4, __value4__, \
+		__sndMsg__ = muse_core_msg_json_factory_new(api, \
+				MUSE_TYPE_INT, MUSE_PARAM_EVENT, event, \
+				MUSE_TYPE_##type1, #param1, __value1__, \
+				MUSE_TYPE_##type2, #param2, __value2__, \
+				MUSE_TYPE_##type3, #param3, __value3__, \
+				MUSE_TYPE_##type4, #param4, __value4__, \
 				0); \
-		mmsvc_core_ipc_send_msg(mmsvc_core_client_get_msg_fd(client), __sndMsg__); \
-		mmsvc_core_msg_json_factory_free(__sndMsg__); \
+		muse_core_ipc_send_msg(muse_core_client_get_msg_fd(module), __sndMsg__); \
+		muse_core_msg_json_factory_free(__sndMsg__); \
 	}while(0)
 
 /**
@@ -674,30 +684,31 @@ typedef struct {
  * @remarks Does NOT guarantee thread safe.
  * @param[in] api The enum of module API.
  * @param[in] event The event number.
- * @param[in] client socket client information
+ * @param[in] module mused module information
  * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
  * @param[in] param# the name of param is key, must be local variable. never be pointer.
  * @param[in] arr_param the name of param is key, must be local pointer/array variable.
  * @param[in] length The size of array.
  * @param[in] datum_size The size of a array's datum.
  */
-#define player_msg_event2_array(api, event, client, type1, param1, type2, param2, arr_param, length, datum_size) \
+#define player_msg_event2_array(api, event, module, type1, param1, type2, param2, arr_param, length, datum_size) \
 	do{	\
 		char *__sndMsg__; \
 		type1 __value1__ = (type1)param1; \
 		type2 __value2__ = (type2)param2; \
 		int *__arr_value__ = (int *)arr_param; \
-		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_EVENT, event, \
-				MUSED_TYPE_##type1, #param1, __value1__, \
-				MUSED_TYPE_##type2, #param2, __value2__, \
-				MUSED_TYPE_INT, #length, length, \
-				MUSED_TYPE_ARRAY, #arr_param, \
+		__sndMsg__ = muse_core_msg_json_factory_new(api, \
+				MUSE_TYPE_INT, MUSE_PARAM_EVENT, event, \
+				MUSE_TYPE_##type1, #param1, __value1__, \
+				MUSE_TYPE_##type2, #param2, __value2__, \
+				MUSE_TYPE_INT, #length, length, \
+				MUSE_TYPE_ARRAY, #arr_param, \
 					datum_size == sizeof(int)? length :  \
 					length / sizeof(int) + (length % sizeof(int)?1:0), \
 					__arr_value__, \
 				0); \
-		mmsvc_core_ipc_send_msg(mmsvc_core_client_get_msg_fd(client), __sndMsg__); \
-		mmsvc_core_msg_json_factory_free(__sndMsg__); \
+		muse_core_ipc_send_msg(muse_core_client_get_msg_fd(module), __sndMsg__); \
+		muse_core_msg_json_factory_free(__sndMsg__); \
 	}while(0)
 
 /**
@@ -705,14 +716,14 @@ typedef struct {
  * @remarks Does NOT guarantee thread safe.
  * @param[in] api The enum of module API.
  * @param[in] event The event number.
- * @param[in] client socket client information
+ * @param[in] module mused module information
  * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
  * @param[in] param# the name of param is key, must be local variable. never be pointer.
  * @param[in] arr_param the name of param is key, must be local array/pointer variable.
  * @param[in] length The size of array.
  * @param[in] datum_size The size of a array's datum.
  */
-#define player_msg_event6_array(api, event, client, type1, param1, type2, param2, type3, param3, type4, param4, type5, param5, type6, param6, arr_param, length, datum_size) \
+#define player_msg_event6_array(api, event, module, type1, param1, type2, param2, type3, param3, type4, param4, type5, param5, type6, param6, arr_param, length, datum_size) \
 	do{	\
 		char *__sndMsg__; \
 		type1 __value1__ = (type1)param1; \
@@ -722,21 +733,22 @@ typedef struct {
 		type5 __value5__ = (type5)param5; \
 		type6 __value6__ = (type6)param6; \
 		int *__arr_value__ = (int *)arr_param; \
-		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_EVENT, event, \
-				MUSED_TYPE_##type1, #param1, __value1__, \
-				MUSED_TYPE_##type2, #param2, __value2__, \
-				MUSED_TYPE_##type3, #param3, __value3__, \
-				MUSED_TYPE_##type4, #param4, __value4__, \
-				MUSED_TYPE_##type5, #param5, __value5__, \
-				MUSED_TYPE_##type6, #param6, __value6__, \
-				MUSED_TYPE_INT, #length, length, \
-				MUSED_TYPE_ARRAY, #arr_param, \
+		__sndMsg__ = muse_core_msg_json_factory_new(api, \
+				MUSE_TYPE_INT, MUSE_PARAM_EVENT, event, \
+				MUSE_TYPE_##type1, #param1, __value1__, \
+				MUSE_TYPE_##type2, #param2, __value2__, \
+				MUSE_TYPE_##type3, #param3, __value3__, \
+				MUSE_TYPE_##type4, #param4, __value4__, \
+				MUSE_TYPE_##type5, #param5, __value5__, \
+				MUSE_TYPE_##type6, #param6, __value6__, \
+				MUSE_TYPE_INT, #length, length, \
+				MUSE_TYPE_ARRAY, #arr_param, \
 					datum_size == sizeof(int)? length :  \
 					length / sizeof(int) + (length % sizeof(int)?1:0), \
 					__arr_value__, \
 				0); \
-		mmsvc_core_ipc_send_msg(mmsvc_core_client_get_msg_fd(client), __sndMsg__); \
-		mmsvc_core_msg_json_factory_free(__sndMsg__); \
+		muse_core_ipc_send_msg(muse_core_client_get_msg_fd(module), __sndMsg__); \
+		muse_core_msg_json_factory_free(__sndMsg__); \
 	}while(0)
 
 
