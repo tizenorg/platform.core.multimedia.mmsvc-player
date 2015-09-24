@@ -1108,7 +1108,7 @@ int player_create(player_h * player)
 		ret = PLAYER_ERROR_INVALID_OPERATION;
 		goto ErrorExit;
 	}
-	player_msg_create_handle(api, (intptr_t)player, sock_fd, INT, client, INT, pid);
+	player_msg_create_handle(api, sock_fd, INT, client, INT, pid);
 
 	pc = g_new0(player_cli_s, 1);
 	if (pc == NULL) {
@@ -1130,14 +1130,9 @@ int player_create(player_h * player)
 
 	ret = wait_for_cb_return(api, pc->cb_info, &ret_buf, CALLBACK_TIME_OUT);
 	if (ret == PLAYER_ERROR_NONE) {
-		intptr_t handle;
 		intptr_t client_addr;
 		char stream_path[MM_MSG_MAX_LENGTH] = {0,};
-		if(player_msg_get_type(handle, ret_buf, POINTER)) {
-			EXT_HANDLE(pc) = handle;
-			LOGD("Player create %p", EXT_HANDLE(pc));
-			*player = (player_h) pc;
-		}
+		*player = (player_h) pc;
 		if(player_msg_get_type(client_addr, ret_buf, POINTER)) {
 			pc->cb_info->data_fd = mmsvc_core_client_new_data_ch();
 			mmsvc_core_send_client_addr(client_addr, pc->cb_info->data_fd);

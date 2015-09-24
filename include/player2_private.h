@@ -247,7 +247,6 @@ typedef struct {
 }server_info_s;
 
 typedef struct _player_cli_s{
-	intptr_t remote_handle;
 	callback_cb_info_s *cb_info;
 	player_data_s *head;
 	server_info_s server;
@@ -255,8 +254,6 @@ typedef struct _player_cli_s{
 
 /* Internal handle */
 #define INT_HANDLE(h)		((h)->cb_info->local_handle)
-/* external handlet */
-#define EXT_HANDLE(h)		((h)->remote_handle)
 
 /* player callback infomatnio */
 #define CALLBACK_INFO(h)	((h)->cb_info)
