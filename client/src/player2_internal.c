@@ -18,9 +18,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <glib.h>
-#include <mmsvc_core.h>
-#include <mmsvc_core_msg_json.h>
-#include <mmsvc_core_ipc.h>
+#include <muse_core.h>
+#include <muse_core_msg_json.h>
+#include <muse_core_ipc.h>
 #include <mm_error.h>
 #include <dlog.h>
 #include "player2_private.h"
@@ -33,7 +33,7 @@ int player_set_pcm_extraction_mode(player_h player,
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(callback);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_SET_PCM_EXTRACTION_MODE;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_PCM_EXTRACTION_MODE;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 	_player_event_e event = _PLAYER_EVENT_TYPE_AUDIO_FRAME;
@@ -57,7 +57,7 @@ int player_set_pcm_spec(player_h player, const char *format, int samplerate, int
 {
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
-	mm_player_api_e api = MM_PLAYER_API_SET_PCM_SPEC;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_PCM_SPEC;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 
