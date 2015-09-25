@@ -688,6 +688,7 @@ static int player_disp_prepare(Module module)
 	mm_player_api_e api = MM_PLAYER_API_PREPARE;
 	player_h player;
 	char *caps = NULL;
+	bool is_streaming = FALSE;
 
 	handle = mmsvc_core_ipc_get_handle(module);
 
@@ -695,12 +696,15 @@ static int player_disp_prepare(Module module)
 
 	ret = player_prepare(player);
 	if(ret == PLAYER_ERROR_NONE) {
+		player_is_streaming(player, &is_streaming);
 		ret = player_get_raw_video_caps(player, &caps);
 		if(ret == PLAYER_ERROR_NONE && caps) {
-			player_msg_return1(api, ret, module, STRING, caps);
+			player_msg_return2(api, ret, module, STRING, caps, INT, is_streaming);
 			g_free(caps);
-			return ret;
-		}
+		} else
+			player_msg_return1(api, ret, module, INT, is_streaming);
+
+		return ret;
 	}
 
 	player_msg_return(api, ret, module);
@@ -715,6 +719,7 @@ static int player_disp_prepare_async(Module module)
 	mm_player_api_e api = MM_PLAYER_API_PREPARE_ASYNC;
 	player_h player;
 	prepare_data_t *prepare_data;
+	bool is_streaming = FALSE;
 
 	handle = mmsvc_core_ipc_get_handle(module);
 
@@ -725,6 +730,11 @@ static int player_disp_prepare_async(Module module)
 	prepare_data->module = module;
 
 	ret = player_prepare_async(player, _prepare_async_cb, prepare_data);
+	if(ret == PLAYER_ERROR_NONE) {
+		player_is_streaming(player, &is_streaming);
+		player_msg_return1(api, ret, module, INT, is_streaming);
+		return ret;
+	}
 
 	player_msg_return(api, ret, module);
 
