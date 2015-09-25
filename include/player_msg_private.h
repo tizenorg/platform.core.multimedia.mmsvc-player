@@ -26,7 +26,7 @@ extern "C" {
 #include <tbm_bufmgr.h>
 #include <player2_private.h>
 
-#define CALLBACK_TIME_OUT 35
+#define CALLBACK_TIME_OUT 5
 
 typedef int32_t INT;
 typedef int64_t INT64;
@@ -118,6 +118,7 @@ typedef struct {
 		char *__sndMsg__; \
 		int __len__; \
 		int __fd__; \
+		int __timeout__ = _get_api_timeout(player, api); \
 		if(CALLBACK_INFO(player)) __fd__ = MSG_FD(player); \
 		else {ret = PLAYER_ERROR_INVALID_STATE;break;} \
 		__sndMsg__ = mmsvc_core_msg_json_factory_new(api, PARAM_HANDLE, EXT_HANDLE(player), \
@@ -127,7 +128,7 @@ typedef struct {
 			LOGE("sending message failed"); \
 			ret = PLAYER_ERROR_INVALID_OPERATION; \
 		} else \
-			ret = wait_for_cb_return(api, CALLBACK_INFO(player), &retbuf, CALLBACK_TIME_OUT); \
+			ret = wait_for_cb_return(api, CALLBACK_INFO(player), &retbuf, __timeout__); \
 		mmsvc_core_msg_json_factory_free(__sndMsg__); \
 	}while(0)
 
@@ -146,6 +147,7 @@ typedef struct {
 		char *__sndMsg__; \
 		int __len__; \
 		int __fd__; \
+		int __timeout__ = _get_api_timeout(player, api); \
 		type __value__ = (type)param; \
 		if(CALLBACK_INFO(player)) __fd__ = MSG_FD(player); \
 		else {ret = PLAYER_ERROR_INVALID_STATE;break;} \
@@ -157,7 +159,7 @@ typedef struct {
 			LOGE("sending message failed"); \
 			ret = PLAYER_ERROR_INVALID_OPERATION; \
 		} else \
-			ret = wait_for_cb_return(api, CALLBACK_INFO(player), &retbuf, CALLBACK_TIME_OUT); \
+			ret = wait_for_cb_return(api, CALLBACK_INFO(player), &retbuf, __timeout__); \
 		mmsvc_core_msg_json_factory_free(__sndMsg__); \
 	}while(0)
 
@@ -176,6 +178,7 @@ typedef struct {
 		char *__sndMsg__; \
 		int __len__; \
 		int __fd__; \
+		int __timeout__ = _get_api_timeout(player, api); \
 		type1 __value1__ = (type1)param1; \
 		type2 __value2__ = (type2)param2; \
 		if(CALLBACK_INFO(player)) __fd__ = MSG_FD(player); \
@@ -189,7 +192,7 @@ typedef struct {
 			LOGE("sending message failed"); \
 			ret = PLAYER_ERROR_INVALID_OPERATION; \
 		} else \
-			ret = wait_for_cb_return(api, CALLBACK_INFO(player), &retbuf, CALLBACK_TIME_OUT); \
+			ret = wait_for_cb_return(api, CALLBACK_INFO(player), &retbuf, __timeout__); \
 		mmsvc_core_msg_json_factory_free(__sndMsg__); \
 	}while(0)
 
@@ -208,6 +211,7 @@ typedef struct {
 		char *__sndMsg__; \
 		int __len__; \
 		int __fd__; \
+		int __timeout__ = _get_api_timeout(player, api); \
 		type1 __value1__ = (type1)param1; \
 		type2 __value2__ = (type2)param2; \
 		type3 __value3__ = (type3)param3; \
@@ -223,7 +227,7 @@ typedef struct {
 			LOGE("sending message failed"); \
 			ret = PLAYER_ERROR_INVALID_OPERATION; \
 		} else \
-			ret = wait_for_cb_return(api, CALLBACK_INFO(player), &retbuf, CALLBACK_TIME_OUT); \
+			ret = wait_for_cb_return(api, CALLBACK_INFO(player), &retbuf, __timeout__); \
 		mmsvc_core_msg_json_factory_free(__sndMsg__); \
 	}while(0)
 
@@ -242,6 +246,7 @@ typedef struct {
 		char *__sndMsg__; \
 		int __len__; \
 		int __fd__; \
+		int __timeout__ = _get_api_timeout(player, api); \
 		type1 __value1__ = (type1)param1; \
 		type2 __value2__ = (type2)param2; \
 		type3 __value3__ = (type3)param3; \
@@ -263,7 +268,7 @@ typedef struct {
 			LOGE("sending message failed"); \
 			ret = PLAYER_ERROR_INVALID_OPERATION; \
 		} else \
-			ret = wait_for_cb_return(api, CALLBACK_INFO(player), &retbuf, CALLBACK_TIME_OUT); \
+			ret = wait_for_cb_return(api, CALLBACK_INFO(player), &retbuf, __timeout__); \
 		mmsvc_core_msg_json_factory_free(__sndMsg__); \
 	}while(0)
 
@@ -283,6 +288,7 @@ typedef struct {
 		char *__sndMsg__; \
 		int __len__; \
 		int __fd__; \
+		int __timeout__ = _get_api_timeout(player, api); \
 		int *__value__ = (int *)param; \
 		if(CALLBACK_INFO(player)) __fd__ = MSG_FD(player); \
 		else {ret = PLAYER_ERROR_INVALID_STATE;break;} \
@@ -298,7 +304,7 @@ typedef struct {
 			LOGE("sending message failed"); \
 			ret = PLAYER_ERROR_INVALID_OPERATION; \
 		} else \
-			ret = wait_for_cb_return(api, CALLBACK_INFO(player), &retbuf, CALLBACK_TIME_OUT); \
+			ret = wait_for_cb_return(api, CALLBACK_INFO(player), &retbuf, __timeout__); \
 		mmsvc_core_msg_json_factory_free(__sndMsg__); \
 	}while(0)
 
@@ -318,6 +324,7 @@ typedef struct {
 		char *__sndMsg__; \
 		int __len__; \
 		int __fd__; \
+		int __timeout__ = _get_api_timeout(player, api); \
 		int *__value1__ = (int *)param1; \
 		int *__value2__ = (int *)param2; \
 		if(CALLBACK_INFO(player)) __fd__ = MSG_FD(player); \
@@ -339,7 +346,7 @@ typedef struct {
 			LOGE("sending message failed"); \
 			ret = PLAYER_ERROR_INVALID_OPERATION; \
 		} else \
-			ret = wait_for_cb_return(api, CALLBACK_INFO(player), &retbuf, CALLBACK_TIME_OUT); \
+			ret = wait_for_cb_return(api, CALLBACK_INFO(player), &retbuf, __timeout__); \
 		mmsvc_core_msg_json_factory_free(__sndMsg__); \
 	}while(0)
 

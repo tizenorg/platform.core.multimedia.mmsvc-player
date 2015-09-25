@@ -244,6 +244,8 @@ typedef struct _callback_cb_info {
 
 typedef struct {
 	intptr_t bo;
+	gboolean is_streaming;
+	gint timeout;
 }server_info_s;
 
 typedef struct _player_cli_s{
@@ -269,10 +271,16 @@ typedef struct _player_cli_s{
 
 /* server tbm bo */
 #define SERVER_TBM_BO(h)	((h)->server.bo)
+/* content type is streaming */
+#define IS_STREAMING_CONTENT(h)		((h)->server.is_streaming)
+/* server state change timeout */
+#define SERVER_TIMEOUT(h)		((h)->server.timeout)
 
+int _get_api_timeout(player_cli_s *pc, mm_player_api_e api);
 int wait_for_cb_return(mm_player_api_e api, callback_cb_info_s *cb_info,
 		char **ret_buf, int time_out);
 int player_sound_register(player_h player, int pid);
+int player_is_streaming(player_h player, bool *is_streaming);
 
 /**
  * @brief Called when the video sink bin is crated.
