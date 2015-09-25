@@ -90,7 +90,7 @@ int _player_media_packet_finalize(media_packet_h pkt, int error_code,
 	}
 
 	packet = fin_data->remote_pkt;
-	sndMsg = mmsvc_core_msg_json_factory_new(api, "packet", packet, 0);
+	sndMsg = mmsvc_core_msg_json_factory_new(api, MUSED_TYPE_POINTER, "packet", packet, 0);
 	mmsvc_core_ipc_send_msg(fin_data->cb_info->fd, sndMsg);
 	mmsvc_core_msg_json_factory_free(sndMsg);
 
@@ -1046,6 +1046,29 @@ static void callback_destroy(callback_cb_info_s * cb_info)
 	g_free(cb_info);
 }
 
+int _get_api_timeout(player_cli_s *pc, mm_player_api_e api)
+{
+	int timeout = 0;
+
+	switch(api) {
+	case MM_PLAYER_API_PREPARE:
+	case MM_PLAYER_API_PREPARE_ASYNC:
+	case MM_PLAYER_API_UNPREPARE:
+	case MM_PLAYER_API_START:
+	case MM_PLAYER_API_STOP:
+	case MM_PLAYER_API_PAUSE:
+		timeout += SERVER_TIMEOUT(pc);
+	default:
+		/* check prepare async is done */
+		if(pc && CALLBACK_INFO(pc) &&
+				CALLBACK_INFO(pc)->user_cb[_PLAYER_EVENT_TYPE_PREPARE])
+			timeout += SERVER_TIMEOUT(pc);
+		break;
+	}
+	timeout += CALLBACK_TIME_OUT;
+	return timeout;
+}
+
 int wait_for_cb_return(mm_player_api_e api, callback_cb_info_s *cb_info,
 		char **ret_buf, int time_out)
 {
@@ -1145,6 +1168,8 @@ int player_create(player_h * player)
 			ret = PLAYER_ERROR_INVALID_OPERATION;
 			goto ErrorExit;
 		}
+		mm_player_get_state_timeout(INT_HANDLE(pc), &SERVER_TIMEOUT(pc), TRUE);
+		SERVER_TIMEOUT(pc) += CALLBACK_TIME_OUT;
 		if(player_msg_get_string(stream_path, ret_buf)) {
 			LOGD("shmsrc stream path : %s", stream_path);
 			if(mm_player_set_shm_stream_path(INT_HANDLE(pc), stream_path)
@@ -1208,6 +1233,7 @@ int player_prepare_async(player_h player, player_prepared_cb callback,
 	mm_player_api_e api = MM_PLAYER_API_PREPARE_ASYNC;
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
+	int is_streaming = 0;
 
 	LOGD("ENTER");
 
@@ -1221,6 +1247,13 @@ int player_prepare_async(player_h player, player_prepared_cb callback,
 	}
 	player_msg_send(api, pc, ret_buf, ret);
 
+	if(ret == PLAYER_ERROR_NONE) {
+		player_msg_get(is_streaming, ret_buf);
+		IS_STREAMING_CONTENT(pc) = is_streaming;
+		mm_player_get_state_timeout(INT_HANDLE(pc), &SERVER_TIMEOUT(pc),
+				is_streaming);
+	}
+
 	g_free(ret_buf);
 	return ret;
 }
@@ -1233,6 +1266,7 @@ int player_prepare(player_h player)
 	player_cli_s *pc = (player_cli_s *) player;
 	char *ret_buf = NULL;
 	char caps[MM_MSG_MAX_LENGTH] = {0};
+	int is_streaming = 0;
 
 	LOGD("ENTER");
 
@@ -1243,6 +1277,10 @@ int player_prepare(player_h player)
 			NULL);
 
 	if(ret == PLAYER_ERROR_NONE) {
+		player_msg_get(is_streaming, ret_buf);
+		IS_STREAMING_CONTENT(pc) = is_streaming;
+		mm_player_get_state_timeout(INT_HANDLE(pc), &SERVER_TIMEOUT(pc),
+				is_streaming);
 		player_msg_get_string(caps, ret_buf);
 		if(strlen(caps) > 0 &&
 				mm_player_mused_realize(INT_HANDLE(pc), caps) != MM_ERROR_NONE)
