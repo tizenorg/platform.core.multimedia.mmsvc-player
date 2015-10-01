@@ -138,6 +138,7 @@ _media_packet_video_decoded_cb(media_packet_h packet, void *user_data)
 	if (ad->pipe == NULL) {
 		media_packet_destroy(packet);
 		LOGW("release media packet immediately");
+		g_mutex_unlock(&ad->buffer_lock);
 		return;
 	}
 
@@ -333,6 +334,12 @@ static int app_pause(void *data)
 	}
 
 	g_mutex_unlock(&ad->buffer_lock);
+
+	ret = player_unset_media_packet_video_frame_decoded_cb(ad->player_handle);
+	if (ret != PLAYER_ERROR_NONE) {
+		g_print("player_unset_media_packet_video_frame_decoded_cb failed : 0x%x", ret);
+		return false;
+	}
 
 	ret = player_unprepare(ad->player_handle);
 	if (ret != PLAYER_ERROR_NONE) {
