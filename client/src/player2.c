@@ -331,7 +331,9 @@ static int __unset_callback(_player_event_e type, player_h player)
 	int set = 0;
 
 	LOGI("Event type : %d ", type);
-	set_null_user_cb_lock(pc->cb_info, type);
+
+	PLAYER_NULL_ARG_CHECK(CALLBACK_INFO(pc));
+	set_null_user_cb_lock(CALLBACK_INFO(pc), type);
 
 	player_msg_set_callback(api, pc, ret, type, set);
 	ret = PLAYER_ERROR_NONE;
@@ -790,13 +792,19 @@ static void * _player_event_queue_loop(void *param)
 
 	g_mutex_lock(&ev->mutex);
 	while(ev->running) {
+		g_mutex_lock(&ev->qlock);
 		if(g_queue_is_empty(ev->queue)) {
+			g_mutex_unlock(&ev->qlock);
 			g_cond_wait(&ev->cond, &ev->mutex);
 			if(!ev->running)
 				break;
-		}
+		} else
+			g_mutex_unlock(&ev->qlock);
+
 		while(1) {
+			g_mutex_lock(&ev->qlock);
 			event_data = (_player_cb_data *)g_queue_pop_head(ev->queue);
+			g_mutex_unlock(&ev->qlock);
 			if(event_data)
 				_player_event_job_function(event_data);
 			else {
@@ -816,13 +824,14 @@ static gboolean _player_event_queue_new(callback_cb_info_s *cb_info)
 
 	ev->queue = g_queue_new();
 	g_return_val_if_fail(ev->queue, FALSE);
+	g_mutex_init(&ev->qlock);
 
 	g_mutex_init(&ev->mutex);
 	g_cond_init(&ev->cond);
 	ev->running = TRUE;
 	ev->thread =
 		g_thread_new("cb_event_thread", _player_event_queue_loop,
-			     (gpointer) cb_info);
+				(gpointer) cb_info);
 	g_return_val_if_fail(ev->thread, FALSE);
 	LOGI("event queue thread %p", ev->thread);
 
@@ -834,6 +843,7 @@ static void _player_event_queue_destroy(callback_cb_info_s *cb_info)
 {
 	g_return_if_fail(cb_info);
 	player_event_queue *ev = &cb_info->event_queue;
+	_player_cb_data *event_data;
 
 	LOGI("event queue thread %p", ev->thread);
 
@@ -845,7 +855,15 @@ static void _player_event_queue_destroy(callback_cb_info_s *cb_info)
 	g_thread_join(ev->thread);
 	g_thread_unref(ev->thread);
 
+	while(!g_queue_is_empty(ev->queue)) {
+		event_data = (_player_cb_data *)g_queue_pop_head(ev->queue);
+		if(event_data) {
+			g_free(event_data->buf);
+			g_free(event_data);
+		}
+	}
 	g_queue_free(ev->queue);
+	g_mutex_clear(&ev->qlock);
 	g_mutex_clear(&ev->mutex);
 	g_cond_clear(&ev->cond);
 
@@ -853,12 +871,12 @@ static void _player_event_queue_destroy(callback_cb_info_s *cb_info)
 
 static void _player_event_queue_add(player_event_queue *ev, _player_cb_data *data)
 {
-	g_mutex_lock(&ev->mutex);
 	if(ev->running){
+		g_mutex_lock(&ev->qlock);
 		g_queue_push_tail(ev->queue, (gpointer)data);
+		g_mutex_unlock(&ev->qlock);
 		g_cond_signal(&ev->cond);
 	}
-	g_mutex_unlock(&ev->mutex);
 }
 
 static void _user_callback_handler(callback_cb_info_s * cb_info,
@@ -1082,7 +1100,7 @@ int wait_for_cb_return(muse_player_api_e api, callback_cb_info_s *cb_info,
 	msg = _get_ret_msg(api, cb_info);
 	if(!buff->recved || !msg) {
 		if (!g_cond_wait_until(&cb_info->player_cond[api], &cb_info->player_mutex, end_time)) {
-			LOGW("return msg does not received %ds", time_out);
+			LOGW("api %d return msg does not received %ds", api, time_out);
 			g_mutex_unlock(&cb_info->player_mutex);
 			return PLAYER_ERROR_INVALID_OPERATION;
 		}

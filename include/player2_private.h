@@ -221,6 +221,7 @@ typedef struct _player_data{
 typedef struct {
 	GThread *thread;
 	GQueue *queue;
+	GMutex qlock;
 	GMutex mutex;
 	GCond cond;
 	gboolean running;
