@@ -2930,6 +2930,7 @@ int player_push_media_stream(player_h player, media_packet_h packet)
 	media_packet_get_buffer_size(packet, &push_media.size);
 	media_packet_get_pts(packet, &push_media.pts);
 	media_packet_get_format(packet, &format);
+	media_packet_get_flags(packet, &push_media.flags);
 
 	push_media.buf_type = PUSH_MEDIA_BUF_TYPE_RAW;
 
