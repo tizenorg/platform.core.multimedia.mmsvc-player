@@ -26,8 +26,6 @@
 #endif
 
 #define KEY_END "XF86Stop"
-#define ES_FEEDING_PATH "es_buff://push_mode"
-//#define ES_FEEDING_PATH "es_buff://pull_mode"
 
 #define ES_DEFAULT_DIR_PATH			"/home/owner/content/"
 #define ES_DEFAULT_H264_VIDEO_PATH		ES_DEFAULT_DIR_PATH"Simpsons.h264"
@@ -270,7 +268,7 @@ static void _player_prepared_cb(void *user_data)
 	LOGD("done");
 }
 
-unsigned int bytestream2nalunit(FILE *fd, unsigned char* nal)
+int bytestream2nalunit(FILE *fd, unsigned char* nal)
 {
     int nal_length = 0;
     size_t result;
@@ -316,11 +314,13 @@ unsigned int bytestream2nalunit(FILE *fd, unsigned char* nal)
     while(1)
     {
         if (feof(fd))
-            return nal_length;
+            return -1;
 
         result = fread(buffer, 1, read_size, fd);
         if(result != read_size)
         {
+            if (init == 1)
+                return -1;
             break;
         }
         val = buffer[0];
@@ -377,8 +377,31 @@ unsigned int bytestream2nalunit(FILE *fd, unsigned char* nal)
     return nal_length;
 }
 
-static void feed_video_data(appdata_s *appdata)
+static void feed_eos_data(appdata_s *appdata)
 {
+	appdata_s *ad = appdata;
+
+	LOGD("push EOS");
+
+	if (media_packet_create(ad->video_fmt, NULL, NULL, &ad->video_pkt) != MEDIA_PACKET_ERROR_NONE) {
+		LOGE("media_packet_create_alloc failed\n");
+		return;
+	}
+
+	media_packet_set_flags(ad->video_pkt, MEDIA_PACKET_END_OF_STREAM);
+	if (player_push_media_stream(ad->player_handle, ad->video_pkt) != PLAYER_ERROR_NONE) {
+		LOGE("fail to push media packet\n");
+	}
+
+	media_packet_destroy(ad->video_pkt);
+	ad->video_pkt = NULL;
+
+	return;
+}
+
+static bool feed_video_data(appdata_s *appdata)
+{
+	bool ret = FALSE;
 	int read = 0;
 	static guint64 pts = 0L;
 	void *buf_data_ptr = NULL;
@@ -386,17 +409,17 @@ static void feed_video_data(appdata_s *appdata)
 
 	if (media_packet_create_alloc(ad->video_fmt, NULL, NULL, &ad->video_pkt) != MEDIA_PACKET_ERROR_NONE) {
 		LOGE("media_packet_create_alloc failed\n");
-		return;
+		return FALSE;
 	}
 
 	if (media_packet_get_buffer_data_ptr(ad->video_pkt, &buf_data_ptr) != MEDIA_PACKET_ERROR_NONE) {
 		LOGE("media_packet_get_buffer_data_ptr failed\n");
-		return;
+		goto ERROR;
 	}
 
 	if (media_packet_set_pts(ad->video_pkt, (uint64_t)(pts/1000000)) != MEDIA_PACKET_ERROR_NONE) {
 		LOGE("media_packet_set_pts failed\n");
-		return;
+		goto ERROR;
 	}
 
 	/* NOTE: In case of H.264 video, stream format for feeding is NAL unit.
@@ -405,39 +428,58 @@ static void feed_video_data(appdata_s *appdata)
 	read = bytestream2nalunit(ad->file_src, buf_data_ptr);
 	LOGD("real length = %d\n", read);
 	if (read == 0) {
-		LOGD("input file read failed\n");
-		return;
+		LOGE("input file read failed\n");
+		ret = TRUE;
+		goto ERROR;
+	}
+	else if (read < 0) {
+		LOGD("push EOS");
+		media_packet_destroy(ad->video_pkt);
+		ad->video_pkt = NULL;
+
+		if (media_packet_create(ad->video_fmt, NULL, NULL, &ad->video_pkt) != MEDIA_PACKET_ERROR_NONE) {
+			LOGE("media_packet_create failed\n");
+			goto ERROR;
+		}
+		media_packet_set_flags (ad->video_pkt, MEDIA_PACKET_END_OF_STREAM);
+		if (player_push_media_stream(ad->player_handle, ad->video_pkt) != PLAYER_ERROR_NONE) {
+			LOGE("fail to push media packet\n");
+		}
+		goto ERROR;
 	}
 
 	if (media_packet_set_buffer_size(ad->video_pkt, (uint64_t)read) != MEDIA_PACKET_ERROR_NONE) {
 		LOGE("media_packet_set_buffer_size failed\n");
-		return;
+		goto ERROR;
 	}
 
 	/* push media packet */
 	player_push_media_stream(ad->player_handle, ad->video_pkt);
 	pts += ES_DEFAULT_VIDEO_PTS_OFFSET;
+	ret = TRUE;
 
+ERROR:
 	/* destroy media packet after use*/
 	media_packet_destroy(ad->video_pkt);
 	ad->video_pkt = NULL;
-	return;
+	return ret;
 }
 
 static void feed_video_data_thread_func(void *data)
 {
-	gboolean exit = FALSE;
 	appdata_s *ad = (appdata_s *)data;
 
-	while (!exit)
+	while (TRUE)
 	{
 		static int frame_count = 0;
 
 		if (frame_count < ES_DEFAULT_NUMBER_OF_FEED) {
-			feed_video_data(ad);
+			if (!feed_video_data(ad))
+				break;
 			frame_count++;
 		} else {
-			exit = TRUE;
+			feed_eos_data(ad);
+			break;
 		}
 	}
 }
@@ -494,12 +536,6 @@ static int app_reset(bundle *b, void *data)
 	ret = player_set_display(ad->player_handle, PLAYER_DISPLAY_TYPE_OVERLAY, GET_DISPLAY(ad->win));
 	if (ret != PLAYER_ERROR_NONE) {
 		LOGE("player_set_display failed : 0x%x", ret);
-		goto FAILED;
-	}
-
-	ret = player_set_uri(ad->player_handle, ES_FEEDING_PATH);
-	if (ret != PLAYER_ERROR_NONE) {
-		LOGE("player_set_uri failed : 0x%x", ret);
 		goto FAILED;
 	}
 

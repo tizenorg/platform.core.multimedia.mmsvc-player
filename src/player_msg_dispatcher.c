@@ -58,6 +58,7 @@ typedef struct {
 	uint64_t pts;
 	uint64_t size;
 	media_format_mimetype_e mimetype;
+	media_buffer_flags_e flags;
 }push_data_q_t;
 
 typedef struct {
@@ -1763,11 +1764,11 @@ static gpointer _player_push_media_stream_handler(gpointer param)
 				push_media.mimetype = qData->mimetype;
 				push_media.pts = qData->pts;
 				push_media.size = qData->size;
+				push_media.flags = qData->flags;
 				buf = muse_core_ipc_get_data(module);
-				if(buf) {
-					_push_media_stream(qData->handle, &push_media, buf);
+				_push_media_stream(qData->handle, &push_media, buf);
+				if(buf)
 					muse_core_ipc_delete_data(buf);
-				}
 				g_free(qData);
 			} else {
 				g_mutex_lock(&thread_i->mutex);
@@ -1833,13 +1834,24 @@ static int _push_media_stream(intptr_t handle, player_push_media_msg_type *push_
 		return PLAYER_ERROR_INVALID_PARAMETER;
 	}
 
-	ret = media_packet_create_from_external_memory(format, buf,
-			push_media->size, NULL, NULL, &packet);
-	if(ret != MEDIA_PACKET_ERROR_NONE) {
-		return PLAYER_ERROR_INVALID_PARAMETER;
+	if (buf) {
+		ret = media_packet_create_from_external_memory(format, buf,
+				push_media->size, NULL, NULL, &packet);
+		if(ret != MEDIA_PACKET_ERROR_NONE) {
+			LOGE("fail to create media packet with external mem");
+			return PLAYER_ERROR_INVALID_PARAMETER;
+		}
+	}
+	else {
+		ret = media_packet_create(format, NULL, NULL, &packet);
+		if(ret != MEDIA_PACKET_ERROR_NONE) {
+			LOGE("fail to create media packet");
+			return PLAYER_ERROR_INVALID_PARAMETER;
+		}
 	}
 
 	media_packet_set_pts(packet, push_media->pts);
+	media_packet_set_flags(packet, push_media->flags);
 
 	ret = player_push_media_stream((player_h)handle, packet);
 	if(ret != PLAYER_ERROR_NONE)
@@ -1901,6 +1913,8 @@ static int player_disp_push_media_stream(muse_module_h module)
 		qData->mimetype = push_media.mimetype;
 		qData->pts = push_media.pts;
 		qData->size = push_media.size;
+		qData->flags = push_media.flags;
+
 		g_queue_push_tail(thread_i->queue ,qData);
 		g_cond_signal(&thread_i->cond);
 	}

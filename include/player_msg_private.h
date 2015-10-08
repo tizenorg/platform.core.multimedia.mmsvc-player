@@ -45,6 +45,7 @@ typedef struct _player_push_media_msg_type{
 	uint64_t size;
 	uint64_t pts;
 	media_format_mimetype_e mimetype;
+	media_buffer_flags_e flags;
 	tbm_key key;
 }player_push_media_msg_type;
 
