@@ -69,3 +69,20 @@ int player_set_pcm_spec(player_h player, const char *format, int samplerate, int
 	g_free(ret_buf);
 	return ret;
 }
+
+int player_set_streaming_playback_rate(player_h player, float rate)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	int ret = PLAYER_ERROR_NONE;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_STREAMING_PLAYBACK_RATE;
+	player_cli_s *pc = (player_cli_s *) player;
+	char *ret_buf = NULL;
+
+	LOGD("ENTER");
+
+	player_msg_send1(api, pc, ret_buf, ret,
+			DOUBLE, rate);
+	g_free(ret_buf);
+	return ret;
+}
+

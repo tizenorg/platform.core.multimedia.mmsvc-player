@@ -83,6 +83,7 @@ enum
 	CURRENT_STATUS_SUBTITLE_FILENAME,
 	CURRENT_STATUS_AUDIO_EQUALIZER,
 	CURRENT_STATUS_PLAYBACK_RATE,
+	CURRENT_STATUS_STREAMING_PLAYBACK_RATE,
 	CURRENT_STATUS_SWITCH_SUBTITLE,
 };
 
@@ -1392,11 +1393,21 @@ static void set_position(int position)
 	}
 }
 
-static void set_playback_rate(float rate)
+static void set_playback_rate(float rate, bool streaming)
 {
-	if ( player_set_playback_rate(g_player[0], rate) != PLAYER_ERROR_NONE )
+	if (streaming)
 	{
-		g_print("failed to set playback rate\n");
+		if ( player_set_streaming_playback_rate(g_player[0], rate) != PLAYER_ERROR_NONE )
+		{
+			g_print("failed to set streaming playback rate\n");
+		}
+	}
+	else
+	{
+		if ( player_set_playback_rate(g_player[0], rate) != PLAYER_ERROR_NONE )
+		{
+			g_print("failed to set playback rate\n");
+		}
 	}
 }
 
@@ -2158,7 +2169,14 @@ void _interpret_main_menu(char *cmd)
 	}
 	else
 	{
-		g_print("unknown menu \n");
+		if (strncmp(cmd, "trs", 3) == 0 )
+		{
+			g_menu_state = CURRENT_STATUS_STREAMING_PLAYBACK_RATE;
+		}
+		else
+		{
+			g_print("unknown menu \n");
+		}
 	}
 }
 
@@ -2293,7 +2311,7 @@ static void displaymenu()
 	{
 		g_print(" *** input audio eq value.(0: UNSET, 1: SET) \n");
 	}
-	else if (g_menu_state == CURRENT_STATUS_PLAYBACK_RATE)
+	else if (g_menu_state == CURRENT_STATUS_PLAYBACK_RATE || g_menu_state == CURRENT_STATUS_STREAMING_PLAYBACK_RATE)
 	{
 		g_print(" *** input playback rate.(-5.0 ~ 5.0)\n");
 	}
@@ -2528,7 +2546,14 @@ static void interpret (char *cmd)
 		case CURRENT_STATUS_PLAYBACK_RATE:
 		{
 			float rate = atof(cmd);
-			set_playback_rate(rate);
+			set_playback_rate(rate, FALSE);
+			reset_menu_state();
+		}
+		break;
+		case CURRENT_STATUS_STREAMING_PLAYBACK_RATE:
+		{
+			float rate = atof(cmd);
+			set_playback_rate(rate, TRUE);
 			reset_menu_state();
 		}
 		break;

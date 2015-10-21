@@ -2233,6 +2233,23 @@ static int player_disp_set_pcm_spec(muse_module_h module)
 	return ret;
 }
 
+static int player_disp_set_streaming_playback_rate(muse_module_h module)
+{
+	int ret = -1;
+	intptr_t handle;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_STREAMING_PLAYBACK_RATE;
+	double rate = 0;
+
+	handle = muse_core_ipc_get_handle(module);
+	player_msg_get(rate, muse_core_client_get_msg(module));
+
+	ret = player_set_streaming_playback_rate((player_h) handle, (float)rate);
+
+	player_msg_return(api, ret, module);
+
+	return ret;
+}
+
 int (*dispatcher[MUSE_PLAYER_API_MAX]) (muse_module_h module) = {
 	player_disp_create,	/* MUSE_PLAYER_API_CREATE */
 		player_disp_destroy,	/* MUSE_PLAYER_API_DESTROY */
@@ -2304,5 +2321,6 @@ int (*dispatcher[MUSE_PLAYER_API_MAX]) (muse_module_h module) = {
 		player_disp_get_track_language_code, /* MUSE_PLAYER_API_GET_TRACK_LANGUAGE_CODE */
 		player_disp_set_pcm_extraction_mode, /* MUSE_PLAYER_API_SET_PCM_EXTRACTION_MODE */
 		player_disp_set_pcm_spec, /* MUSE_PLAYER_API_SET_PCM_SPEC */
+		player_disp_set_streaming_playback_rate, /* MUSE_PLAYER_API_SET_STREAMING_PLAYBACK_RATE */
 };
 
