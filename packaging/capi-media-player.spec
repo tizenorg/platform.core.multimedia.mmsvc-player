@@ -28,7 +28,7 @@ BuildRequires:  pkgconfig(ecore-x)
 BuildRequires:  pkgconfig(ecore-wayland)
 %endif
 BuildRequires:  pkgconfig(capi-media-tool)
-BuildRequires:  pkgconfig(json)
+BuildRequires:  pkgconfig(json-c)
 BuildRequires:  pkgconfig(libtbm)
 BuildRequires:  pkgconfig(eom)
 
