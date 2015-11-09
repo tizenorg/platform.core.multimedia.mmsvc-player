@@ -363,12 +363,12 @@ static void __complete_cb_handler(callback_cb_info_s * cb_info, char *recvMsg)
 
 static void __interrupt_cb_handler(callback_cb_info_s * cb_info, char *recvMsg)
 {
-	int interrupt;
+	int code;
 	_player_event_e ev = _PLAYER_EVENT_TYPE_INTERRUPT;
 
-	if(player_msg_get(interrupt, recvMsg)) {
+	if(player_msg_get(code, recvMsg)) {
 		((player_interrupted_cb)cb_info->user_cb[ev])(
-			interrupt, cb_info->user_data[ev]);
+			code, cb_info->user_data[ev]);
 	}
 }
 
