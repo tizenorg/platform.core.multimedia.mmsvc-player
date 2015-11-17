@@ -908,8 +908,8 @@ static int player_disp_set_volume(muse_module_h module)
 	double left, right;
 
 	handle = muse_core_ipc_get_handle(module);
-	player_msg_get(left, muse_core_client_get_msg(module));
-	player_msg_get(right, muse_core_client_get_msg(module));
+	player_msg_get_type(left, muse_core_client_get_msg(module), DOUBLE);
+	player_msg_get_type(right, muse_core_client_get_msg(module), DOUBLE);
 
 	ret = player_set_volume((player_h) handle, (float)left, (float)right);
 
@@ -1210,7 +1210,7 @@ static int player_disp_set_playback_rate(muse_module_h module)
 	double rate = 0;
 
 	handle = muse_core_ipc_get_handle(module);
-	player_msg_get(rate, muse_core_client_get_msg(module));
+	player_msg_get_type(rate, muse_core_client_get_msg(module), DOUBLE);
 
 	ret = player_set_playback_rate((player_h) handle, (float)rate);
 
@@ -2246,7 +2246,7 @@ static int player_disp_set_streaming_playback_rate(muse_module_h module)
 	double rate = 0;
 
 	handle = muse_core_ipc_get_handle(module);
-	player_msg_get(rate, muse_core_client_get_msg(module));
+	player_msg_get_type(rate, muse_core_client_get_msg(module), DOUBLE);
 
 	ret = player_set_streaming_playback_rate((player_h) handle, (float)rate);
 

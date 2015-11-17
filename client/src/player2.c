@@ -1483,8 +1483,8 @@ int player_get_volume(player_h player, float *pleft, float *pright)
 	player_msg_send(api, pc, ret_buf, ret);
 
 	if(ret == PLAYER_ERROR_NONE) {
-		player_msg_get(left, ret_buf);
-		player_msg_get(right, ret_buf);
+		player_msg_get_type(left, ret_buf, DOUBLE);
+		player_msg_get_type(right, ret_buf, DOUBLE);
 		*pleft = (float)left;
 		*pright = (float)right;
 	}
