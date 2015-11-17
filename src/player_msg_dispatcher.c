@@ -451,10 +451,15 @@ static void _set_buffering_cb(player_h player, void *module, bool set)
 
 static void _set_pd_msg_cb(player_h player, void *module, bool set)
 {
+	int ret = PLAYER_ERROR_NONE;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_CALLBACK;
+
 	if(set)
-		player_set_progressive_download_message_cb(player, _pd_msg_cb, module);
+		ret = player_set_progressive_download_message_cb(player, _pd_msg_cb, module);
 	else
-		player_unset_progressive_download_message_cb(player);
+		ret = player_unset_progressive_download_message_cb(player);
+
+	player_msg_return(api, ret, module);
 }
 
 static void _set_media_packet_video_frame_cb(player_h player,

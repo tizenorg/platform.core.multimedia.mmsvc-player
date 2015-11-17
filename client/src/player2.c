@@ -2656,13 +2656,50 @@ int player_set_progressive_download_message_cb(player_h player,
 		player_pd_message_cb callback,
 		void *user_data)
 {
-	return __set_callback(_PLAYER_EVENT_TYPE_PD, player, callback,
-			user_data);
+	PLAYER_INSTANCE_CHECK(player);
+	PLAYER_NULL_ARG_CHECK(callback);
+	int ret = PLAYER_ERROR_NONE;
+	player_cli_s *pc = (player_cli_s *) player;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_CALLBACK;
+	char *ret_buf = NULL;
+	_player_event_e type = _PLAYER_EVENT_TYPE_PD;
+	int set = 1;
+
+	LOGD("ENTER");
+
+	player_msg_send2(api, pc, ret_buf, ret,
+			INT, type, INT, set);
+
+	if(ret == PLAYER_ERROR_NONE){
+		pc->cb_info->user_cb[type] = callback;
+		pc->cb_info->user_data[type] = user_data;
+		LOGI("Event type : %d ", type);
+	}
+
+	g_free(ret_buf);
+	return ret;
 }
 
 int player_unset_progressive_download_message_cb(player_h player)
 {
-	return __unset_callback(_PLAYER_EVENT_TYPE_PD, player);
+	PLAYER_INSTANCE_CHECK(player);
+	int ret = PLAYER_ERROR_NONE;
+	player_cli_s *pc = (player_cli_s *) player;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_CALLBACK;
+	char *ret_buf = NULL;
+	_player_event_e type = _PLAYER_EVENT_TYPE_PD;
+	int set = 0;
+
+	LOGD("ENTER");
+
+	set_null_user_cb_lock(pc->cb_info, type);
+
+	player_msg_send2(api, pc, ret_buf, ret,
+			INT, type, INT, set);
+
+	g_free(ret_buf);
+	return ret;
+
 }
 
 int player_set_media_packet_video_frame_decoded_cb(player_h player,
