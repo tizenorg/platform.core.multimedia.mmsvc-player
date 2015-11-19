@@ -1769,7 +1769,7 @@ int player_set_display(player_h player, player_display_type_e type,
 				xhandle = elm_win_xwindow_get(obj);
 #endif
 			}
-#ifdef TIZEN_MOBILE
+#if defined(TIZEN_MOBILE) && !defined(HAVE_X11)
 			else if (type == PLAYER_DISPLAY_TYPE_EVAS && !strcmp(object_type, "image"))
 			{
 				/* evas object surface */
