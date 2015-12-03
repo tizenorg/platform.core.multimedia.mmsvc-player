@@ -1076,6 +1076,7 @@ int _get_api_timeout(player_cli_s *pc, muse_player_api_e api)
 	case MUSE_PLAYER_API_STOP:
 	case MUSE_PLAYER_API_PAUSE:
 		timeout += SERVER_TIMEOUT(pc);
+		break;
 	default:
 		/* check prepare async is done */
 		if(pc && CALLBACK_INFO(pc) &&
@@ -1228,13 +1229,15 @@ int player_destroy(player_h player)
 
 	player_msg_send(api, pc, ret_buf, ret);
 
-	if(mm_player_mused_destroy(INT_HANDLE(pc)) != MM_ERROR_NONE)
-		ret = PLAYER_ERROR_INVALID_OPERATION;
+	if (CALLBACK_INFO(pc)) {
+		if(mm_player_mused_destroy(INT_HANDLE(pc)) != MM_ERROR_NONE)
+			ret = PLAYER_ERROR_INVALID_OPERATION;
 
-	_player_event_queue_destroy(CALLBACK_INFO(pc));
-	tbm_bufmgr_deinit (TBM_BUFMGR(pc));
+		_player_event_queue_destroy(CALLBACK_INFO(pc));
+		tbm_bufmgr_deinit (TBM_BUFMGR(pc));
 
-	callback_destroy(CALLBACK_INFO(pc));
+		callback_destroy(CALLBACK_INFO(pc));
+	}
 
 	g_free(pc);
 	pc = NULL;
@@ -1290,9 +1293,11 @@ int player_prepare(player_h player)
 
 	player_msg_send(api, pc, ret_buf, ret);
 
-	mm_player_set_attribute(INT_HANDLE(pc), NULL,
-			"display_visible" , 1,
-			NULL);
+	if (CALLBACK_INFO(pc)) {
+		mm_player_set_attribute(INT_HANDLE(pc), NULL,
+				"display_visible" , 1,
+				NULL);
+	}
 
 	if(ret == PLAYER_ERROR_NONE) {
 		player_msg_get(is_streaming, ret_buf);
@@ -1318,6 +1323,9 @@ int player_unprepare(player_h player)
 	char *ret_buf = NULL;
 
 	LOGD("ENTER");
+
+	if (!CALLBACK_INFO(pc))
+		return PLAYER_ERROR_INVALID_STATE;
 
 	mm_player_mused_pre_unrealize(INT_HANDLE(pc));
 
@@ -1889,26 +1897,27 @@ int player_set_display(player_h player, player_display_type_e type,
 	player_msg_send_array(api, pc, ret_buf, ret,
 			wl_win_msg, sizeof(wl_win_msg_type), sizeof(char));
 
-	ret = mm_player_set_attribute(INT_HANDLE(pc), NULL,
-		"display_surface_type", type,
-		"pipeline_type", mmPipelineType,
-		"wl_display", set_wl_display,
-		sizeof(void*),
-		"display_overlay", set_handle,
-		sizeof(display), (char*)NULL);
-	if (ret != MM_ERROR_NONE)
-		LOGE("Failed to display surface change :%d", ret);
+	if (CALLBACK_INFO(pc)) {
+		ret = mm_player_set_attribute(INT_HANDLE(pc), NULL,
+			"display_surface_type", type,
+			"pipeline_type", mmPipelineType,
+			"wl_display", set_wl_display,
+			sizeof(void*),
+			"display_overlay", set_handle,
+			sizeof(display), (char*)NULL);
+		if (ret != MM_ERROR_NONE)
+			LOGE("Failed to display surface change :%d", ret);
 
-	ret = mm_player_set_attribute(INT_HANDLE(pc), NULL,
-			"wl_window_render_x", wl_win.wl_window_x,
-			"wl_window_render_y", wl_win.wl_window_y,
-			"wl_window_render_width", wl_win.wl_window_width,
-			"wl_window_render_height", wl_win.wl_window_height,
-			(char*)NULL);
+		ret = mm_player_set_attribute(INT_HANDLE(pc), NULL,
+				"wl_window_render_x", wl_win.wl_window_x,
+				"wl_window_render_y", wl_win.wl_window_y,
+				"wl_window_render_width", wl_win.wl_window_width,
+				"wl_window_render_height", wl_win.wl_window_height,
+				(char*)NULL);
 
-	if (ret != MM_ERROR_NONE)
-		LOGE("Failed to set wl_window render rectangle :%d", ret);
-
+		if (ret != MM_ERROR_NONE)
+			LOGE("Failed to set wl_window render rectangle :%d", ret);
+	}
 #else
 	player_msg_send2(api, pc, ret_buf, ret,
 			INT, type, INT, xhandle);

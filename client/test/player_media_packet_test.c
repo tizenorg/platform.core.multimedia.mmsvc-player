@@ -237,6 +237,10 @@ pipe_cb(void *data, void *buf, unsigned int len)
 
 		tbm_surface_get_info(surface,&suf_info);
 		buf_data = (unsigned char*)g_malloc0(suf_info.size);
+		if (!buf_data) {
+			LOGE("no free space");
+			return;
+		}
 		ptr = buf_data;
 
 		for (plane_idx = 0; plane_idx < suf_info.num_planes; plane_idx++) {
