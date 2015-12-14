@@ -27,23 +27,21 @@
 #include "player_msg_private.h"
 #include "player_internal.h"
 
-int player_set_pcm_extraction_mode(player_h player,
-		bool sync, player_audio_pcm_extraction_cb callback, void *user_data)
+int player_set_pcm_extraction_mode(player_h player, bool sync, player_audio_pcm_extraction_cb callback, void *user_data)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(callback);
 	int ret = PLAYER_ERROR_NONE;
 	muse_player_api_e api = MUSE_PLAYER_API_SET_PCM_EXTRACTION_MODE;
-	player_cli_s *pc = (player_cli_s *) player;
+	player_cli_s *pc = (player_cli_s *)player;
 	char *ret_buf = NULL;
 	_player_event_e event = _PLAYER_EVENT_TYPE_AUDIO_FRAME;
 
 	LOGD("ENTER");
 
-	player_msg_send1(api, pc, ret_buf, ret,
-			INT, sync);
+	player_msg_send1(api, pc, ret_buf, ret, INT, sync);
 
-	if(ret == PLAYER_ERROR_NONE){
+	if (ret == PLAYER_ERROR_NONE) {
 		pc->cb_info->user_cb[event] = callback;
 		pc->cb_info->user_data[event] = user_data;
 		LOGI("Event type : %d ", event);
@@ -58,13 +56,12 @@ int player_set_pcm_spec(player_h player, const char *format, int samplerate, int
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
 	muse_player_api_e api = MUSE_PLAYER_API_SET_PCM_SPEC;
-	player_cli_s *pc = (player_cli_s *) player;
+	player_cli_s *pc = (player_cli_s *)player;
 	char *ret_buf = NULL;
 
 	LOGD("ENTER");
 
-	player_msg_send3(api, pc, ret_buf, ret,
-			STRING, format, INT, samplerate, INT, channel);
+	player_msg_send3(api, pc, ret_buf, ret, STRING, format, INT, samplerate, INT, channel);
 
 	g_free(ret_buf);
 	return ret;
@@ -75,14 +72,12 @@ int player_set_streaming_playback_rate(player_h player, float rate)
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
 	muse_player_api_e api = MUSE_PLAYER_API_SET_STREAMING_PLAYBACK_RATE;
-	player_cli_s *pc = (player_cli_s *) player;
+	player_cli_s *pc = (player_cli_s *)player;
 	char *ret_buf = NULL;
 
 	LOGD("ENTER");
 
-	player_msg_send1(api, pc, ret_buf, ret,
-			DOUBLE, rate);
+	player_msg_send1(api, pc, ret_buf, ret, DOUBLE, rate);
 	g_free(ret_buf);
 	return ret;
 }
-

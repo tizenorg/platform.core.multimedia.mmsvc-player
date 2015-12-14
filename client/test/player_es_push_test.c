@@ -74,23 +74,21 @@ typedef struct appdata {
 	pthread_t feeding_thread_id;
 } appdata_s;
 
-static void
-win_delete_request_cb(void *data , Evas_Object *obj , void *event_info)
+static void win_delete_request_cb(void *data, Evas_Object *obj, void *event_info)
 {
 	elm_exit();
 }
 
-static Eina_Bool
-keydown_cb(void *data , int type , void *event)
+static Eina_Bool keydown_cb(void *data, int type, void *event)
 {
-	//appdata_s *ad = data;
+	/* appdata_s *ad = data; */
 	Ecore_Event_Key *ev = event;
 
 	LOGD("start");
 
 	if (!strcmp(ev->keyname, KEY_END)) {
 		/* Let window go to hide state. */
-		//elm_win_lower(ad->win);
+		/* elm_win_lower(ad->win); */
 		LOGD("elm exit");
 		elm_exit();
 
@@ -104,10 +102,10 @@ keydown_cb(void *data , int type , void *event)
 
 static void win_del(void *data, Evas_Object *obj, void *event)
 {
-		elm_exit();
+	elm_exit();
 }
 
-static Evas_Object* create_win(const char *name)
+static Evas_Object *create_win(const char *name)
 {
 	Evas_Object *eo = NULL;
 	int w = 0;
@@ -117,9 +115,9 @@ static Evas_Object* create_win(const char *name)
 	if (eo) {
 		elm_win_title_set(eo, name);
 		elm_win_borderless_set(eo, EINA_TRUE);
-		evas_object_smart_callback_add(eo, "delete,request",win_del, NULL);
+		evas_object_smart_callback_add(eo, "delete,request", win_del, NULL);
 		elm_win_screen_size_get(eo, NULL, NULL, &w, &h);
-		g_print ("window size :%d,%d", w, h);
+		g_print("window size :%d,%d", w, h);
 		evas_object_resize(eo, w, h);
 		elm_win_autodel_set(eo, EINA_TRUE);
 #ifdef HAVE_WAYLAND
@@ -131,15 +129,13 @@ static Evas_Object* create_win(const char *name)
 
 static Evas_Object *create_render_rect(Evas_Object *pParent)
 {
-	if(!pParent) {
+	if (!pParent)
 		return NULL;
-	}
 
 	Evas *pEvas = evas_object_evas_get(pParent);
 	Evas_Object *pObj = evas_object_rectangle_add(pEvas);
-	if(pObj == NULL) {
+	if (pObj == NULL)
 		return NULL;
-	}
 
 	evas_object_size_hint_weight_set(pObj, EVAS_HINT_EXPAND, EVAS_HINT_EXPAND);
 	evas_object_color_set(pObj, 0, 0, 0, 0);
@@ -150,17 +146,17 @@ static Evas_Object *create_render_rect(Evas_Object *pParent)
 	return pObj;
 }
 
-static void
-create_base_gui(appdata_s *ad)
+static void create_base_gui(appdata_s *ad)
 {
 	/* Enable GLES Backened */
 	elm_config_preferred_engine_set("3d");
 
 	/* Window */
-	ad->win = create_win(PACKAGE);//elm_win_util_standard_add(PACKAGE, PACKAGE);
+	/* elm_win_util_standard_add(PACKAGE, PACKAGE); */
+	ad->win = create_win(PACKAGE);
 	ad->rect = create_render_rect(ad->win);
-        /* This is not supported in 3.0
-	elm_win_wm_desktop_layout_support_set(ad->win, EINA_TRUE);*/
+	/* This is not supported in 3.0
+	   elm_win_wm_desktop_layout_support_set(ad->win, EINA_TRUE); */
 	elm_win_autodel_set(ad->win, EINA_TRUE);
 	evas_object_smart_callback_add(ad->win, "delete,request", win_delete_request_cb, ad);
 
@@ -182,7 +178,7 @@ static int app_create(void *data)
 	create_base_gui(ad);
 	ecore_event_handler_add(ECORE_EVENT_KEY_DOWN, keydown_cb, NULL);
 
-	/* open test file*/
+	/* open test file */
 	ad->file_src = fopen(ES_DEFAULT_H264_VIDEO_PATH, "r");
 
 	LOGD("done");
@@ -208,8 +204,7 @@ static int app_pause(void *data)
 		return -1;
 	}
 
-	if (ad->feeding_thread_id)
-	{
+	if (ad->feeding_thread_id) {
 		pthread_join(ad->feeding_thread_id, NULL);
 		ad->feeding_thread_id = 0;
 	}
@@ -262,119 +257,97 @@ static void _player_prepared_cb(void *user_data)
 	LOGD("prepared");
 
 	ret = player_start(ad->player_handle);
-	if (ret != PLAYER_ERROR_NONE) {
+	if (ret != PLAYER_ERROR_NONE)
 		LOGE("player start failed : 0x%x", ret);
-	}
+
 	LOGD("done");
 }
 
-int bytestream2nalunit(FILE *fd, unsigned char* nal)
+int bytestream2nalunit(FILE * fd, unsigned char *nal)
 {
-    int nal_length = 0;
-    size_t result;
-    int read_size = 1;
-    unsigned char buffer[1000000];
-    unsigned char val, zero_count, i;
-    int nal_unit_type = 0;
-    int init;
+	int nal_length = 0;
+	size_t result;
+	int read_size = 1;
+	unsigned char buffer[1000000];
+	unsigned char val, zero_count, i;
+	int nal_unit_type = 0;
+	int init;
 
-    zero_count = 0;
-    if (feof(fd))
-        return -1;
+	zero_count = 0;
+	if (feof(fd))
+		return -1;
 
-    result = fread(buffer, 1, read_size, fd);
+	result = fread(buffer, 1, read_size, fd);
 
-    if(result != read_size)
-    {
-        //exit(1);
-        return -1;
-    }
-    val = buffer[0];
-    while (!val)
-    {
-        if ((zero_count == 2 || zero_count == 3) && val == 1)
-        {
-            break;
-        }
-        zero_count++;
-        result = fread(buffer, 1, read_size, fd);
+	if (result != read_size)
+	return -1;
 
-        if(result != read_size)
-        {
-            break;
-        }
-        val = buffer[0];
-    }
-    nal[nal_length++] = 0;
-    nal[nal_length++] = 0;
-    nal[nal_length++] = 0;
-    nal[nal_length++] = 1;
-    zero_count = 0;
-    init = 1;
-    while(1)
-    {
-        if (feof(fd))
-            return -1;
+	val = buffer[0];
+	while (!val) {
+		if ((zero_count == 2 || zero_count == 3) && val == 1)
+			break;
+		zero_count++;
+		result = fread(buffer, 1, read_size, fd);
 
-        result = fread(buffer, 1, read_size, fd);
-        if(result != read_size)
-        {
-            if (init == 1)
-                return -1;
-            break;
-        }
-        val = buffer[0];
+		if (result != read_size)
+			break;
+		val = buffer[0];
+	}
+	nal[nal_length++] = 0;
+	nal[nal_length++] = 0;
+	nal[nal_length++] = 0;
+	nal[nal_length++] = 1;
+	zero_count = 0;
+	init = 1;
+	while (1) {
+		if (feof(fd))
+			return -1;
 
-        if(init) {
-            nal_unit_type = val & 0xf;
-            init = 0;
-        }
-        if (!val)
-        {
-            zero_count++;
-        }
-        else
-        {
-            if ((zero_count == 2 || zero_count == 3 || zero_count == 4) && (val == 1))
-            {
-                break;
-            }
-            else
-            {
-                for (i = 0; i<zero_count; i++)
-                {
-                    nal[nal_length++] = 0;
-                }
-                nal[nal_length++] = val;
-                zero_count = 0;
-            }
-        }
-    }
+		result = fread(buffer, 1, read_size, fd);
+		if (result != read_size) {
+			if (init == 1)
+				return -1;
+			break;
+		}
+		val = buffer[0];
 
-    fseek(fd, -(zero_count + 1), SEEK_CUR);
+		if (init) {
+			nal_unit_type = val & 0xf;
+			init = 0;
+		}
+		if (!val) {
+			zero_count++;
+		} else {
+			if ((zero_count == 2 || zero_count == 3 || zero_count == 4) && (val == 1)) {
+				break;
+			} else {
+				for (i = 0; i < zero_count; i++)
+					nal[nal_length++] = 0;
+				nal[nal_length++] = val;
+				zero_count = 0;
+			}
+		}
+	}
 
-    if (nal_unit_type == 0x7)
-    {
-        sps_len = nal_length;
-        memcpy(sps, nal, nal_length);
-        return 0;
-    }
-    else if (nal_unit_type == 0x8)
-    {
-        pps_len = nal_length;
-        memcpy(pps, nal, nal_length);
-        return 0;
-    }
-    else if (nal_unit_type == 0x5)
-    {
-        memcpy(tmp_buf, nal, nal_length);
-        memcpy(nal, sps, sps_len);
-        memcpy(nal + sps_len, pps, pps_len);
-        memcpy(nal + sps_len + pps_len, tmp_buf, nal_length);
-        nal_length += sps_len + pps_len;
-    }
+	fseek(fd, -(zero_count + 1), SEEK_CUR);
 
-    return nal_length;
+	if (nal_unit_type == 0x7) {
+		sps_len = nal_length;
+		memcpy(sps, nal, nal_length);
+		return 0;
+	} else if (nal_unit_type == 0x8) {
+		pps_len = nal_length;
+		memcpy(pps, nal, nal_length);
+		return 0;
+	} else if (nal_unit_type == 0x5) {
+		memcpy(tmp_buf, nal, nal_length);
+		memcpy(nal, sps, sps_len);
+		memcpy(nal + sps_len, pps, pps_len);
+		memcpy(nal + sps_len + pps_len, tmp_buf, nal_length);
+		nal_length += sps_len + pps_len;
+	}
+
+	return nal_length;
 }
 
 static void feed_eos_data(appdata_s *appdata)
@@ -389,9 +362,8 @@ static void feed_eos_data(appdata_s *appdata)
 	}
 
 	media_packet_set_flags(ad->video_pkt, MEDIA_PACKET_END_OF_STREAM);
-	if (player_push_media_stream(ad->player_handle, ad->video_pkt) != PLAYER_ERROR_NONE) {
+	if (player_push_media_stream(ad->player_handle, ad->video_pkt) != PLAYER_ERROR_NONE)
 		LOGE("fail to push media packet\n");
-	}
 
 	media_packet_destroy(ad->video_pkt);
 	ad->video_pkt = NULL;
@@ -417,7 +389,7 @@ static bool feed_video_data(appdata_s *appdata)
 		goto ERROR;
 	}
 
-	if (media_packet_set_pts(ad->video_pkt, (uint64_t)(pts/1000000)) != MEDIA_PACKET_ERROR_NONE) {
+	if (media_packet_set_pts(ad->video_pkt, (uint64_t)(pts / 1000000)) != MEDIA_PACKET_ERROR_NONE) {
 		LOGE("media_packet_set_pts failed\n");
 		goto ERROR;
 	}
@@ -431,8 +403,7 @@ static bool feed_video_data(appdata_s *appdata)
 		LOGE("input file read failed\n");
 		ret = TRUE;
 		goto ERROR;
-	}
-	else if (read < 0) {
+	} else if (read < 0) {
 		LOGD("push EOS");
 		media_packet_destroy(ad->video_pkt);
 		ad->video_pkt = NULL;
@@ -441,10 +412,9 @@ static bool feed_video_data(appdata_s *appdata)
 			LOGE("media_packet_create failed\n");
 			goto ERROR;
 		}
-		media_packet_set_flags (ad->video_pkt, MEDIA_PACKET_END_OF_STREAM);
-		if (player_push_media_stream(ad->player_handle, ad->video_pkt) != PLAYER_ERROR_NONE) {
+		media_packet_set_flags(ad->video_pkt, MEDIA_PACKET_END_OF_STREAM);
+		if (player_push_media_stream(ad->player_handle, ad->video_pkt) != PLAYER_ERROR_NONE)
 			LOGE("fail to push media packet\n");
-		}
 		goto ERROR;
 	}
 
@@ -459,7 +429,7 @@ static bool feed_video_data(appdata_s *appdata)
 	ret = TRUE;
 
 ERROR:
-	/* destroy media packet after use*/
+	/* destroy media packet after use */
 	media_packet_destroy(ad->video_pkt);
 	ad->video_pkt = NULL;
 	return ret;
@@ -469,8 +439,7 @@ static void feed_video_data_thread_func(void *data)
 {
 	appdata_s *ad = (appdata_s *)data;
 
-	while (TRUE)
-	{
+	while (TRUE) {
 		static int frame_count = 0;
 
 		if (frame_count < ES_DEFAULT_NUMBER_OF_FEED) {
@@ -484,19 +453,15 @@ static void feed_video_data_thread_func(void *data)
 	}
 }
 
-void _video_buffer_status_cb (player_media_stream_buffer_status_e status, void *user_data)
+void _video_buffer_status_cb(player_media_stream_buffer_status_e status, void *user_data)
 {
 	if (status == PLAYER_MEDIA_STREAM_BUFFER_UNDERRUN)
-	{
 		LOGE("video buffer is underrun state");
-	}
 	else if (status == PLAYER_MEDIA_STREAM_BUFFER_OVERFLOW)
-	{
 		LOGE("video buffer is overrun state");
-	}
 }
 
-void _audio_buffer_status_cb (player_media_stream_buffer_status_e status, void *user_data)
+void _audio_buffer_status_cb(player_media_stream_buffer_status_e status, void *user_data)
 {
 	if (status == PLAYER_MEDIA_STREAM_BUFFER_UNDERRUN)
 		LOGE("audio buffer is underrun state");
@@ -504,12 +469,12 @@ void _audio_buffer_status_cb (player_media_stream_buffer_status_e status, void *
 		LOGE("audio buffer is overrun state");
 }
 
-void _video_seek_data_cb (unsigned long long offset, void *user_data)
+void _video_seek_data_cb(unsigned long long offset, void *user_data)
 {
 	LOGE("seek offset of video is %llu", offset);
 }
 
-void _audio_seek_data_cb (unsigned long long offset, void *user_data)
+void _audio_seek_data_cb(unsigned long long offset, void *user_data)
 {
 	LOGE("seek offset of audio is %llu", offset);
 }
@@ -549,25 +514,25 @@ static int app_reset(bundle *b, void *data)
 	/* set video format */
 	media_format_set_video_mime(ad->video_fmt, ES_DEFAULT_VIDEO_FORMAT_TYPE);
 	media_format_set_video_width(ad->video_fmt, ES_DEFAULT_VIDEO_FORMAT_WIDTH);
-	media_format_set_video_height(ad->video_fmt,ES_DEFAULT_VIDEO_FORMAT_HEIGHT);
+	media_format_set_video_height(ad->video_fmt, ES_DEFAULT_VIDEO_FORMAT_HEIGHT);
 
-	ret = player_set_media_stream_buffer_status_cb(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO, _video_buffer_status_cb, (void*)ad);
+	ret = player_set_media_stream_buffer_status_cb(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO, _video_buffer_status_cb, (void *)ad);
 	if (ret != PLAYER_ERROR_NONE) {
 		LOGE("player set video buffer status cb failed : 0x%x", ret);
 		goto FAILED;
 	}
-	ret = player_set_media_stream_buffer_status_cb(ad->player_handle, PLAYER_STREAM_TYPE_AUDIO, _audio_buffer_status_cb, (void*)ad);
+	ret = player_set_media_stream_buffer_status_cb(ad->player_handle, PLAYER_STREAM_TYPE_AUDIO, _audio_buffer_status_cb, (void *)ad);
 	if (ret != PLAYER_ERROR_NONE) {
 		LOGE("player set audio buffer status cb failed : 0x%x", ret);
 		goto FAILED;
 	}
 
-	ret = player_set_media_stream_seek_cb(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO, _video_seek_data_cb, (void*)ad);
+	ret = player_set_media_stream_seek_cb(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO, _video_seek_data_cb, (void *)ad);
 	if (ret != PLAYER_ERROR_NONE) {
 		LOGE("player set seek data cb for video failed : 0x%x", ret);
 		goto FAILED;
 	}
-	ret = player_set_media_stream_seek_cb(ad->player_handle, PLAYER_STREAM_TYPE_AUDIO, _audio_seek_data_cb, (void*)ad);
+	ret = player_set_media_stream_seek_cb(ad->player_handle, PLAYER_STREAM_TYPE_AUDIO, _audio_seek_data_cb, (void *)ad);
 	if (ret != PLAYER_ERROR_NONE) {
 		LOGE("player set seek data cb for audio failed : 0x%x", ret);
 		goto FAILED;
@@ -576,13 +541,13 @@ static int app_reset(bundle *b, void *data)
 	/* send media packet to player */
 	player_set_media_stream_info(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO, ad->video_fmt);
 
-	ret = player_prepare_async(ad->player_handle, _player_prepared_cb, (void*)ad);
+	ret = player_prepare_async(ad->player_handle, _player_prepared_cb, (void *)ad);
 	if (ret != PLAYER_ERROR_NONE) {
 		LOGE("player prepare failed : 0x%x", ret);
 		goto FAILED;
 	}
 
-	pthread_create(&ad->feeding_thread_id, NULL, (void*)feed_video_data_thread_func, (void *)ad);
+	pthread_create(&ad->feeding_thread_id, NULL, (void *)feed_video_data_thread_func, (void *)ad);
 
 	LOGD("done");
 
@@ -619,7 +584,7 @@ static int app_terminate(void *data)
 int main(int argc, char *argv[])
 {
 	int ret = 0;
-	static appdata_s ad = {0,};
+	static appdata_s ad = {0, };
 
 	LOGD("start");
 

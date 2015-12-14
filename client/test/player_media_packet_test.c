@@ -58,23 +58,21 @@ typedef struct appdata {
 	int w, h;
 } appdata_s;
 
-static void
-win_delete_request_cb(void *data , Evas_Object *obj , void *event_info)
+static void win_delete_request_cb(void *data, Evas_Object *obj, void *event_info)
 {
 	elm_exit();
 }
 
-static Eina_Bool
-keydown_cb(void *data , int type , void *event)
+static Eina_Bool keydown_cb(void *data, int type, void *event)
 {
-	//appdata_s *ad = data;
+	/* appdata_s *ad = data; */
 	Ecore_Event_Key *ev = event;
 
 	LOGD("start");
 
 	if (!strcmp(ev->keyname, KEY_END)) {
 		/* Let window go to hide state. */
-		//elm_win_lower(ad->win);
+		/* elm_win_lower(ad->win); */
 		LOGD("elm exit");
 		elm_exit();
 
@@ -86,16 +84,15 @@ keydown_cb(void *data , int type , void *event)
 	return ECORE_CALLBACK_PASS_ON;
 }
 
-static void
-create_base_gui(appdata_s *ad)
+static void create_base_gui(appdata_s *ad)
 {
 	/* Enable GLES Backened */
 	elm_config_preferred_engine_set("3d");
 
 	/* Window */
 	ad->win = elm_win_util_standard_add(PACKAGE, PACKAGE);
-    /* This is not supported in 3.0
-	elm_win_wm_desktop_layout_support_set(ad->win, EINA_TRUE); */
+	/* This is not supported in 3.0
+	   elm_win_wm_desktop_layout_support_set(ad->win, EINA_TRUE); */
 	elm_win_autodel_set(ad->win, EINA_TRUE);
 #if 0
 	if (elm_win_wm_rotation_supported_get(ad->win)) {
@@ -122,8 +119,7 @@ create_base_gui(appdata_s *ad)
 	evas_object_show(ad->win);
 }
 
-static void
-_media_packet_video_decoded_cb(media_packet_h packet, void *user_data)
+static void _media_packet_video_decoded_cb(media_packet_h packet, void *user_data)
 {
 	/* This callback function would be called on different thread */
 	appdata_s *ad = user_data;
@@ -155,8 +151,7 @@ _media_packet_video_decoded_cb(media_packet_h packet, void *user_data)
 	return;
 }
 
-static void
-pipe_cb(void *data, void *buf, unsigned int len)
+static void pipe_cb(void *data, void *buf, unsigned int len)
 {
 	/* Now, we get a player surface to be set here. */
 	appdata_s *ad = data;
@@ -176,9 +171,8 @@ pipe_cb(void *data, void *buf, unsigned int len)
 	/* Destroy previous packet */
 	if (ad->packet) {
 		ret = media_packet_destroy(ad->packet);
-		if (ret != MEDIA_PACKET_ERROR_NONE) {
+		if (ret != MEDIA_PACKET_ERROR_NONE)
 			LOGE("Failed to destroy media packet. ret (%d)", ret);
-		}
 		ad->packet = NULL;
 	}
 
@@ -235,8 +229,8 @@ pipe_cb(void *data, void *buf, unsigned int len)
 
 	if (mimetype == MEDIA_FORMAT_I420 || mimetype == MEDIA_FORMAT_NV12 || mimetype == MEDIA_FORMAT_NV12T) {
 
-		tbm_surface_get_info(surface,&suf_info);
-		buf_data = (unsigned char*)g_malloc0(suf_info.size);
+		tbm_surface_get_info(surface, &suf_info);
+		buf_data = (unsigned char *)g_malloc0(suf_info.size);
 		if (!buf_data) {
 			LOGE("no free space");
 			return;
@@ -331,9 +325,8 @@ static int app_pause(void *data)
 	if (ad->packet) {
 		LOGD("destroy packet %p", ad->packet);
 		ret = media_packet_destroy(ad->packet);
-		if (ret != MEDIA_PACKET_ERROR_NONE) {
+		if (ret != MEDIA_PACKET_ERROR_NONE)
 			LOGE("Failed to destroy media packet. ret (%d)", ret);
-		}
 		ad->packet = NULL;
 	}
 
@@ -373,10 +366,10 @@ static int app_resume(void *data)
 	return 0;
 }
 
-static int app_reset(bundle *b, void *data)
+static int app_reset(bundle * b, void *data)
 {
 	/* Take necessary actions when application becomes visible. */
-	appdata_s *ad = (appdata_s *)data;
+	appdata_s *ad = (appdata_s *) data;
 	int ret = PLAYER_ERROR_NONE;
 
 	LOGD("start");
@@ -463,7 +456,7 @@ static int app_terminate(void *data)
 int main(int argc, char *argv[])
 {
 	int ret = 0;
-	static appdata_s ad = {0,};
+	static appdata_s ad = {0, };
 
 	LOGD("start");
 
@@ -479,4 +472,3 @@ int main(int argc, char *argv[])
 
 	return ret;
 }
-

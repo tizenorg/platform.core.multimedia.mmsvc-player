@@ -3,7 +3,7 @@
 
 Name:       capi-media-player
 Summary:    A Media Daemon player library in Tizen Native API
-Version:    0.3.2
+Version:    0.3.3
 Release:    0
 Group:      Multimedia/API
 License:    Apache-2.0
