@@ -41,21 +41,21 @@ static int player_cmd_shutdown(muse_module_h module)
 
 	handle = muse_core_ipc_get_handle(module);
 
-	ret = player_get_state((player_h) handle, &state);
+	ret = player_get_state((player_h)handle, &state);
 
-	if(ret != PLAYER_ERROR_NONE)
+	if (ret != PLAYER_ERROR_NONE)
 		return ret;
 
-	switch(state) {
+	switch (state) {
 	case PLAYER_STATE_PLAYING:
-		player_stop((player_h) handle);
+		player_stop((player_h)handle);
 		/* FALLTHROUGH */
 	case PLAYER_STATE_PAUSED:
 	case PLAYER_STATE_READY:
-		player_unprepare((player_h) handle);
+		player_unprepare((player_h)handle);
 		/* FALLTHROUGH */
 	case PLAYER_STATE_IDLE:
-		player_destroy((player_h) handle);
+		player_destroy((player_h)handle);
 		break;
 
 	default:
@@ -66,7 +66,7 @@ static int player_cmd_shutdown(muse_module_h module)
 	return PLAYER_ERROR_NONE;
 }
 
-int (*cmd_dispatcher[MUSE_MODULE_EVENT_MAX]) (muse_module_h module) = {
-	player_cmd_shutdown, /* MUSE_MODULE_EVENT_SHUTDOWN */
-	NULL, /* MUSE_MODULE_EVENT_DEBUG_INFO_DUMP */
+int (*cmd_dispatcher[MUSE_MODULE_EVENT_MAX])(muse_module_h module) = {
+	player_cmd_shutdown,	/* MUSE_MODULE_EVENT_SHUTDOWN */
+	NULL,	/* MUSE_MODULE_EVENT_DEBUG_INFO_DUMP */
 };
