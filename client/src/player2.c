@@ -31,6 +31,7 @@
 #endif
 #include "muse_core.h"
 #include "muse_core_msg_json.h"
+#include "muse_core_module.h"
 #include "muse_core_ipc.h"
 #include "player2_private.h"
 #include "player_msg_private.h"
