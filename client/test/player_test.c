@@ -956,12 +956,11 @@ static void _player_prepare(bool async)
 			set_content_info(TRUE);
 			async = TRUE;
 			is_es_push_mode = TRUE;
-		}
 #ifdef _ES_PULL_
-		else {
+		} else {
 			set_content_info(FALSE);
-		}
 #endif
+		}
 	}
 
 	if (g_current_surface_type == PLAYER_DISPLAY_TYPE_OVERLAY) {

@@ -460,6 +460,7 @@ static void __media_packet_video_frame_cb_handler(callback_cb_info_s *cb_info, c
 	int ret;
 	_media_pkt_fin_data *fin_data;
 	intptr_t packet;
+	uint64_t pts = 0;
 	int i;
 
 	player_msg_get(key[0], recvMsg);
@@ -468,6 +469,7 @@ static void __media_packet_video_frame_cb_handler(callback_cb_info_s *cb_info, c
 	player_msg_get(key[3], recvMsg);
 	player_msg_get_type(packet, recvMsg, POINTER);
 	player_msg_get(mimetype, recvMsg);
+	player_msg_get(pts, recvMsg);
 	player_msg_get_array(surface_info, recvMsg);
 
 	LOGD("width %d, height %d", sinfo.width, sinfo.height);
@@ -522,6 +524,11 @@ static void __media_packet_video_frame_cb_handler(callback_cb_info_s *cb_info, c
 		}
 	}
 	if (pkt) {
+		if (pts != 0) {
+			ret = media_packet_set_pts(pkt, (uint64_t)pts);
+			if (ret != MEDIA_PACKET_ERROR_NONE)
+				LOGE("media_packet_set_pts failed");
+		}
 		/* call media packet callback */
 		((player_media_packet_video_decoded_cb)cb_info->user_cb[_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME])(pkt, cb_info->user_data[_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME]);
 	}

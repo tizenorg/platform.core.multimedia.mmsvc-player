@@ -253,6 +253,7 @@ static void _media_packet_video_decoded_cb(media_packet_h pkt, void *user_data)
 	intptr_t packet = (intptr_t)pkt;
 	media_format_mimetype_e mimetype = MEDIA_FORMAT_NV12;
 	media_format_h fmt;
+	uint64_t pts = 0;
 
 	memset(&sinfo, 0, sizeof(tbm_surface_info_s));
 
@@ -278,7 +279,8 @@ static void _media_packet_video_decoded_cb(media_packet_h pkt, void *user_data)
 	}
 	media_packet_get_format(pkt, &fmt);
 	media_format_get_video_info(fmt, &mimetype, NULL, NULL, NULL, NULL);
-	player_msg_event6_array(api, ev, module, INT, key[0], INT, key[1], INT, key[2], INT, key[3], POINTER, packet, INT, mimetype, surface_info, surface_info_size, sizeof(char));
+	media_packet_get_pts(pkt, &pts);
+	player_msg_event7_array(api, ev, module, INT, key[0], INT, key[1], INT, key[2], INT, key[3], POINTER, packet, INT, mimetype, INT64, pts, surface_info, surface_info_size, sizeof(char));
 }
 
 static void _audio_frame_decoded_cb(player_audio_raw_data_s * audio_frame, void *user_data)
