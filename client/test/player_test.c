@@ -84,6 +84,7 @@ enum {
 	CURRENT_STATUS_PLAYBACK_RATE,
 	CURRENT_STATUS_STREAMING_PLAYBACK_RATE,
 	CURRENT_STATUS_SWITCH_SUBTITLE,
+	CURRENT_STATUS_SESSION_TYPE,
 };
 
 #define MAX_HANDLE 20
@@ -1848,6 +1849,8 @@ void _interpret_main_menu(char *cmd)
 			audio_frame_decoded_cb_ex();
 		} else if (strncmp(cmd, "X4", 2) == 0) {
 			set_pcm_spec();
+		} else if (strncmp(cmd, "st", 2) == 0) {
+			g_menu_state = CURRENT_STATUS_SESSION_TYPE;
 		} else {
 			g_print("unknown menu \n");
 		}
@@ -1883,12 +1886,13 @@ void display_sub_basic()
 	g_print("un. Unprepare \t");
 	g_print("dt. Destroy \n");
 	g_print("[State] S. Player State \n");
-	g_print("[ volume ] f. Set Volume\t");
+	g_print("[volume] f. Set Volume\t");
 	g_print("g. Get Volume\t");
-	g_print("z. Set Sound type\t");
-	g_print("k. Set Sound Stream Info.\t");
-	g_print("[ mute ] h. Set Mute\t");
+	g_print("[mute] h. Set Mute\t");
 	g_print("i. Get Mute\n");
+	g_print("[sound] st. Set Session type\t");
+	g_print("z. Set Sound type\t");
+	g_print("k. Set Sound Stream Info.\n");
 	g_print("[audio eq] E. Set Audio EQ\t");
 	g_print("H. Get Audio EQ\n");
 	g_print("[position] j. Set Position \t");
@@ -1970,6 +1974,8 @@ static void displaymenu()
 			g_print(" *** input correct index 0 to %d\n:", (count - 1));
 		} else
 			g_print("no track\n");
+	} else if (g_menu_state == CURRENT_STATUS_SESSION_TYPE) {
+		g_print(" *** input sound manager session type.(0: MEDIA, 1: ALARM, 2: NOTI, 3:EMERGENCY) \n");
 	} else {
 		g_print("*** unknown status.\n");
 		quit_program();
@@ -2193,6 +2199,13 @@ static void interpret(char *cmd)
 		{
 			int index = atoi(cmd);
 			switch_subtitle(index);
+			reset_menu_state();
+		}
+		break;
+	case CURRENT_STATUS_SESSION_TYPE:
+		{
+			int type = atoi(cmd);
+			sound_manager_set_session_type(type);
 			reset_menu_state();
 		}
 		break;
