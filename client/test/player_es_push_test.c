@@ -389,7 +389,7 @@ static bool feed_video_data(appdata_s *appdata)
 		goto ERROR;
 	}
 
-	if (media_packet_set_pts(ad->video_pkt, (uint64_t)(pts / 1000000)) != MEDIA_PACKET_ERROR_NONE) {
+	if (media_packet_set_pts(ad->video_pkt, (uint64_t)pts) != MEDIA_PACKET_ERROR_NONE) {
 		LOGE("media_packet_set_pts failed\n");
 		goto ERROR;
 	}
