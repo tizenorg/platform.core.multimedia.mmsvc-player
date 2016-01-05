@@ -28,10 +28,8 @@
 #include <Ecore.h>
 #include <Ecore_Wayland.h>
 #endif
+#ifdef _ACTIVATE_EOM_
 #include <eom.h>
-/* #define _USE_X_DIRECT_ */
-#ifdef _USE_X_DIRECT_
-#include <X11/Xlib.h>
 #endif
 #define PACKAGE "player_test"
 #define MAX_STRING_LEN	2048
@@ -89,15 +87,11 @@ enum {
 #define MAX_HANDLE 20
 
 /* for video display */
-#ifdef _USE_X_DIRECT_
-static Window g_xid;
-static Display *g_dpy;
-static GC g_gc;
-#else
 static Evas_Object *g_xid;
+#ifdef _ACTIVATE_EOM_
 static Evas_Object *g_external_xid;
-static Evas_Object *selected_xid;
 #endif
+static Evas_Object *selected_xid;
 static Evas_Object *g_eo[MAX_HANDLE] = {0, };
 
 static int g_current_surface_type = PLAYER_DISPLAY_TYPE_OVERLAY;
@@ -111,7 +105,9 @@ typedef struct {
 	unsigned int xid;
 #endif
 	/* add more variables here */
+#ifdef _ACTIVATE_EOM_
 	int hdmi_output_id;
+#endif
 } appdata;
 
 static appdata ad;
@@ -191,7 +187,7 @@ void create_render_rect_and_bg(Evas_Object *win)
 	evas_object_show(rect);
 	evas_object_show(win);
 }
-
+#ifdef _ACTIVATE_EOM_
 int eom_get_output_id(const char *output_name)
 {
 	eom_output_id *output_ids = NULL;
@@ -382,13 +378,14 @@ static void eom_notify_cb_attribute_changed(eom_output_id output_id, void *user_
 		eom_deinit();
 	}
 }
-
+#endif
 static int app_create(void *data)
 {
 	appdata *ad = data;
 	Evas_Object *win = NULL;
+#ifdef _ACTIVATE_EOM_
 	eom_output_mode_e output_mode = EOM_OUTPUT_MODE_NONE;
-
+#endif
 	/* use gl backend */
 	elm_config_preferred_engine_set("3d");
 
@@ -408,7 +405,7 @@ static int app_create(void *data)
 
 	elm_win_activate(win);
 	evas_object_show(win);
-
+#ifdef _ACTIVATE_EOM_
 	/* check external device */
 	eom_init();
 	ad->hdmi_output_id = eom_get_output_id("HDMI");
@@ -442,7 +439,7 @@ static int app_create(void *data)
 	eom_set_output_removed_cb(eom_notify_cb_output_remove, ad);
 	eom_set_mode_changed_cb(eom_notify_cb_mode_changed, ad);
 	eom_set_attribute_changed_cb(eom_notify_cb_attribute_changed, ad);
-
+#endif
 	return 0;
 }
 
@@ -461,31 +458,22 @@ static int app_terminate(void *data)
 		evas_object_del(g_xid);
 		g_xid = NULL;
 	}
+#ifdef _ACTIVATE_EOM_
 	if (g_external_xid) {
 		evas_object_del(g_external_xid);
 		g_external_xid = NULL;
 	}
+#endif
 	ad->win = NULL;
 	selected_xid = NULL;
-#ifdef _USE_X_DIRECT_
-	if (g_dpy) {
-		if (g_gc)
-			XFreeGC(g_dpy, g_gc);
-		if (g_xid)
-			XDestroyWindow(g_dpy, g_xid);
-		XCloseDisplay(g_dpy);
-		g_xid = 0;
-		g_dpy = NULL;
-	}
-#endif
-
+#ifdef _ACTIVATE_EOM_
 	eom_unset_output_added_cb(eom_notify_cb_output_add);
 	eom_unset_output_removed_cb(eom_notify_cb_output_remove);
 	eom_unset_mode_changed_cb(eom_notify_cb_mode_changed);
 	eom_unset_attribute_changed_cb(eom_notify_cb_attribute_changed);
 
 	eom_deinit();
-
+#endif
 	return 0;
 }
 
@@ -607,19 +595,6 @@ static void reset_display()
 			g_eo[i] = NULL;
 		}
 	}
-
-#ifdef _USE_X_DIRECT_
-	/* delete x window, if it is */
-	if (g_dpy) {
-		if (g_gc)
-			XFreeGC(g_dpy, g_gc);
-		if (g_xid)
-			XDestroyWindow(g_dpy, g_xid);
-		XCloseDisplay(g_dpy);
-		g_xid = 0;
-		g_dpy = NULL;
-	}
-#endif
 }
 
 static void input_filename(char *filename)
@@ -1105,8 +1080,10 @@ static void _player_play()
 	int bRet = FALSE;
 	int i = 0;
 	if (g_current_surface_type == PLAYER_DISPLAY_TYPE_OVERLAY) {
+#ifdef _ACTIVATE_EOM_
 		/* for checking external display.... */
 		player_set_display(g_player[0], g_current_surface_type, GET_DISPLAY(selected_xid));
+#endif
 		bRet = player_start(g_player[0]);
 		g_print("player_start returned [%d]", bRet);
 	} else {
@@ -1144,8 +1121,10 @@ static void _player_resume()
 	int bRet = FALSE;
 	int i = 0;
 	if (g_current_surface_type == PLAYER_DISPLAY_TYPE_OVERLAY) {
+#ifdef _ACTIVATE_EOM_
 		/* for checking external display.... */
 		player_set_display(g_player[0], PLAYER_DISPLAY_TYPE_OVERLAY, GET_DISPLAY(selected_xid));
+#endif
 		bRet = player_start(g_player[0]);
 		g_print("player_start returned [%d]", bRet);
 	} else {
@@ -1381,9 +1360,10 @@ static void change_surface(int option)
 {
 	player_display_type_e surface_type = 0;
 	int ret = PLAYER_ERROR_NONE;
+#ifdef _ACTIVATE_EOM_
 	int hdmi_output_id;
 	eom_output_mode_e output_mode;
-
+#endif
 	switch (option) {
 	case 0:
 		/* X surface */
@@ -1418,25 +1398,14 @@ static void change_surface(int option)
 		reset_display();
 
 		if (surface_type == PLAYER_DISPLAY_TYPE_OVERLAY) {
-#ifdef _USE_X_DIRECT_
-			/* Create xwindow for X surface */
-			if (!g_dpy) {
-				g_dpy = XOpenDisplay(NULL);
-				g_xid = create_window(g_dpy, 0, 0, 500, 500);
-				g_gc = XCreateGC(g_dpy, g_xid, 0, 0);
-			}
-			g_print("create x window dpy(%p), gc(%x), xid(%d)\n", g_dpy, (unsigned int)g_gc, (int)g_xid);
-			XImage *xim = make_transparent_image(g_dpy, 500, 500);
-			XPutImage(g_dpy, g_xid, g_gc, xim, 0, 0, 0, 0, 500, 500);
-			XSync(g_dpy, False);
-#else
-
+#ifdef _ACTIVATE_EOM_
 			hdmi_output_id = eom_get_output_id("HDMI");
 			if (hdmi_output_id == 0)
 				g_print("[eom] error : HDMI output id is NULL.\n");
 
 			eom_get_output_mode(hdmi_output_id, &output_mode);
 			if (output_mode == EOM_OUTPUT_MODE_NONE) {
+#endif
 				if (!g_xid) {
 					g_xid = create_win(PACKAGE);
 					if (g_xid == NULL)
@@ -1447,6 +1416,7 @@ static void change_surface(int option)
 					evas_object_show(g_xid);
 					g_xid = selected_xid;
 				}
+#ifdef _ACTIVATE_EOM_
 			} else {
 				/* for external */
 			}
