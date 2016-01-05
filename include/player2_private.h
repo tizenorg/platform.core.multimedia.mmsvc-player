@@ -21,6 +21,7 @@
 #include "mm_types.h"
 #include "muse_core.h"
 #include "muse_core_ipc.h"
+#include "mm_player_wlclient.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -254,6 +255,8 @@ typedef struct _player_cli_s{
 	callback_cb_info_s *cb_info;
 	player_data_s *head;
 	server_info_s server;
+    mm_wl_client *wlclient;
+    gboolean have_wlclient;
 } player_cli_s;
 
 /* Internal handle */

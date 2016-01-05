@@ -1107,7 +1107,7 @@ static void _player_play()
 	int i = 0;
 	if (g_current_surface_type == PLAYER_DISPLAY_TYPE_OVERLAY) {
 		/* for checking external display.... */
-		player_set_display(g_player[0], g_current_surface_type, GET_DISPLAY(selected_xid));
+//		player_set_display(g_player[0], g_current_surface_type, GET_DISPLAY(selected_xid));
 		bRet = player_start(g_player[0]);
 		g_print("player_start returned [%d]", bRet);
 	} else {
