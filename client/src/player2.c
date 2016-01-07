@@ -633,6 +633,33 @@ static void __media_stream_audio_buffer_cb_handler(callback_cb_info_s *cb_info, 
 
 }
 
+static void __media_stream_video_buffer_cb_handler_ex(callback_cb_info_s *cb_info, char *recvMsg)
+{
+	/* player_media_stream_buffer_status_e status; */
+	int status;
+	unsigned long long bytes;
+
+	if (player_msg_get(status, recvMsg) && player_msg_get_type(bytes, recvMsg, INT64)) {
+		((player_media_stream_buffer_status_cb_ex)
+			cb_info->user_cb[_PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_BUFFER_STATUS_WITH_INFO])
+			((player_media_stream_buffer_status_e)status, bytes, cb_info->user_data[_PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_BUFFER_STATUS_WITH_INFO]);
+	}
+}
+
+static void __media_stream_audio_buffer_cb_handler_ex(callback_cb_info_s *cb_info, char *recvMsg)
+{
+	/* player_media_stream_buffer_status_e status; */
+	int status;
+	unsigned long long bytes;
+
+	if (player_msg_get(status, recvMsg) && player_msg_get_type(bytes, recvMsg, INT64)) {
+		((player_media_stream_buffer_status_cb_ex)
+			cb_info->user_cb[_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_BUFFER_STATUS_WITH_INFO])
+			((player_media_stream_buffer_status_e)status, bytes, cb_info->user_data[_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_BUFFER_STATUS_WITH_INFO]);
+	}
+
+}
+
 static void __media_stream_video_seek_cb_handler(callback_cb_info_s *cb_info, char *recvMsg)
 {
 	unsigned long long offset;
@@ -704,6 +731,8 @@ static void (*_user_callbacks[_PLAYER_EVENT_TYPE_NUM])(callback_cb_info_s *cb_in
 #endif
 	__media_stream_video_buffer_cb_handler,	/*_PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_BUFFER_STATUS*/
 	__media_stream_audio_buffer_cb_handler,	/*_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_BUFFER_STATUS*/
+	__media_stream_video_buffer_cb_handler_ex,	/*_PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_BUFFER_STATUS_WITH_INFO*/
+	__media_stream_audio_buffer_cb_handler_ex,	/*_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_BUFFER_STATUS_WITH_INFO*/
 	__media_stream_video_seek_cb_handler,	/*_PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_SEEK*/
 	__media_stream_audio_seek_cb_handler,	/*_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_SEEK*/
 	NULL,	/*_PLAYER_EVENT_TYPE_AUDIO_STREAM_CHANGED*/

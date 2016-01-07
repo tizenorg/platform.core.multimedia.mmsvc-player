@@ -368,6 +368,24 @@ static void _media_stream_video_buffer_status_cb(player_media_stream_buffer_stat
 	player_msg_event1(api, ev, module, INT, status);
 }
 
+static void _media_stream_audio_buffer_status_cb_ex(player_media_stream_buffer_status_e status, unsigned long long bytes, void *user_data)
+{
+	muse_player_cb_e api = MUSE_PLAYER_CB_EVENT;
+	_player_event_e ev = _PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_BUFFER_STATUS_WITH_INFO;
+	muse_module_h module = (muse_module_h)user_data;
+
+	player_msg_event2(api, ev, module, INT, status, INT64, bytes);
+}
+
+static void _media_stream_video_buffer_status_cb_ex(player_media_stream_buffer_status_e status, unsigned long long bytes, void *user_data)
+{
+	muse_player_cb_e api = MUSE_PLAYER_CB_EVENT;
+	_player_event_e ev = _PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_BUFFER_STATUS_WITH_INFO;
+	muse_module_h module = (muse_module_h)user_data;
+
+	player_msg_event2(api, ev, module, INT, status, INT64, bytes);
+}
+
 static void _media_stream_audio_seek_cb(unsigned long long offset, void *user_data)
 {
 	muse_player_cb_e api = MUSE_PLAYER_CB_EVENT;
@@ -523,6 +541,34 @@ static void _set_media_stream_video_buffer_cb(player_h player, void *data, bool 
 	player_msg_return(api, ret, module);
 }
 
+static void _set_media_stream_audio_buffer_cb_ex(player_h player, void *data, bool set)
+{
+	int ret = PLAYER_ERROR_NONE;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_CALLBACK;
+	muse_module_h module = (muse_module_h)data;
+
+	if (set)
+		ret = player_set_media_stream_buffer_status_cb_ex(player, PLAYER_STREAM_TYPE_AUDIO, _media_stream_audio_buffer_status_cb_ex, module);
+	else
+		ret = player_unset_media_stream_buffer_status_cb_ex(player, PLAYER_STREAM_TYPE_AUDIO);
+
+	player_msg_return(api, ret, module);
+}
+
+static void _set_media_stream_video_buffer_cb_ex(player_h player, void *data, bool set)
+{
+	int ret = PLAYER_ERROR_NONE;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_CALLBACK;
+	muse_module_h module = (muse_module_h)data;
+
+	if (set)
+		ret = player_set_media_stream_buffer_status_cb_ex(player, PLAYER_STREAM_TYPE_VIDEO, _media_stream_video_buffer_status_cb_ex, module);
+	else
+		ret = player_unset_media_stream_buffer_status_cb_ex(player, PLAYER_STREAM_TYPE_VIDEO);
+
+	player_msg_return(api, ret, module);
+}
+
 static void (*set_callback_func[_PLAYER_EVENT_TYPE_NUM])(player_h player, void *user_data, bool set) = {
 	NULL,					/* _PLAYER_EVENT_TYPE_PREPARE */
 	_set_completed_cb,		/* _PLAYER_EVENT_TYPE_COMPLETE */
@@ -545,6 +591,8 @@ static void (*set_callback_func[_PLAYER_EVENT_TYPE_NUM])(player_h player, void *
 #endif
 	_set_media_stream_video_buffer_cb,	/*_PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_BUFFER_STATUS*/
 	_set_media_stream_audio_buffer_cb,	/*_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_BUFFER_STATUS*/
+	_set_media_stream_video_buffer_cb_ex,	/*_PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_BUFFER_STATUS_WITH_INFO*/
+	_set_media_stream_audio_buffer_cb_ex,	/*_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_BUFFER_STATUS_WITH_INFO*/
 	_set_media_stream_video_seek_cb,	/*_PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_SEEK*/
 	_set_media_stream_audio_seek_cb,	/*_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_SEEK*/
 	NULL,								/*_PLAYER_EVENT_TYPE_AUDIO_STREAM_CHANGED*/
