@@ -1135,19 +1135,43 @@ int player_create(player_h *player)
 			muse_core_send_client_addr(module_addr, pc->cb_info->data_fd);
 			LOGD("Data channel fd %d, muse module addr %p", pc->cb_info->data_fd, module_addr);
 		}
-
-		if (mm_player_mused_create(&INT_HANDLE(pc)) != MM_ERROR_NONE) {
-			LOGE("create failure");
-			ret = PLAYER_ERROR_INVALID_OPERATION;
-			goto ErrorExit;
-		}
-		mm_player_get_state_timeout(INT_HANDLE(pc), &SERVER_TIMEOUT(pc), TRUE);
-		SERVER_TIMEOUT(pc) += CALLBACK_TIME_OUT;
-		if (player_msg_get_string(stream_path, ret_buf)) {
-			LOGD("shmsrc stream path : %s", stream_path);
-			if (mm_player_set_shm_stream_path(INT_HANDLE(pc), stream_path)
-				!= MM_ERROR_NONE)
+#ifdef USE_WAYLAND_CLIENT
+#if 0
+		mm_player_ini_t ini;
+		if (mm_player_ini_load(&ini)!= MM_ERROR_NONE)
+        {
+				LOGE("can't load ini");
 				goto ErrorExit;
+		}
+		if(strncmp(ini.videosink_element_x, "fakesink", strlen("fakesink")) == 0) {
+		pc->have_wlclient = TRUE;
+		LOGE(" have wlclient ");
+		}
+#endif
+		pc->have_wlclient = TRUE;
+		LOGE("have wlclient (%d)", pc->have_wlclient);
+#endif
+		if (!pc->have_wlclient)
+		{
+			if (mm_player_mused_create(&INT_HANDLE(pc)) != MM_ERROR_NONE) {
+				LOGE("create failure");
+				ret = PLAYER_ERROR_INVALID_OPERATION;
+				goto ErrorExit;
+			}
+			mm_player_get_state_timeout(INT_HANDLE(pc), &SERVER_TIMEOUT(pc), TRUE);
+			SERVER_TIMEOUT(pc) += CALLBACK_TIME_OUT;
+			if (player_msg_get_string(stream_path, ret_buf)) {
+				LOGD("shmsrc stream path : %s", stream_path);
+				if (mm_player_set_shm_stream_path(INT_HANDLE(pc), stream_path)
+					!= MM_ERROR_NONE)
+					goto ErrorExit;
+			}
+		} else {
+			LOGE("have wlclient (%d)", pc->have_wlclient);
+			if (mm_player_wlclient_create(&pc->wlclient) != MM_ERROR_NONE) {
+				LOGE("wlclient create failure");
+				goto ErrorExit;
+			}
 		}
 	} else
 		goto ErrorExit;
@@ -1184,7 +1208,7 @@ int player_destroy(player_h player)
 	player_msg_send(api, pc, ret_buf, ret);
 
 	if (CALLBACK_INFO(pc)) {
-		if (mm_player_mused_destroy(INT_HANDLE(pc)) != MM_ERROR_NONE)
+		if (!pc->have_wlclient && mm_player_mused_destroy(INT_HANDLE(pc)) != MM_ERROR_NONE)
 			ret = PLAYER_ERROR_INVALID_OPERATION;
 
 		_player_event_queue_destroy(CALLBACK_INFO(pc));
@@ -1252,8 +1276,18 @@ int player_prepare(player_h player)
 		IS_STREAMING_CONTENT(pc) = is_streaming;
 		mm_player_get_state_timeout(INT_HANDLE(pc), &SERVER_TIMEOUT(pc), is_streaming);
 		player_msg_get_string(caps, ret_buf);
-		if (strlen(caps) > 0 && mm_player_mused_realize(INT_HANDLE(pc), caps) != MM_ERROR_NONE)
-			ret = PLAYER_ERROR_INVALID_OPERATION;
+
+		if (!pc->have_wlclient) {
+			if (strlen(caps) > 0 && mm_player_mused_realize(INT_HANDLE(pc), caps) != MM_ERROR_NONE)
+				ret = PLAYER_ERROR_INVALID_OPERATION;
+		} else {
+			if (strlen(caps) > 0) {
+				if (ret != mm_player_wlclient_send_meta_buf(pc->wlclient, caps))
+				ret = PLAYER_ERROR_INVALID_OPERATION;
+			} else {
+				ret = PLAYER_ERROR_INVALID_OPERATION;
+			}
+		}
 	}
 
 	g_free(ret_buf);
@@ -1272,8 +1306,10 @@ int player_unprepare(player_h player)
 
 	if (!CALLBACK_INFO(pc))
 		return PLAYER_ERROR_INVALID_STATE;
-
-	mm_player_mused_pre_unrealize(INT_HANDLE(pc));
+	if (!pc->have_wlclient)
+	{
+		mm_player_mused_pre_unrealize(INT_HANDLE(pc));
+	}
 
 	player_msg_send(api, pc, ret_buf, ret);
 	if (ret == PLAYER_ERROR_NONE) {
@@ -1282,10 +1318,14 @@ int player_unprepare(player_h player)
 		_del_mem(pc);
 		_player_deinit_memory_buffer(pc);
 	}
+	if (!pc->have_wlclient)
+	{
+		if (mm_player_mused_unrealize(INT_HANDLE(pc)) != MM_ERROR_NONE)
+			ret = PLAYER_ERROR_INVALID_OPERATION;
+	} else {
+		ret = mm_player_wlclient_finalize(pc->wlclient);
 
-	if (mm_player_mused_unrealize(INT_HANDLE(pc)) != MM_ERROR_NONE)
-		ret = PLAYER_ERROR_INVALID_OPERATION;
-
+	}
 	g_free(ret_buf);
 	return ret;
 }
@@ -1778,12 +1818,13 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 				/* get wl_display */
 				set_wl_display = (void *)ecore_wl_display_get();
 
-				LOGI("xid %d, surface_id %d, surface %p(%d), win_id %d",
+				LOGI("xid %d, surface_id %d, surface %p(%d), win_id %d display %p -(%p)",
 					elm_win_xwindow_get(obj),
 					ecore_wl_window_surface_id_get(wl_window),
 					ecore_wl_window_surface_get(wl_window),
 					*(int *)ecore_wl_window_surface_get(wl_window),
-					ecore_wl_window_id_get(wl_window));
+					ecore_wl_window_id_get(wl_window),
+					(void *)ecore_wl_display_get(), set_wl_display);
 #else
 				/* x window overlay surface */
 				LOGI("overlay surface type");
@@ -1817,26 +1858,46 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 	}
 	player_msg_send_array(api, pc, ret_buf, ret, wl_win_msg, sizeof(wl_win_msg_type), sizeof(char));
 
-	if (CALLBACK_INFO(pc)) {
-		ret = mm_player_set_attribute(INT_HANDLE(pc), NULL,
-			"display_surface_type", type,
-			"pipeline_type", mmPipelineType,
-			"wl_display", set_wl_display,
-			sizeof(void *),
-			"display_overlay", set_handle,
-			sizeof(display), (char *)NULL);
-		if (ret != MM_ERROR_NONE)
-			LOGE("Failed to display surface change :%d", ret);
+	LOGD ("wlclient (%p)", pc->wlclient);
+	if (!pc->wlclient) {
+		if (CALLBACK_INFO(pc)) {
+			ret = mm_player_set_attribute(INT_HANDLE(pc), NULL,
+				"display_surface_type", type,
+				"pipeline_type", mmPipelineType,
+				"wl_display", set_wl_display,
+				sizeof(void *),
+				"display_overlay", set_handle,
+				sizeof(display), (char *)NULL);
+			if (ret != MM_ERROR_NONE)
+				LOGE("Failed to display surface change :%d", ret);
 
-		ret = mm_player_set_attribute(INT_HANDLE(pc), NULL,
-			"wl_window_render_x", wl_win.wl_window_x,
-			"wl_window_render_y", wl_win.wl_window_y,
-			"wl_window_render_width", wl_win.wl_window_width,
-			"wl_window_render_height", wl_win.wl_window_height,
-			(char *)NULL);
+			ret = mm_player_set_attribute(INT_HANDLE(pc), NULL,
+				"wl_window_render_x", wl_win.wl_window_x,
+				"wl_window_render_y", wl_win.wl_window_y,
+				"wl_window_render_width", wl_win.wl_window_width,
+				"wl_window_render_height", wl_win.wl_window_height,
+				(char *)NULL);
 
-		if (ret != MM_ERROR_NONE)
-			LOGE("Failed to set wl_window render rectangle :%d", ret);
+			if (ret != MM_ERROR_NONE)
+				LOGE("Failed to set wl_window render rectangle :%d", ret);
+		}
+	}else {
+		/* get render rect */
+		pc->wlclient->rect.x = wl_win.wl_window_x;
+		pc->wlclient->rect.y = wl_win.wl_window_y;
+		pc->wlclient->rect.width = wl_win.wl_window_width;
+		pc->wlclient->rect.height = wl_win.wl_window_height;
+		LOGD ("Wlclient(%p)::get (%d, %d, %d, %d)",pc->wlclient, pc->wlclient->rect.x,
+			pc->wlclient->rect.y, pc->wlclient->rect.width, pc->wlclient->rect.height);
+
+        LOGD ("wl_display %p, wl_surface %p", set_wl_display, set_handle);
+		pc->wlclient->display = set_wl_display;
+		pc->wlclient->set_handle = set_handle;
+
+		if (ret != mm_player_wlclient_start(pc->wlclient)) {
+			return MM_ERROR_PLAYER_INTERNAL;
+		}
+
 	}
 #else
 	player_msg_send2(api, pc, ret_buf, ret, INT, type, INT, xhandle);
@@ -1855,6 +1916,16 @@ int player_set_display_mode(player_h player, player_display_mode_e mode)
 	char *ret_buf = NULL;
 
 	LOGD("ENTER");
+
+	if (pc->have_wlclient)
+	{
+		if(pc->wlclient->caps) {
+			LOGD("need to send meta buf");
+			pc->wlclient->display_geo_method = mode;
+			ret = mm_player_wlclient_send_meta_buf (pc->wlclient, NULL);
+		}
+		return ret;
+	}
 
 	ret = mm_player_set_attribute(INT_HANDLE(pc), NULL, "display_method", mode, NULL);
 	if (ret != MM_ERROR_NONE)
@@ -1908,6 +1979,16 @@ int player_set_display_rotation(player_h player, player_display_rotation_e rotat
 	char *ret_buf = NULL;
 
 	LOGD("ENTER");
+
+	if (pc->have_wlclient)
+	{
+		if(pc->wlclient->caps) {
+			LOGD("need to send meta buf");
+			pc->wlclient->rotate_angle = rotation;
+			ret = mm_player_wlclient_send_meta_buf (pc->wlclient, NULL);
+		}
+		return ret;
+	}
 
 	ret = mm_player_set_attribute(INT_HANDLE(pc), NULL, "display_rotation", rotation, NULL);
 	if (ret != MM_ERROR_NONE)
