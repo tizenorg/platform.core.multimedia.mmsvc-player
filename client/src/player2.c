@@ -470,7 +470,7 @@ static void __media_packet_video_frame_cb_handler(callback_cb_info_s *cb_info, c
 	player_msg_get(key[3], recvMsg);
 	player_msg_get_type(packet, recvMsg, POINTER);
 	player_msg_get(mimetype, recvMsg);
-	player_msg_get(pts, recvMsg);
+	player_msg_get_type(pts, recvMsg, INT64);
 	player_msg_get_array(surface_info, recvMsg);
 
 	LOGD("width %d, height %d", sinfo.width, sinfo.height);
