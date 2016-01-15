@@ -1187,6 +1187,9 @@ int player_destroy(player_h player)
 		if (mm_player_mused_destroy(INT_HANDLE(pc)) != MM_ERROR_NONE)
 			ret = PLAYER_ERROR_INVALID_OPERATION;
 
+		if(mm_player_mused_unset_evas_object_cb(INT_HANDLE(pc)) != MM_ERROR_NONE)
+			LOGW("fail to unset evas object callback");
+
 		_player_event_queue_destroy(CALLBACK_INFO(pc));
 		tbm_bufmgr_deinit(TBM_BUFMGR(pc));
 
@@ -1771,6 +1774,8 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 				wl_win.type = type;
 
 				evas_object_geometry_get(obj, &wl_win.wl_window_x, &wl_win.wl_window_y, &wl_win.wl_window_width, &wl_win.wl_window_height);
+				if(mm_player_mused_set_evas_object_cb(INT_HANDLE(pc), obj) != MM_ERROR_NONE)
+					LOGW("fail to set evas object callback");
 
 				wl_window = elm_win_wl_window_get(obj);
 				set_handle = (void *)ecore_wl_window_surface_get(wl_window);
