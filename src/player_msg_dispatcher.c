@@ -597,7 +597,9 @@ static void (*set_callback_func[_PLAYER_EVENT_TYPE_NUM])(player_h player, void *
 	_set_media_stream_audio_seek_cb,	/*_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_SEEK*/
 	NULL,								/*_PLAYER_EVENT_TYPE_AUDIO_STREAM_CHANGED*/
 	_set_video_stream_changed_cb,		/*_PLAYER_EVENT_TYPE_VIDEO_STREAM_CHANGED*/
+#ifdef USE_CLIENT_PIPELINE
 	NULL,								/*_PLAYER_EVENT_TYPE_VIDEO_BIN_CREATED*/
+#endif
 };
 
 static int player_disp_set_callback(muse_module_h module)
@@ -1581,6 +1583,7 @@ static int player_disp_set_subtitle_position_offset(muse_module_h module)
 	return ret;
 }
 
+#ifdef USE_CLIENT_PIPELINE
 static void _video_bin_created_cb(const char *caps, void *user_data)
 {
 	muse_module_h module = (muse_module_h)user_data;
@@ -1591,6 +1594,7 @@ static void _video_bin_created_cb(const char *caps, void *user_data)
 
 	player_msg_event1(api, ev, module, STRING, caps);
 }
+#endif
 
 static int player_disp_set_progressive_download_path(muse_module_h module)
 {
@@ -1603,9 +1607,10 @@ static int player_disp_set_progressive_download_path(muse_module_h module)
 	player_msg_get_string(path, muse_core_client_get_msg(module));
 
 	ret = player_set_progressive_download_path((player_h)handle, path);
+#ifdef USE_CLIENT_PIPELINE
 	if (ret == PLAYER_ERROR_NONE)
 		player_set_video_bin_created_cb((player_h)handle, _video_bin_created_cb, module);
-
+#endif
 	player_msg_return(api, ret, module);
 
 	return ret;

@@ -282,6 +282,8 @@ int wait_for_cb_return(muse_player_api_e api, callback_cb_info_s *cb_info, char 
 int player_sound_register(player_h player, int pid);
 int player_is_streaming(player_h player, bool *is_streaming);
 
+#ifdef USE_CLIENT_PIPELINE
+
 /**
  * @brief Called when the video sink bin is crated.
  * @since_tizen 3.0
@@ -319,7 +321,7 @@ int player_set_video_bin_created_cb(player_h player, player_video_bin_created_cb
  * @see player_unset_vidoe_bin_created_cb()
  */
 int player_unset_video_bin_created_cb(player_h player);
-
+#endif
 
 #ifdef __cplusplus
 }
