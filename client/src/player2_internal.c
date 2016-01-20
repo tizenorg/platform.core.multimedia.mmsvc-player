@@ -23,6 +23,7 @@
 #include <muse_core_ipc.h>
 #include <mm_error.h>
 #include <dlog.h>
+#include <Evas.h>
 #include "player2_private.h"
 #include "player_msg_private.h"
 #include "player_internal.h"
@@ -164,4 +165,79 @@ int player_unset_media_stream_buffer_status_cb_ex(player_h player, player_stream
 
 	g_free(ret_buf);
 	return ret;
+}
+
+static void __evas_resize_cb (void *data, Evas *e, Evas_Object *eo, void *event_info)
+{
+
+	player_cli_s *pc = (player_cli_s *)data;
+	wl_win_msg_type wl_win;
+	char *wl_win_msg = (char *)&wl_win;
+	char *ret_buf = NULL;
+	muse_player_api_e api = MUSE_PLAYER_API_RESIZE_VIDEO_RENDER_RECT;
+	int ret = PLAYER_ERROR_NONE;
+	LOGD("ret =%d",ret);
+
+	evas_object_geometry_get(eo, &wl_win.wl_window_x, &wl_win.wl_window_y, &wl_win.wl_window_width, &wl_win.wl_window_height);
+	LOGD("get window rectangle: x(%d) y(%d) width(%d) height(%d)",
+			wl_win.wl_window_x, wl_win.wl_window_y, wl_win.wl_window_width, wl_win.wl_window_height);
+
+	wl_win.type = 0; /*init  but not use */
+	wl_win.parent_id = 0; /*init  but not use */
+
+	player_msg_send_array(api, pc, ret_buf, ret, wl_win_msg, sizeof(wl_win_msg_type), sizeof(char));
+
+	g_free(ret_buf);
+	return;
+
+}
+
+static void __evas_del_cb (void *data, Evas *e, Evas_Object *eo, void *event_info)
+{
+
+	player_cli_s *pc = (player_cli_s *)data;
+
+	evas_object_event_callback_del (eo, EVAS_CALLBACK_RESIZE, __evas_resize_cb);
+	evas_object_event_callback_del (eo, EVAS_CALLBACK_DEL, __evas_del_cb);
+
+	LOGD("evas callback del %p", eo);
+	pc->have_evas_callback = FALSE;
+
+	return;
+}
+
+int player_set_evas_object_cb(player_h player, Evas_Object * eo)
+{
+
+	PLAYER_INSTANCE_CHECK(player);
+	return_val_if_fail(eo != NULL, MM_ERROR_INVALID_ARGUMENT);
+
+	player_cli_s *pc = (player_cli_s *)player;
+
+	if(pc->have_evas_callback && pc->eo == eo) {
+		LOGW("evas object had callback already %p", pc->eo);
+		return MM_ERROR_UNKNOWN;
+	}
+	pc->eo = eo;
+	evas_object_event_callback_add (eo, EVAS_CALLBACK_RESIZE, __evas_resize_cb, player);
+	evas_object_event_callback_add (eo, EVAS_CALLBACK_DEL, __evas_del_cb, player);
+	LOGD("evas callback add %p", pc->eo);
+	pc->have_evas_callback = TRUE;
+
+	return MM_ERROR_NONE;
+}
+
+int player_unset_evas_object_cb(player_h player)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	player_cli_s *pc = (player_cli_s *)player;
+	return_val_if_fail(pc->eo != NULL, MM_ERROR_INVALID_ARGUMENT);
+
+	evas_object_event_callback_del (pc->eo, EVAS_CALLBACK_RESIZE, __evas_resize_cb);
+	evas_object_event_callback_del (pc->eo, EVAS_CALLBACK_DEL, __evas_del_cb);
+	LOGD("evas callback del %p", pc->eo);
+	pc->eo = NULL;
+	pc->have_evas_callback = FALSE;
+
+	return MM_ERROR_NONE;
 }
