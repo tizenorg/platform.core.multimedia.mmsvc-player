@@ -1772,10 +1772,13 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 #ifdef HAVE_WAYLAND
 	wl_win_msg_type wl_win;
 	char *wl_win_msg = (char *)&wl_win;
+	unsigned int parent_id;
+	struct wl_surface *wl_surface;
+	struct wl_display *wl_display;
+	Ecore_Wl_Window *wl_window = NULL;
 #ifdef USE_CLIENT_PIPELINE
 	void *set_handle = NULL;
 	void *set_wl_display = NULL;
-	Ecore_Wl_Window *wl_window = NULL;
 	MMPlayerPipelineType mmPipelineType = MM_PLAYER_PIPELINE_CLIENT;
 #endif
 #else
@@ -1801,21 +1804,31 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 #ifdef USE_CLIENT_PIPELINE
 				if(mm_player_mused_set_evas_object_cb(INT_HANDLE(pc), obj) != MM_ERROR_NONE)
 					LOGW("fail to set evas object callback");
-
+#endif
 				wl_window = elm_win_wl_window_get(obj);
-				set_handle = (void *)ecore_wl_window_surface_get(wl_window);
+				wl_surface = (struct wl_surface *) ecore_wl_window_surface_get(wl_window);
 
 				/* get wl_display */
-				set_wl_display = (void *)ecore_wl_display_get();
+				wl_display = (struct wl_display *) ecore_wl_display_get();
 
-				LOGI("xid %d, surface_id %d, surface %p(%d), win_id %d",
-					elm_win_xwindow_get(obj),
-					ecore_wl_window_surface_id_get(wl_window),
-					ecore_wl_window_surface_get(wl_window),
-					*(int *)ecore_wl_window_surface_get(wl_window),
-					ecore_wl_window_id_get(wl_window));
-#endif
-
+				if (!pc->wlclient) {
+					ret = _wlclient_create(&pc->wlclient);
+					if ( ret != MM_ERROR_NONE) {
+						LOGE("Wayland client create failure");
+						return ret;
+					}
+				}
+				if (wl_surface && wl_display){
+					LOGD ("surface = %p, wl_display = %p", wl_surface, wl_display);
+					parent_id = _wlclient_get_wl_window_parent_id (pc->wlclient, wl_surface, wl_display);
+					LOGD ("parent_id = %d", parent_id);
+					wl_win.parent_id = parent_id;
+					LOGD ("wl_win.parent_id = %d", wl_win.parent_id);
+				}
+				if (pc->wlclient) {
+					g_free(pc->wlclient);
+					pc->wlclient = NULL;
+				}
 #else
 				/* x window overlay surface */
 				LOGI("overlay surface type");
@@ -1841,7 +1854,7 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 			return PLAYER_ERROR_INVALID_PARAMETER;
 	}
 #ifdef HAVE_WAYLAND
-	else {
+	else { /* PLAYER_DISPLAY_TYPE_NONE */
 		LOGI("Wayland surface type is NONE");
 		wl_win.type = type;
 		wl_win.wl_window_x = 0;
@@ -1944,11 +1957,11 @@ int player_set_display_rotation(player_h player, player_display_rotation_e rotat
 	char *ret_buf = NULL;
 
 	LOGD("ENTER");
-
+#ifdef USE_CLIENT_PIPELINE
 	ret = mm_player_set_attribute(INT_HANDLE(pc), NULL, "display_rotation", rotation, NULL);
 	if (ret != MM_ERROR_NONE)
 		return __player_convert_error_code(ret, (char *)__FUNCTION__);
-
+#endif
 	player_msg_send1(api, pc, ret_buf, ret, INT, rotation);
 	g_free(ret_buf);
 	return ret;
