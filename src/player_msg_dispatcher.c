@@ -45,6 +45,7 @@ static tbm_bufmgr bufmgr;
 __thread media_format_h audio_format = NULL;
 __thread media_format_h video_format = NULL;
 
+#ifdef USE_PUSH_THREAD
 typedef struct {
 	GThread *thread;
 	GQueue *queue;
@@ -52,7 +53,7 @@ typedef struct {
 	GCond cond;
 	gint running;
 } data_thread_info_t;
-
+#endif
 typedef struct {
 	intptr_t handle;
 	uint64_t pts;
@@ -82,7 +83,9 @@ int player_get_raw_video_caps(player_h player, char **caps);
 * Internal Implementation
 */
 static int _push_media_stream(intptr_t handle, player_push_media_msg_type *push_media, char *buf);
+#ifdef USE_PUSH_THREAD
 static gpointer _player_push_media_stream_handler(gpointer param);
+#endif
 
 static void __player_callback(_player_event_e ev, muse_module_h module)
 {
@@ -623,7 +626,9 @@ static int player_disp_create(muse_module_h module)
 	muse_player_api_e api = MUSE_PLAYER_API_CREATE;
 	intptr_t handle = 0;
 	intptr_t module_addr = (intptr_t)module;
+#ifdef USE_PUSH_THREAD
 	data_thread_info_t *thread_i;
+#endif
 	static guint stream_id = 0;
 	char stream_path[STREAM_PATH_LENGTH];
 	int pid;
@@ -641,6 +646,7 @@ static int player_disp_create(muse_module_h module)
 	if (ret == PLAYER_ERROR_NONE) {
 		handle = (intptr_t)player;
 		muse_core_ipc_set_handle(module, handle);
+#ifdef USE_PUSH_THREAD
 		thread_i = g_new(data_thread_info_t, 1);
 		thread_i->running = 1;
 		g_mutex_init(&thread_i->mutex);
@@ -649,7 +655,7 @@ static int player_disp_create(muse_module_h module)
 		thread_i->thread = (gpointer)g_thread_new("push_media", _player_push_media_stream_handler, module);
 
 		muse_core_client_set_cust_data(module, thread_i);
-
+#endif
 		muse_core_ipc_get_bufmgr(&bufmgr);
 
 		stream_id = muse_core_get_atomic_uint();
@@ -763,11 +769,13 @@ static int player_disp_destroy(muse_module_h module)
 	int ret = -1;
 	intptr_t handle;
 	muse_player_api_e api = MUSE_PLAYER_API_DESTROY;
+#ifdef USE_PUSH_THREAD
 	data_thread_info_t *thread_i;
-
+#endif
 	handle = muse_core_ipc_get_handle(module);
 
 	ret = player_destroy((player_h)handle);
+#ifdef USE_PUSH_THREAD
 
 	thread_i = (data_thread_info_t *)muse_core_client_get_cust_data(module);
 	thread_i->running = 0;
@@ -780,7 +788,7 @@ static int player_disp_destroy(muse_module_h module)
 	g_cond_clear(&thread_i->cond);
 	g_free(thread_i);
 	muse_core_client_set_cust_data(module, NULL);
-
+#endif
 	if (audio_format) {
 		media_format_unref(audio_format);
 		audio_format = NULL;
@@ -1705,6 +1713,8 @@ static int player_disp_get_streaming_download_progress(muse_module_h module)
 	return ret;
 }
 
+#ifdef USE_PUSH_THREAD
+
 static gpointer _player_push_media_stream_handler(gpointer param)
 {
 	muse_module_h module = (muse_module_h)param;
@@ -1757,6 +1767,7 @@ static gpointer _player_push_media_stream_handler(gpointer param)
 
 	return NULL;
 }
+#endif
 
 static int _push_media_stream(intptr_t handle, player_push_media_msg_type *push_media, char *buf)
 {
@@ -1870,6 +1881,7 @@ static int player_disp_push_media_stream(muse_module_h module)
 		}
 		player_msg_get_array(buf, muse_core_client_get_msg(module));
 	} else if (push_media.buf_type == PUSH_MEDIA_BUF_TYPE_RAW) {
+#ifdef USE_PUSH_THREAD
 		push_data_q_t *qData = g_new(push_data_q_t, 1);
 		data_thread_info_t *thread_i = (data_thread_info_t *)muse_core_client_get_cust_data(module);
 		if (!qData) {
@@ -1884,12 +1896,17 @@ static int player_disp_push_media_stream(muse_module_h module)
 
 		g_queue_push_tail(thread_i->queue, qData);
 		g_cond_signal(&thread_i->cond);
+#else
+		buf = muse_core_ipc_get_data(module);
+#endif
 	}
 
+#ifdef USE_PUSH_THREAD
 	if (push_media.buf_type == PUSH_MEDIA_BUF_TYPE_RAW)
 		ret = PLAYER_ERROR_NONE;
 	else
-		ret = _push_media_stream(handle, &push_media, buf);
+#endif
+	ret = _push_media_stream(handle, &push_media, buf);
 
 	if (push_media.buf_type == PUSH_MEDIA_BUF_TYPE_TBM)
 		tbm_bo_unmap(bo);
@@ -1898,7 +1915,10 @@ push_media_stream_exit2:
 		tbm_bo_unref(bo);
 	else if (push_media.buf_type == PUSH_MEDIA_BUF_TYPE_MSG)
 		g_free(buf);
-
+#ifndef USE_PUSH_THREAD
+	else if (push_media.buf_type == PUSH_MEDIA_BUF_TYPE_RAW && buf)
+		muse_core_ipc_delete_data(buf);
+#endif
 push_media_stream_exit1:
 	player_msg_return(api, ret, module);
 	return ret;
