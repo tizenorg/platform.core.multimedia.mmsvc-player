@@ -10,7 +10,7 @@ SET(PREFIX ${CMAKE_INSTALL_PREFIX})
 SET(INC_DIR include)
 INCLUDE_DIRECTORIES(${INC_DIR})
 
-SET(dependents "dlog elementary evas libtbm mm-common mm-playerclient capi-base-common capi-media-tool eom")
+SET(dependents "dlog elementary evas libtbm mm-common mm-playerclient capi-base-common capi-media-tool eom tizen-extension-client")
 SET(pc_dependents "libtbm capi-media-tool capi-base-common capi-media-sound-manager legacy-capi-media-player")
 
 INCLUDE(FindPkgConfig)

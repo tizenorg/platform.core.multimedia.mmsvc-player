@@ -17,11 +17,12 @@
 #ifndef __TIZEN_MEDIA_PLAYER_2_PRIVATE_H__
 #define	__TIZEN_MEDIA_PLAYER_2_PRIVATE_H__
 #include <tbm_bufmgr.h>
+#include <Evas.h>
 #include "player.h"
 #include "mm_types.h"
 #include "muse_core.h"
 #include "muse_core_ipc.h"
-
+#include "player2_wayland.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -84,6 +85,7 @@ typedef enum {
 	MUSE_PLAYER_API_GET_DISPLAY_ROTATION,
 	MUSE_PLAYER_API_SET_DISPLAY_VISIBLE,
 	MUSE_PLAYER_API_IS_DISPLAY_VISIBLE,
+	MUSE_PLAYER_API_RESIZE_VIDEO_RENDER_RECT,
 	MUSE_PLAYER_API_GET_CONTENT_INFO,
 	MUSE_PLAYER_API_GET_CODEC_INFO,
 	MUSE_PLAYER_API_GET_AUDIO_STREAM_INFO,
@@ -256,6 +258,9 @@ typedef struct _player_cli_s{
 	callback_cb_info_s *cb_info;
 	player_data_s *head;
 	server_info_s server;
+	wl_client *wlclient;
+	Evas_Object * eo;
+	gboolean have_evas_callback;
 } player_cli_s;
 
 /* Internal handle */
@@ -281,45 +286,8 @@ int _get_api_timeout(player_cli_s *pc, muse_player_api_e api);
 int wait_for_cb_return(muse_player_api_e api, callback_cb_info_s *cb_info, char **ret_buf, int time_out);
 int player_sound_register(player_h player, int pid);
 int player_is_streaming(player_h player, bool *is_streaming);
-
-/**
- * @brief Called when the video sink bin is crated.
- * @since_tizen 3.0
- * @param[out] caps			video sink current caps
- * @param[out ] user_data	The user data passed from the callback registration function
- * @see player_set_vidoe_bin_created_cb()
- * @see player_unset_vidoe_bin_created_cb()
- */
-typedef void (*player_video_bin_created_cb)(const char *caps, void *user_data);
-
-/**
- * @brief Registers a callback function to be invoked when video sink bin is created.
- * @since_tizen 3.0
- * @param[in] player    The handle to the media player
- * @param[in] callback The callback function to register
- * @param[in] user_data The user data to be passed to the callback function
- * @return @c 0 on success,
- *         otherwise a negative error value
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @post player_video_bin_created_cb() will be invoked.
- * @see player_unset_vidoe_bin_created_cb()
- */
-int player_set_video_bin_created_cb(player_h player, player_video_bin_created_cb callback, void *user_data);
-
-/**
- * @brief Unregisters a callback function to be invoked when video sink bin is created.
- * @since_tizen 3.0
- * @param[in] player    The handle to the media player
- * @return @c 0 on success,
- *         otherwise a negative error value
- * @retval #PLAYER_ERROR_NONE Successful
- * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
- * @post player_video_bin_created_cb() will be invoked.
- * @see player_unset_vidoe_bin_created_cb()
- */
-int player_unset_video_bin_created_cb(player_h player);
-
+int player_set_evas_object_cb(player_h player, Evas_Object * eo);
+int player_unset_evas_object_cb(player_h player);
 
 #ifdef __cplusplus
 }
