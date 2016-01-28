@@ -337,13 +337,16 @@ static int __unset_callback(_player_event_e type, player_h player)
 
 static void __prepare_cb_handler(callback_cb_info_s *cb_info, char *recvMsg)
 {
+#ifdef USE_CLIENT_PIPELINE
 	char caps[MUSE_MSG_MAX_LENGTH] = {0, };
+#endif
 	_player_event_e ev = _PLAYER_EVENT_TYPE_PREPARE;
 
+#ifdef USE_CLIENT_PIPELINE
 	if (player_msg_get_string(caps, recvMsg))
 		if (strlen(caps) > 0)
 			mm_player_mused_realize(cb_info->local_handle, caps);
-
+#endif
 	((player_prepared_cb)cb_info->user_cb[ev])(cb_info->user_data[ev]);
 
 	set_null_user_cb(cb_info, ev);
@@ -697,6 +700,7 @@ static void __video_stream_changed_cb_handler(callback_cb_info_s *cb_info, char 
 	}
 }
 
+#ifdef USE_CLIENT_PIPELINE
 static void __video_bin_created_cb_handler(callback_cb_info_s *cb_info, char *recvMsg)
 {
 	char caps[MUSE_MSG_MAX_LENGTH] = {0, };
@@ -708,6 +712,7 @@ static void __video_bin_created_cb_handler(callback_cb_info_s *cb_info, char *re
 static void dummy_user_callback()
 {
 }
+#endif
 
 static void (*_user_callbacks[_PLAYER_EVENT_TYPE_NUM])(callback_cb_info_s *cb_info, char *recvMsg) = {
 	__prepare_cb_handler,	/*_PLAYER_EVENT_TYPE_PREPARE*/
@@ -737,7 +742,9 @@ static void (*_user_callbacks[_PLAYER_EVENT_TYPE_NUM])(callback_cb_info_s *cb_in
 	__media_stream_audio_seek_cb_handler,	/*_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_SEEK*/
 	NULL,	/*_PLAYER_EVENT_TYPE_AUDIO_STREAM_CHANGED*/
 	__video_stream_changed_cb_handler,	/*_PLAYER_EVENT_TYPE_VIDEO_STREAM_CHANGED*/
+#ifdef USE_CLIENT_PIPELINE
 	__video_bin_created_cb_handler,	/*_PLAYER_EVENT_TYPE_VIDEO_BIN_CREATED*/
+#endif
 };
 
 static void _player_event_job_function(_player_cb_data *data)
@@ -1128,14 +1135,16 @@ int player_create(player_h *player)
 	ret = wait_for_cb_return(api, pc->cb_info, &ret_buf, CALLBACK_TIME_OUT);
 	if (ret == PLAYER_ERROR_NONE) {
 		intptr_t module_addr;
+#ifdef USE_CLIENT_PIPELINE
 		char stream_path[MUSE_MSG_MAX_LENGTH] = {0, };
+#endif
 		*player = (player_h)pc;
 		if (player_msg_get_type(module_addr, ret_buf, POINTER)) {
 			pc->cb_info->data_fd = muse_core_client_new_data_ch();
 			muse_core_send_client_addr(module_addr, pc->cb_info->data_fd);
 			LOGD("Data channel fd %d, muse module addr %p", pc->cb_info->data_fd, module_addr);
 		}
-
+#ifdef USE_CLIENT_PIPELINE
 		if (mm_player_mused_create(&INT_HANDLE(pc)) != MM_ERROR_NONE) {
 			LOGE("create failure");
 			ret = PLAYER_ERROR_INVALID_OPERATION;
@@ -1149,6 +1158,7 @@ int player_create(player_h *player)
 				!= MM_ERROR_NONE)
 				goto ErrorExit;
 		}
+#endif
 	} else
 		goto ErrorExit;
 
@@ -1183,13 +1193,14 @@ int player_destroy(player_h player)
 
 	player_msg_send(api, pc, ret_buf, ret);
 
-	if(mm_player_mused_unset_evas_object_cb(INT_HANDLE(pc)) != MM_ERROR_NONE)
+	if(player_unset_evas_object_cb(player) != MM_ERROR_NONE)
 		LOGW("fail to unset evas object callback");
 
 	if (CALLBACK_INFO(pc)) {
+#ifdef USE_CLIENT_PIPELINE
 		if (mm_player_mused_destroy(INT_HANDLE(pc)) != MM_ERROR_NONE)
 			ret = PLAYER_ERROR_INVALID_OPERATION;
-
+#endif
 		_player_event_queue_destroy(CALLBACK_INFO(pc));
 		tbm_bufmgr_deinit(TBM_BUFMGR(pc));
 
@@ -1210,7 +1221,9 @@ int player_prepare_async(player_h player, player_prepared_cb callback, void *use
 	muse_player_api_e api = MUSE_PLAYER_API_PREPARE_ASYNC;
 	player_cli_s *pc = (player_cli_s *)player;
 	char *ret_buf = NULL;
+#ifdef USE_CLIENT_PIPELINE
 	int is_streaming = 0;
+#endif
 
 	LOGD("ENTER");
 
@@ -1223,12 +1236,13 @@ int player_prepare_async(player_h player, player_prepared_cb callback, void *use
 	}
 	player_msg_send(api, pc, ret_buf, ret);
 
+#ifdef USE_CLIENT_PIPELINE
 	if (ret == PLAYER_ERROR_NONE) {
 		player_msg_get(is_streaming, ret_buf);
 		IS_STREAMING_CONTENT(pc) = is_streaming;
 		mm_player_get_state_timeout(INT_HANDLE(pc), &SERVER_TIMEOUT(pc), is_streaming);
 	}
-
+#endif
 	g_free(ret_buf);
 	return ret;
 }
@@ -1240,13 +1254,16 @@ int player_prepare(player_h player)
 	muse_player_api_e api = MUSE_PLAYER_API_PREPARE;
 	player_cli_s *pc = (player_cli_s *)player;
 	char *ret_buf = NULL;
+#ifdef USE_CLIENT_PIPELINE
 	char caps[MUSE_MSG_MAX_LENGTH] = {0, };
 	int is_streaming = 0;
+#endif
 
 	LOGD("ENTER");
 
 	player_msg_send(api, pc, ret_buf, ret);
 
+#ifdef USE_CLIENT_PIPELINE
 	if (CALLBACK_INFO(pc))
 		mm_player_set_attribute(INT_HANDLE(pc), NULL, "display_visible", 1, NULL);
 
@@ -1258,7 +1275,7 @@ int player_prepare(player_h player)
 		if (strlen(caps) > 0 && mm_player_mused_realize(INT_HANDLE(pc), caps) != MM_ERROR_NONE)
 			ret = PLAYER_ERROR_INVALID_OPERATION;
 	}
-
+#endif
 	g_free(ret_buf);
 	return ret;
 }
@@ -1276,7 +1293,9 @@ int player_unprepare(player_h player)
 	if (!CALLBACK_INFO(pc))
 		return PLAYER_ERROR_INVALID_STATE;
 
+#ifdef USE_CLIENT_PIPELINE
 	mm_player_mused_pre_unrealize(INT_HANDLE(pc));
+#endif
 
 	player_msg_send(api, pc, ret_buf, ret);
 	if (ret == PLAYER_ERROR_NONE) {
@@ -1286,9 +1305,10 @@ int player_unprepare(player_h player)
 		_player_deinit_memory_buffer(pc);
 	}
 
+#ifdef USE_CLIENT_PIPELINE
 	if (mm_player_mused_unrealize(INT_HANDLE(pc)) != MM_ERROR_NONE)
 		ret = PLAYER_ERROR_INVALID_OPERATION;
-
+#endif
 	g_free(ret_buf);
 	return ret;
 }
@@ -1748,12 +1768,17 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 	Evas_Object *obj = NULL;
 	const char *object_type = NULL;
 #ifdef HAVE_WAYLAND
-	void *set_handle = NULL;
-	void *set_wl_display = NULL;
-	Ecore_Wl_Window *wl_window = NULL;
 	wl_win_msg_type wl_win;
 	char *wl_win_msg = (char *)&wl_win;
+	unsigned int parent_id;
+	struct wl_surface *wl_surface;
+	struct wl_display *wl_display;
+	Ecore_Wl_Window *wl_window = NULL;
+#ifdef USE_CLIENT_PIPELINE
+	void *set_handle = NULL;
+	void *set_wl_display = NULL;
 	MMPlayerPipelineType mmPipelineType = MM_PLAYER_PIPELINE_CLIENT;
+#endif
 #else
 	unsigned int xhandle = 0;
 #endif
@@ -1774,21 +1799,35 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 				wl_win.type = type;
 
 				evas_object_geometry_get(obj, &wl_win.wl_window_x, &wl_win.wl_window_y, &wl_win.wl_window_width, &wl_win.wl_window_height);
-				if(mm_player_mused_set_evas_object_cb(INT_HANDLE(pc), obj) != MM_ERROR_NONE)
+
+				if(player_set_evas_object_cb(player, obj) != MM_ERROR_NONE){
 					LOGW("fail to set evas object callback");
+				}
 
 				wl_window = elm_win_wl_window_get(obj);
-				set_handle = (void *)ecore_wl_window_surface_get(wl_window);
+				wl_surface = (struct wl_surface *) ecore_wl_window_surface_get(wl_window);
 
 				/* get wl_display */
-				set_wl_display = (void *)ecore_wl_display_get();
+				wl_display = (struct wl_display *) ecore_wl_display_get();
 
-				LOGI("xid %d, surface_id %d, surface %p(%d), win_id %d",
-					elm_win_xwindow_get(obj),
-					ecore_wl_window_surface_id_get(wl_window),
-					ecore_wl_window_surface_get(wl_window),
-					*(int *)ecore_wl_window_surface_get(wl_window),
-					ecore_wl_window_id_get(wl_window));
+				if (!pc->wlclient) {
+					ret = _wlclient_create(&pc->wlclient);
+					if ( ret != MM_ERROR_NONE) {
+						LOGE("Wayland client create failure");
+						return ret;
+					}
+				}
+				if (wl_surface && wl_display){
+					LOGD ("surface = %p, wl_display = %p", wl_surface, wl_display);
+					parent_id = _wlclient_get_wl_window_parent_id (pc->wlclient, wl_surface, wl_display);
+					LOGD ("parent_id = %d", parent_id);
+					wl_win.parent_id = parent_id;
+					LOGD ("wl_win.parent_id = %d", wl_win.parent_id);
+				}
+				if (pc->wlclient) {
+					g_free(pc->wlclient);
+					pc->wlclient = NULL;
+				}
 #else
 				/* x window overlay surface */
 				LOGI("overlay surface type");
@@ -1803,7 +1842,9 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 
 				evas_object_geometry_get(obj, &wl_win.wl_window_x, &wl_win.wl_window_y,
 					&wl_win.wl_window_width, &wl_win.wl_window_height);
+#ifdef USE_CLIENT_PIPELINE
 				set_handle = display;
+#endif
 			}
 #endif
 			else
@@ -1812,7 +1853,7 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 			return PLAYER_ERROR_INVALID_PARAMETER;
 	}
 #ifdef HAVE_WAYLAND
-	else {
+	else { /* PLAYER_DISPLAY_TYPE_NONE */
 		LOGI("Wayland surface type is NONE");
 		wl_win.type = type;
 		wl_win.wl_window_x = 0;
@@ -1822,6 +1863,7 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 	}
 	player_msg_send_array(api, pc, ret_buf, ret, wl_win_msg, sizeof(wl_win_msg_type), sizeof(char));
 
+#ifdef USE_CLIENT_PIPELINE
 	if (CALLBACK_INFO(pc)) {
 		ret = mm_player_set_attribute(INT_HANDLE(pc), NULL,
 			"display_surface_type", type,
@@ -1843,6 +1885,7 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 		if (ret != MM_ERROR_NONE)
 			LOGE("Failed to set wl_window render rectangle :%d", ret);
 	}
+#endif
 #else
 	player_msg_send2(api, pc, ret_buf, ret, INT, type, INT, xhandle);
 #endif
@@ -1860,11 +1903,11 @@ int player_set_display_mode(player_h player, player_display_mode_e mode)
 	char *ret_buf = NULL;
 
 	LOGD("ENTER");
-
+#ifdef USE_CLIENT_PIPELINE
 	ret = mm_player_set_attribute(INT_HANDLE(pc), NULL, "display_method", mode, NULL);
 	if (ret != MM_ERROR_NONE)
 		return __player_convert_error_code(ret, (char *)__FUNCTION__);
-
+#endif
 	player_msg_send1(api, pc, ret_buf, ret, INT, mode);
 	g_free(ret_buf);
 	return ret;
@@ -1913,11 +1956,11 @@ int player_set_display_rotation(player_h player, player_display_rotation_e rotat
 	char *ret_buf = NULL;
 
 	LOGD("ENTER");
-
+#ifdef USE_CLIENT_PIPELINE
 	ret = mm_player_set_attribute(INT_HANDLE(pc), NULL, "display_rotation", rotation, NULL);
 	if (ret != MM_ERROR_NONE)
 		return __player_convert_error_code(ret, (char *)__FUNCTION__);
-
+#endif
 	player_msg_send1(api, pc, ret_buf, ret, INT, rotation);
 	g_free(ret_buf);
 	return ret;
@@ -1946,16 +1989,17 @@ int player_set_display_visible(player_h player, bool visible)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
-	player_cli_s *pc = (player_cli_s *)player;
-	int value = 0;
+//	player_cli_s *pc = (player_cli_s *)player;
+//	int value = 0;
 
 	LOGD("ENTER");
-
+#ifdef USE_CLIENT_PIPELINE
 	if (visible == TRUE)
 		value = 1;
 	ret = mm_player_set_attribute(INT_HANDLE(pc), NULL, "display_visible", value, NULL);
 	if (ret != MM_ERROR_NONE)
 		return __player_convert_error_code(ret, (char *)__FUNCTION__);
+#endif
 	return ret;
 }
 
@@ -2353,15 +2397,19 @@ int player_set_progressive_download_path(player_h player, const char *path)
 	muse_player_api_e api = MUSE_PLAYER_API_SET_PROGRESSIVE_DOWNLOAD_PATH;
 	player_cli_s *pc = (player_cli_s *)player;
 	char *ret_buf = NULL;
+#ifdef USE_CLIENT_PIPELINE
 	int type = _PLAYER_EVENT_TYPE_VIDEO_BIN_CREATED;
+#endif
 
 	LOGD("ENTER");
 
 	player_msg_send1(api, pc, ret_buf, ret, STRING, path);
+#ifdef USE_CLIENT_PIPELINE
 	if (ret == PLAYER_ERROR_NONE) {
 		pc->cb_info->user_cb[type] = dummy_user_callback;
 		pc->cb_info->user_data[type] = NULL;
 	}
+#endif
 	g_free(ret_buf);
 	return ret;
 }
