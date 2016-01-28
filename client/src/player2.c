@@ -40,6 +40,7 @@
 #include "mm_error.h"
 #include "mm_player.h"
 #include "mm_player_mused.h"
+#include "mm_player_evas.h"
 #include "dlog.h"
 
 typedef struct {
@@ -337,12 +338,7 @@ static int __unset_callback(_player_event_e type, player_h player)
 
 static void __prepare_cb_handler(callback_cb_info_s *cb_info, char *recvMsg)
 {
-	char caps[MUSE_MSG_MAX_LENGTH] = {0, };
 	_player_event_e ev = _PLAYER_EVENT_TYPE_PREPARE;
-
-	if (player_msg_get_string(caps, recvMsg))
-		if (strlen(caps) > 0)
-			mm_player_mused_realize(cb_info->local_handle, caps);
 
 	((player_prepared_cb)cb_info->user_cb[ev])(cb_info->user_data[ev]);
 
@@ -697,14 +693,6 @@ static void __video_stream_changed_cb_handler(callback_cb_info_s *cb_info, char 
 	}
 }
 
-static void __video_bin_created_cb_handler(callback_cb_info_s *cb_info, char *recvMsg)
-{
-	char caps[MUSE_MSG_MAX_LENGTH] = {0, };
-	if (player_msg_get_string(caps, recvMsg))
-		if (strlen(caps) > 0)
-			mm_player_mused_realize(cb_info->local_handle, caps);
-}
-
 static void dummy_user_callback()
 {
 }
@@ -737,7 +725,7 @@ static void (*_user_callbacks[_PLAYER_EVENT_TYPE_NUM])(callback_cb_info_s *cb_in
 	__media_stream_audio_seek_cb_handler,	/*_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_SEEK*/
 	NULL,	/*_PLAYER_EVENT_TYPE_AUDIO_STREAM_CHANGED*/
 	__video_stream_changed_cb_handler,	/*_PLAYER_EVENT_TYPE_VIDEO_STREAM_CHANGED*/
-	__video_bin_created_cb_handler,	/*_PLAYER_EVENT_TYPE_VIDEO_BIN_CREATED*/
+	//__video_bin_created_cb_handler,	/*_PLAYER_EVENT_TYPE_VIDEO_BIN_CREATED*/
 };
 
 static void _player_event_job_function(_player_cb_data *data)
@@ -1136,18 +1124,10 @@ int player_create(player_h *player)
 			LOGD("Data channel fd %d, muse module addr %p", pc->cb_info->data_fd, module_addr);
 		}
 
-		if (mm_player_mused_create(&INT_HANDLE(pc)) != MM_ERROR_NONE) {
-			LOGE("create failure");
-			ret = PLAYER_ERROR_INVALID_OPERATION;
-			goto ErrorExit;
-		}
 		mm_player_get_state_timeout(INT_HANDLE(pc), &SERVER_TIMEOUT(pc), TRUE);
 		SERVER_TIMEOUT(pc) += CALLBACK_TIME_OUT;
 		if (player_msg_get_string(stream_path, ret_buf)) {
 			LOGD("shmsrc stream path : %s", stream_path);
-			if (mm_player_set_shm_stream_path(INT_HANDLE(pc), stream_path)
-				!= MM_ERROR_NONE)
-				goto ErrorExit;
 		}
 	} else
 		goto ErrorExit;
@@ -1183,13 +1163,8 @@ int player_destroy(player_h player)
 
 	player_msg_send(api, pc, ret_buf, ret);
 
-	if(mm_player_mused_unset_evas_object_cb(INT_HANDLE(pc)) != MM_ERROR_NONE)
-		LOGW("fail to unset evas object callback");
 
 	if (CALLBACK_INFO(pc)) {
-		if (mm_player_mused_destroy(INT_HANDLE(pc)) != MM_ERROR_NONE)
-			ret = PLAYER_ERROR_INVALID_OPERATION;
-
 		_player_event_queue_destroy(CALLBACK_INFO(pc));
 		tbm_bufmgr_deinit(TBM_BUFMGR(pc));
 
@@ -1247,15 +1222,12 @@ int player_prepare(player_h player)
 
 	player_msg_send(api, pc, ret_buf, ret);
 
-	if (CALLBACK_INFO(pc))
-		mm_player_set_attribute(INT_HANDLE(pc), NULL, "display_visible", 1, NULL);
-
 	if (ret == PLAYER_ERROR_NONE) {
 		player_msg_get(is_streaming, ret_buf);
 		IS_STREAMING_CONTENT(pc) = is_streaming;
 		mm_player_get_state_timeout(INT_HANDLE(pc), &SERVER_TIMEOUT(pc), is_streaming);
 		player_msg_get_string(caps, ret_buf);
-		if (strlen(caps) > 0 && mm_player_mused_realize(INT_HANDLE(pc), caps) != MM_ERROR_NONE)
+		if (strlen(caps) > 0)
 			ret = PLAYER_ERROR_INVALID_OPERATION;
 	}
 
@@ -1276,8 +1248,6 @@ int player_unprepare(player_h player)
 	if (!CALLBACK_INFO(pc))
 		return PLAYER_ERROR_INVALID_STATE;
 
-	mm_player_mused_pre_unrealize(INT_HANDLE(pc));
-
 	player_msg_send(api, pc, ret_buf, ret);
 	if (ret == PLAYER_ERROR_NONE) {
 		set_null_user_cb_lock(pc->cb_info, _PLAYER_EVENT_TYPE_SEEK);
@@ -1286,8 +1256,8 @@ int player_unprepare(player_h player)
 		_player_deinit_memory_buffer(pc);
 	}
 
-	if (mm_player_mused_unrealize(INT_HANDLE(pc)) != MM_ERROR_NONE)
-		ret = PLAYER_ERROR_INVALID_OPERATION;
+	if (mm_player_mused_unset_evas_info(INT_HANDLE(pc)) != MM_ERROR_NONE)
+		LOGW("fail to unset evas client");
 
 	g_free(ret_buf);
 	return ret;
@@ -1547,6 +1517,9 @@ int player_start(player_h player)
 
 	LOGD("ENTER");
 
+	if (mm_player_mused_update_video_param(INT_HANDLE(pc)) == MM_ERROR_NONE)
+		return ret;
+
 	player_msg_send(api, pc, ret_buf, ret);
 
 	g_free(ret_buf);
@@ -1748,12 +1721,9 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 	Evas_Object *obj = NULL;
 	const char *object_type = NULL;
 #ifdef HAVE_WAYLAND
-	void *set_handle = NULL;
-	void *set_wl_display = NULL;
 	Ecore_Wl_Window *wl_window = NULL;
 	wl_win_msg_type wl_win;
 	char *wl_win_msg = (char *)&wl_win;
-	MMPlayerPipelineType mmPipelineType = MM_PLAYER_PIPELINE_CLIENT;
 #else
 	unsigned int xhandle = 0;
 #endif
@@ -1774,14 +1744,8 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 				wl_win.type = type;
 
 				evas_object_geometry_get(obj, &wl_win.wl_window_x, &wl_win.wl_window_y, &wl_win.wl_window_width, &wl_win.wl_window_height);
-				if(mm_player_mused_set_evas_object_cb(INT_HANDLE(pc), obj) != MM_ERROR_NONE)
-					LOGW("fail to set evas object callback");
 
 				wl_window = elm_win_wl_window_get(obj);
-				set_handle = (void *)ecore_wl_window_surface_get(wl_window);
-
-				/* get wl_display */
-				set_wl_display = (void *)ecore_wl_display_get();
 
 				LOGI("xid %d, surface_id %d, surface %p(%d), win_id %d",
 					elm_win_xwindow_get(obj),
@@ -1800,10 +1764,15 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 				/* evas object surface */
 				LOGI("evas surface type");
 				wl_win.type = type;
-
 				evas_object_geometry_get(obj, &wl_win.wl_window_x, &wl_win.wl_window_y,
 					&wl_win.wl_window_width, &wl_win.wl_window_height);
-				set_handle = display;
+
+				if(mm_player_mused_set_evas_info(&INT_HANDLE(pc), obj) != MM_ERROR_NONE) {
+					LOGW("fail to set evas client");
+				}
+				if(player_set_media_packet_video_frame_decoded_cb(player, _decoded_callback_for_evas , (void*) INT_HANDLE(pc)) != PLAYER_ERROR_NONE) {
+					LOGW("fail to set decoded callback");
+				}
 			}
 #endif
 			else
@@ -1821,28 +1790,6 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 		wl_win.wl_window_height = 0;
 	}
 	player_msg_send_array(api, pc, ret_buf, ret, wl_win_msg, sizeof(wl_win_msg_type), sizeof(char));
-
-	if (CALLBACK_INFO(pc)) {
-		ret = mm_player_set_attribute(INT_HANDLE(pc), NULL,
-			"display_surface_type", type,
-			"pipeline_type", mmPipelineType,
-			"wl_display", set_wl_display,
-			sizeof(void *),
-			"display_overlay", set_handle,
-			sizeof(display), (char *)NULL);
-		if (ret != MM_ERROR_NONE)
-			LOGE("Failed to display surface change :%d", ret);
-
-		ret = mm_player_set_attribute(INT_HANDLE(pc), NULL,
-			"wl_window_render_x", wl_win.wl_window_x,
-			"wl_window_render_y", wl_win.wl_window_y,
-			"wl_window_render_width", wl_win.wl_window_width,
-			"wl_window_render_height", wl_win.wl_window_height,
-			(char *)NULL);
-
-		if (ret != MM_ERROR_NONE)
-			LOGE("Failed to set wl_window render rectangle :%d", ret);
-	}
 #else
 	player_msg_send2(api, pc, ret_buf, ret, INT, type, INT, xhandle);
 #endif
@@ -1861,9 +1808,10 @@ int player_set_display_mode(player_h player, player_display_mode_e mode)
 
 	LOGD("ENTER");
 
-	ret = mm_player_set_attribute(INT_HANDLE(pc), NULL, "display_method", mode, NULL);
-	if (ret != MM_ERROR_NONE)
-		return __player_convert_error_code(ret, (char *)__FUNCTION__);
+	ret = mm_player_mused_set_geometry_evas_info (INT_HANDLE(pc), mode);
+	if (ret == PLAYER_ERROR_NONE) {
+		return ret;
+	}/* FIXME : devide server and client and consider which error code will be returned */
 
 	player_msg_send1(api, pc, ret_buf, ret, INT, mode);
 	g_free(ret_buf);
@@ -1876,15 +1824,25 @@ int player_get_display_mode(player_h player, player_display_mode_e *pmode)
 	PLAYER_NULL_ARG_CHECK(pmode);
 	int ret = PLAYER_ERROR_NONE;
 	player_cli_s *pc = (player_cli_s *)player;
+	muse_player_api_e api = MUSE_PLAYER_API_GET_DISPLAY_MODE;
+	char *ret_buf = NULL;
 	int mode = -1;
 
 	LOGD("ENTER");
 
-	ret = mm_player_get_attribute(INT_HANDLE(pc), NULL, "display_method", &mode, NULL);
-	if (ret != MM_ERROR_NONE)
-		return __player_convert_error_code(ret, (char *)__FUNCTION__);
+	ret = mm_player_mused_get_geometry_evas_info (INT_HANDLE(pc), &mode);
+	if (ret == PLAYER_ERROR_NONE && mode != -1) {
+		*pmode = (player_display_mode_e) mode;
+		return ret;
+	}
 
-	*pmode = mode;
+	player_msg_send(api, pc, ret_buf, ret);
+	if (ret == PLAYER_ERROR_NONE) {
+		player_msg_get_type(mode, ret_buf, INT);
+		*pmode = mode;
+	}
+
+	g_free(ret_buf);
 	return ret;
 }
 
@@ -1914,9 +1872,10 @@ int player_set_display_rotation(player_h player, player_display_rotation_e rotat
 
 	LOGD("ENTER");
 
-	ret = mm_player_set_attribute(INT_HANDLE(pc), NULL, "display_rotation", rotation, NULL);
-	if (ret != MM_ERROR_NONE)
-		return __player_convert_error_code(ret, (char *)__FUNCTION__);
+	ret = mm_player_mused_set_rotation_evas_info (INT_HANDLE(pc), rotation);
+	if (ret == PLAYER_ERROR_NONE) {
+		return ret;
+	}
 
 	player_msg_send1(api, pc, ret_buf, ret, INT, rotation);
 	g_free(ret_buf);
@@ -1929,16 +1888,25 @@ int player_get_display_rotation(player_h player, player_display_rotation_e *prot
 	PLAYER_NULL_ARG_CHECK(protation);
 	int ret = PLAYER_ERROR_NONE;
 	player_cli_s *pc = (player_cli_s *)player;
+	muse_player_api_e api = MUSE_PLAYER_API_GET_DISPLAY_ROTATION;
+	char *ret_buf = NULL;
 	int rotation = -1;
 
 	LOGD("ENTER");
 
-	ret = mm_player_get_attribute(INT_HANDLE(pc), NULL, "display_rotation", &rotation, NULL);
-	if (ret != MM_ERROR_NONE)
-		return __player_convert_error_code(ret, (char *)__FUNCTION__);
+	ret = mm_player_mused_get_rotation_evas_info (INT_HANDLE(pc), &rotation);
+	if (ret == PLAYER_ERROR_NONE && rotation != -1) {
+		*protation = (player_display_rotation_e) rotation;
+		return ret;
+	}
 
-	*protation = rotation;
+	player_msg_send(api, pc, ret_buf, ret);
+	if (ret == PLAYER_ERROR_NONE) {
+		player_msg_get_type(rotation, ret_buf, INT);
+		*protation = rotation;
+	}
 
+	g_free(ret_buf);
 	return ret;
 }
 
@@ -1946,16 +1914,20 @@ int player_set_display_visible(player_h player, bool visible)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	int ret = PLAYER_ERROR_NONE;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_DISPLAY_VISIBLE;
 	player_cli_s *pc = (player_cli_s *)player;
-	int value = 0;
+	char *ret_buf = NULL;
 
 	LOGD("ENTER");
 
-	if (visible == TRUE)
-		value = 1;
-	ret = mm_player_set_attribute(INT_HANDLE(pc), NULL, "display_visible", value, NULL);
-	if (ret != MM_ERROR_NONE)
-		return __player_convert_error_code(ret, (char *)__FUNCTION__);
+	ret = mm_player_mused_set_visible_evas_info(INT_HANDLE(pc), visible);
+	if (ret == PLAYER_ERROR_NONE) {
+		return ret;
+	}
+
+	player_msg_send1(api, pc, ret_buf, ret, INT, visible);
+	g_free(ret_buf);
+
 	return ret;
 }
 
@@ -1965,19 +1937,32 @@ int player_is_display_visible(player_h player, bool *pvisible)
 	PLAYER_NULL_ARG_CHECK(pvisible);
 	int ret = PLAYER_ERROR_NONE;
 	player_cli_s *pc = (player_cli_s *)player;
-	int value = 0;
+	muse_player_api_e api = MUSE_PLAYER_API_IS_DISPLAY_VISIBLE;
+	char *ret_buf = NULL;
+	int value = -1;
+	bool visible = 0;
 
 	LOGD("ENTER");
 
-	ret = mm_player_get_attribute(INT_HANDLE(pc), NULL, "display_visible", &value, NULL);
-	if (ret != MM_ERROR_NONE)
-		return __player_convert_error_code(ret, (char *)__FUNCTION__);
-	else {
+	ret = mm_player_mused_get_visible_evas_info (INT_HANDLE(pc), &visible);
+	if (ret == PLAYER_ERROR_NONE) {
+		if (visible)
+			*pvisible = TRUE;
+		else
+			*pvisible = FALSE;
+		return ret;
+	}
+
+	player_msg_send(api, pc, ret_buf, ret);
+	if (ret == PLAYER_ERROR_NONE) {
+		player_msg_get_type(value, ret_buf, INT);
 		if (value)
 			*pvisible = TRUE;
 		else
 			*pvisible = FALSE;
 	}
+
+	g_free(ret_buf);
 	return ret;
 }
 
