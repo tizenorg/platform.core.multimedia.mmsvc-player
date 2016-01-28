@@ -10,7 +10,7 @@ SET(PREFIX ${CMAKE_INSTALL_PREFIX})
 SET(INC_DIR include)
 INCLUDE_DIRECTORIES(${INC_DIR})
 
-SET(dependents "dlog glib-2.0 libtbm mused legacy-capi-media-player mm-common")
+SET(dependents "dlog glib-2.0 libtbm mused legacy-capi-media-player mm-common tizen-extension-client evas")
 
 INCLUDE(FindPkgConfig)
 pkg_check_modules(${fw_name} REQUIRED ${dependents})
