@@ -520,7 +520,7 @@ static int app_reset(bundle *b, void *data)
 	media_format_set_video_width(ad->video_fmt, ES_DEFAULT_VIDEO_FORMAT_WIDTH);
 	media_format_set_video_height(ad->video_fmt, ES_DEFAULT_VIDEO_FORMAT_HEIGHT);
 
-	player_set_media_stream_buffer_max_size(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO, (unsigned long long)800*1024);
+	player_set_media_stream_buffer_max_size(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO, (unsigned long long)3*1024*1024);
 	player_set_media_stream_buffer_min_threshold(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO, 50);
 
 	ret = player_set_media_stream_buffer_status_cb_ex(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO, _video_buffer_status_cb_ex, (void *)ad);
