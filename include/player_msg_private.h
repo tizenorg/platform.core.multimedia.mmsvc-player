@@ -51,7 +51,7 @@ typedef struct _player_push_media_msg_type{
 
 typedef struct {
 	int type;
-	unsigned int parent_id;
+	unsigned int wl_surface_id;
 	int wl_window_x;
 	int wl_window_y;
 	int wl_window_width;

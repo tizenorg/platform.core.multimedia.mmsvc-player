@@ -37,7 +37,7 @@ typedef struct
 	struct tizen_resource *tz_resource;
 } wl_client;
 int _wlclient_create (wl_client ** wlclient);
-int _wlclient_get_wl_window_parent_id (wl_client * wlclient, struct wl_surface *surface, struct wl_display *display);
+int _wlclient_get_wl_window_wl_surface_id (wl_client * wlclient, struct wl_surface *surface, struct wl_display *display);
 void _wlclient_finalize (wl_client * wlclient);
 
 #ifdef __cplusplus

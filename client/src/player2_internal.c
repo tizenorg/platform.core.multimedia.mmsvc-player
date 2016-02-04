@@ -183,7 +183,7 @@ static void __evas_resize_cb (void *data, Evas *e, Evas_Object *eo, void *event_
 			wl_win.wl_window_x, wl_win.wl_window_y, wl_win.wl_window_width, wl_win.wl_window_height);
 
 	wl_win.type = 0; /*init  but not use */
-	wl_win.parent_id = 0; /*init  but not use */
+	wl_win.wl_surface_id = 0; /*init  but not use */
 
 	player_msg_send_array(api, pc, ret_buf, ret, wl_win_msg, sizeof(wl_win_msg_type), sizeof(char));
 

@@ -1688,7 +1688,7 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 #ifdef HAVE_WAYLAND
 	wl_win_msg_type wl_win;
 	char *wl_win_msg = (char *)&wl_win;
-	unsigned int parent_id;
+	unsigned int wl_surface_id;
 	struct wl_surface *wl_surface;
 	struct wl_display *wl_display;
 	Ecore_Wl_Window *wl_window = NULL;
@@ -1732,10 +1732,10 @@ int player_set_display(player_h player, player_display_type_e type, player_displ
 				}
 				if (wl_surface && wl_display){
 					LOGD ("surface = %p, wl_display = %p", wl_surface, wl_display);
-					parent_id = _wlclient_get_wl_window_parent_id (pc->wlclient, wl_surface, wl_display);
-					LOGD ("parent_id = %d", parent_id);
-					wl_win.parent_id = parent_id;
-					LOGD ("wl_win.parent_id = %d", wl_win.parent_id);
+					wl_surface_id = _wlclient_get_wl_window_wl_surface_id (pc->wlclient, wl_surface, wl_display);
+					LOGD ("wl_surface_id = %d", wl_surface_id);
+					wl_win.wl_surface_id = wl_surface_id;
+					LOGD ("wl_win.wl_surface_id = %d", wl_win.wl_surface_id);
 				}
 				if (pc->wlclient) {
 					g_free(pc->wlclient);

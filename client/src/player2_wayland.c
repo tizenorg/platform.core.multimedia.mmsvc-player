@@ -40,9 +40,9 @@
 
 void handle_resource_id(void *data, struct tizen_resource *tizen_resource, uint32_t id)
 {
-    unsigned int *parent_id = data;
+    unsigned int *wl_surface_id = data;
 
-    *parent_id = id;
+    *wl_surface_id = id;
 
     LOGD("[CLIENT] got parent_id(%d) from server\n", id);
 }
@@ -92,13 +92,13 @@ ERROR:
 }
 
 
-int _wlclient_get_wl_window_parent_id (wl_client * wlclient, struct wl_surface *surface, struct wl_display *display)
+int _wlclient_get_wl_window_wl_surface_id (wl_client * wlclient, struct wl_surface *surface, struct wl_display *display)
 {
 	goto_if_fail (wlclient != NULL, failed);
 	goto_if_fail (surface != NULL, failed);
 	goto_if_fail (display != NULL, failed);
 
-	unsigned int parent_id = 0;
+	unsigned int wl_surface_id = 0;
 
 	wlclient->display = display;
 	goto_if_fail (wlclient->display != NULL, failed);
@@ -113,20 +113,20 @@ int _wlclient_get_wl_window_parent_id (wl_client * wlclient, struct wl_surface *
 	/* check global objects */
 	goto_if_fail (wlclient->tz_surface != NULL, failed);
 
-	/* Get parent_id which is unique in a entire systemw. */
+	/* Get wl_surface_id which is unique in a entire systemw. */
 	wlclient->tz_resource = tizen_surface_get_tizen_resource(wlclient->tz_surface, surface);
 	goto_if_fail (wlclient->tz_resource != NULL, failed);
 
-    tizen_resource_add_listener(wlclient->tz_resource, &tz_resource_listener, &parent_id);
+    tizen_resource_add_listener(wlclient->tz_resource, &tz_resource_listener, &wl_surface_id);
 	wl_display_roundtrip(wlclient->display);
-	goto_if_fail (parent_id > 0, failed);
+	goto_if_fail (wl_surface_id > 0, failed);
 
 	_wlclient_finalize(wlclient);
 
-	return parent_id;
+	return wl_surface_id;
 
 failed:
-  LOGE ("Failed to get parent_id");
+  LOGE ("Failed to get wl_surface_id");
 
   return 0;
 }

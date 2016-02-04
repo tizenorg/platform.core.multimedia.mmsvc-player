@@ -71,7 +71,7 @@ typedef struct {
 * define for lagacy API for mused
 */
 #ifdef HAVE_WAYLAND
-extern int player_set_display_wl_for_mused(player_h player, player_display_type_e type, int parent_id, int x, int y, int w, int h);
+extern int player_set_display_wl_for_mused(player_h player, player_display_type_e type, int wl_surface_id, int x, int y, int w, int h);
 extern int player_resize_video_render_rect(player_h player, int x, int y, int w, int h);
 #else
 extern int player_set_display_for_mused(player_h player, player_display_type_e type, unsigned int xhandle);
@@ -1003,7 +1003,7 @@ static int player_disp_set_display(muse_module_h module)
 #ifdef HAVE_WAYLAND
 	player_msg_get_array(wl_win_msg, muse_core_client_get_msg(module));
 
-	ret = player_set_display_wl_for_mused((player_h)handle, wl_win.type, wl_win.parent_id, wl_win.wl_window_x, wl_win.wl_window_y, wl_win.wl_window_width, wl_win.wl_window_height);
+	ret = player_set_display_wl_for_mused((player_h)handle, wl_win.type, wl_win.wl_surface_id, wl_win.wl_window_x, wl_win.wl_window_y, wl_win.wl_window_width, wl_win.wl_window_height);
 #else
 	player_msg_get(type, muse_core_client_get_msg(module));
 	player_msg_get(xhandle, muse_core_client_get_msg(module));
