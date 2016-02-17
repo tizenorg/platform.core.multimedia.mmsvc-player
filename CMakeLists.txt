@@ -1,68 +1,18 @@
-
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
-SET(fw_name "muse-player")
+
+# project
+SET(description "A Player module for muse server")
+SET(service "mmsvc")
+SET(submodule "player")
+SET(fw_name "${service}-${submodule}")
 
 PROJECT(${fw_name})
 
-SET(CMAKE_INSTALL_PREFIX /usr)
-SET(PREFIX ${CMAKE_INSTALL_PREFIX})
-
-SET(INC_DIR include)
-INCLUDE_DIRECTORIES(${INC_DIR})
-
-SET(dependents "dlog glib-2.0 libtbm mused legacy-capi-media-player mm-common tizen-extension-client evas")
-
-INCLUDE(FindPkgConfig)
-pkg_check_modules(${fw_name} REQUIRED ${dependents})
-FOREACH(flag ${${fw_name}_CFLAGS})
-    SET(EXTRA_CFLAGS "${EXTRA_CFLAGS} ${flag}")
-ENDFOREACH(flag)
-
-SET(CMAKE_C_FLAGS "-I./${INC_DIR} ${CMAKE_C_FLAGS} ${EXTRA_CFLAGS} -fPIC -Wall -Werror -Wno-error=deprecated-declarations")
-SET(CMAKE_C_FLAGS_DEBUG "-O0 -g")
-
-IF("${ARCH}" STREQUAL "arm")
-    ADD_DEFINITIONS("-DTARGET")
-ENDIF("${ARCH}" STREQUAL "arm")
-
-ADD_DEFINITIONS("-DPREFIX=\"${CMAKE_INSTALL_PREFIX}\"")
-ADD_DEFINITIONS("-DTIZEN_DEBUG")
-IF (TIZEN_MOBILE)
-ADD_DEFINITIONS("-DTIZEN_MOBILE")
-ENDIF(TIZEN_MOBILE)
-IF(WAYLAND_SUPPORT)
- ADD_DEFINITIONS("-DHAVE_WAYLAND")
-ENDIF(WAYLAND_SUPPORT)
-IF(X11_SUPPORT)
- ADD_DEFINITIONS("-DHAVE_X11")
-ENDIF(X11_SUPPORT)
-
-SET(CMAKE_EXE_LINKER_FLAGS "-Wl,--as-needed -Wl,--rpath=${LIB_INSTALL_DIR}")
-
-aux_source_directory(src SOURCES)
-ADD_LIBRARY(${fw_name} SHARED ${SOURCES})
-
-TARGET_LINK_LIBRARIES(${fw_name} ${${fw_name}_LDFLAGS})
-
-SET_TARGET_PROPERTIES(${fw_name}
-     PROPERTIES
-     VERSION ${FULLVER}
-     SOVERSION ${MAJORVER}
-     CLEAN_DIRECT_OUTPUT 1
-)
-
-INSTALL(TARGETS ${fw_name} DESTINATION ${LIB_INSTALL_DIR})
-INSTALL(
-        DIRECTORY ${INC_DIR}/ DESTINATION include/media
-        FILES_MATCHING
-        PATTERN "*_private.h" EXCLUDE
-        PATTERN "${INC_DIR}/*.h"
-        )
+SET(pc_dependents "libtbm capi-media-tool capi-base-common capi-media-sound-manager")
 
 SET(PC_NAME ${fw_name})
 SET(PC_REQUIRED ${pc_dependents})
-SET(PC_LDFLAGS -l${fw_name})
-SET(PC_CFLAGS -I\${includedir}/media)
+SET(PC_LDFLAGS -lmuse-player)
 
 CONFIGURE_FILE(
     ${fw_name}.pc.in
@@ -71,7 +21,8 @@ CONFIGURE_FILE(
 )
 INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/${fw_name}.pc DESTINATION ${LIB_INSTALL_DIR}/pkgconfig)
 
-ADD_SUBDIRECTORY(client)
+ADD_SUBDIRECTORY(legacy)
+ADD_SUBDIRECTORY(muse)
 
 IF(UNIX)
 

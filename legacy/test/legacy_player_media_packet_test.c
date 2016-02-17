@@ -17,7 +17,7 @@
 #include <Elementary.h>
 #include <tbm_surface.h>
 #include <dlog.h>
-#include <player.h>
+#include <legacy_player.h>
 #include <glib.h>
 #include <appcore-efl.h>
 
@@ -134,7 +134,6 @@ static void _media_packet_video_decoded_cb(media_packet_h packet, void *user_dat
 	if (ad->pipe == NULL) {
 		media_packet_destroy(packet);
 		LOGW("release media packet immediately");
-		g_mutex_unlock(&ad->buffer_lock);
 		return;
 	}
 
@@ -156,7 +155,7 @@ static void pipe_cb(void *data, void *buf, unsigned int len)
 	/* Now, we get a player surface to be set here. */
 	appdata_s *ad = data;
 	tbm_surface_h surface;
-#ifdef _CAN_USE_NATIVE_SURFACE_TBM
+#if _CAN_USE_NATIVE_SURFACE_TBM
 	Evas_Native_Surface surf;
 #endif
 	tbm_surface_info_s suf_info;
@@ -207,7 +206,7 @@ static void pipe_cb(void *data, void *buf, unsigned int len)
 
 	g_mutex_unlock(&ad->buffer_lock);
 
-#ifdef _CAN_USE_NATIVE_SURFACE_TBM
+#if _CAN_USE_NATIVE_SURFACE_TBM
 	/* Set tbm surface to image native surface */
 	memset(&surf, 0x0, sizeof(surf));
 	surf.version = EVAS_NATIVE_SURFACE_VERSION;
@@ -287,7 +286,7 @@ static int app_pause(void *data)
 	}
 
 	if (ad->player_handle == NULL) {
-		g_print("player_handle is NULL");
+		printf("player_handle is NULL");
 		return -1;
 	}
 
@@ -332,21 +331,15 @@ static int app_pause(void *data)
 
 	g_mutex_unlock(&ad->buffer_lock);
 
-	ret = player_unset_media_packet_video_frame_decoded_cb(ad->player_handle);
+	ret = legacy_player_unprepare(ad->player_handle);
 	if (ret != PLAYER_ERROR_NONE) {
-		g_print("player_unset_media_packet_video_frame_decoded_cb failed : 0x%x", ret);
+		printf("legacy_player_unprepare failed : 0x%x", ret);
 		return false;
 	}
 
-	ret = player_unprepare(ad->player_handle);
+	ret = legacy_player_destroy(ad->player_handle);
 	if (ret != PLAYER_ERROR_NONE) {
-		g_print("player_unprepare failed : 0x%x", ret);
-		return false;
-	}
-
-	ret = player_destroy(ad->player_handle);
-	if (ret != PLAYER_ERROR_NONE) {
-		g_print("player_destroy failed : 0x%x", ret);
+		printf("legacy_player_destroy failed : 0x%x", ret);
 		return false;
 	}
 
@@ -382,37 +375,37 @@ static int app_reset(bundle *b, void *data)
 	/* create ecore pipe */
 	ad->pipe = ecore_pipe_add(pipe_cb, ad);
 
-	ret = player_create(&ad->player_handle);
+	ret = legacy_player_create(&ad->player_handle);
 	if (ret != PLAYER_ERROR_NONE) {
-		LOGE("player_create failed : 0x%x", ret);
+		LOGE("legacy_player_create failed : 0x%x", ret);
 		return -1;
 	}
 
-	ret = player_set_media_packet_video_frame_decoded_cb(ad->player_handle, _media_packet_video_decoded_cb, ad);
+	ret = legacy_player_set_media_packet_video_frame_decoded_cb(ad->player_handle, _media_packet_video_decoded_cb, ad);
 	if (ret != PLAYER_ERROR_NONE) {
-		LOGE("player_set_media_packet_video_frame_decoded_cb failed : 0x%x", ret);
+		LOGE("legacy_player_set_media_packet_video_frame_decoded_cb failed : 0x%x", ret);
 		goto FAILED;
 	}
 
-	ret = player_set_display(ad->player_handle, PLAYER_DISPLAY_TYPE_NONE, NULL);
+	ret = legacy_player_set_display(ad->player_handle, PLAYER_DISPLAY_TYPE_NONE, NULL);
 	if (ret != PLAYER_ERROR_NONE) {
-		LOGE("player_set_display failed : 0x%x", ret);
+		LOGE("legacy_player_set_display failed : 0x%x", ret);
 		goto FAILED;
 	}
 
-	ret = player_set_uri(ad->player_handle, MEDIA_FILE_PATH);
+	ret = legacy_player_set_uri(ad->player_handle, MEDIA_FILE_PATH);
 	if (ret != PLAYER_ERROR_NONE) {
-		LOGE("player_set_uri failed : 0x%x", ret);
+		LOGE("legacy_player_set_uri failed : 0x%x", ret);
 		goto FAILED;
 	}
 
-	ret = player_prepare(ad->player_handle);
+	ret = legacy_player_prepare(ad->player_handle);
 	if (ret != PLAYER_ERROR_NONE) {
 		LOGE("player prepare failed : 0x%x", ret);
 		goto FAILED;
 	}
 
-	ret = player_start(ad->player_handle);
+	ret = legacy_player_start(ad->player_handle);
 	if (ret != PLAYER_ERROR_NONE) {
 		LOGE("player start failed : 0x%x", ret);
 		goto FAILED;
@@ -424,7 +417,7 @@ static int app_reset(bundle *b, void *data)
 
 FAILED:
 	if (ad->player_handle) {
-		player_destroy(ad->player_handle);
+		legacy_player_destroy(ad->player_handle);
 		ad->player_handle = NULL;
 	}
 

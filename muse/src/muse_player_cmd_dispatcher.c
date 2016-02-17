@@ -14,24 +14,10 @@
 * limitations under the License.
 */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <limits.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <glib.h>
-
-#include "mm_types.h"
-#include "mm_debug.h"
-#include "mm_error.h"
-#include "mm_player.h"
+#include <dlog.h>
 #include "muse_core.h"
 #include "muse_core_ipc.h"
-#include "player2_private.h"
-#include "player_msg_private.h"
+#include "legacy_player.h"
 
 static int player_cmd_shutdown(muse_module_h module)
 {
@@ -41,21 +27,21 @@ static int player_cmd_shutdown(muse_module_h module)
 
 	handle = muse_core_ipc_get_handle(module);
 
-	ret = player_get_state((player_h)handle, &state);
+	ret = legacy_player_get_state((player_h)handle, &state);
 
 	if (ret != PLAYER_ERROR_NONE)
 		return ret;
 
 	switch (state) {
 	case PLAYER_STATE_PLAYING:
-		player_stop((player_h)handle);
+		legacy_player_stop((player_h)handle);
 		/* FALLTHROUGH */
 	case PLAYER_STATE_PAUSED:
 	case PLAYER_STATE_READY:
-		player_unprepare((player_h)handle);
+		legacy_player_unprepare((player_h)handle);
 		/* FALLTHROUGH */
 	case PLAYER_STATE_IDLE:
-		player_destroy((player_h)handle);
+		legacy_player_destroy((player_h)handle);
 		break;
 
 	default:

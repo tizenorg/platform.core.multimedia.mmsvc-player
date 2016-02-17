@@ -1,23 +1,21 @@
 %bcond_with wayland
 %bcond_with x
 
-Name:       capi-media-player
-Summary:    A Media Daemon player library in Tizen Native API
-Version:    0.3.3
-Release:    2
-Group:      Multimedia/API
+Name:       mmsvc-player
+Summary:    A Media Player module for muse server
+Version:    0.2.9
+Release:    0
+Group:      Multimedia/Libraries
 License:    Apache-2.0
 Source0:    %{name}-%{version}.tar.gz
+Source1001: 	mmsvc-player.manifest
 BuildRequires:  cmake
 BuildRequires:  pkgconfig(dlog)
-BuildRequires:  pkgconfig(glib-2.0)
 BuildRequires:  pkgconfig(mused)
 BuildRequires:  pkgconfig(mm-common)
 BuildRequires:  pkgconfig(mm-player)
 BuildRequires:  pkgconfig(capi-base-common)
 BuildRequires:  pkgconfig(capi-media-sound-manager)
-BuildRequires:  pkgconfig(legacy-capi-media-player)
-BuildRequires:  pkgconfig(tizen-extension-client)
 BuildRequires:  pkgconfig(appcore-efl)
 BuildRequires:  pkgconfig(elementary)
 BuildRequires:  pkgconfig(ecore)
@@ -31,23 +29,27 @@ BuildRequires:  pkgconfig(ecore-wayland)
 BuildRequires:  pkgconfig(capi-media-tool)
 BuildRequires:  pkgconfig(json-c)
 BuildRequires:  pkgconfig(libtbm)
+BuildRequires:  pkgconfig(ttrace)
+BuildRequires:  pkgconfig(capi-system-info)
+BuildRequires:  pkgconfig(mm-sound)
 BuildRequires:  pkgconfig(eom)
 
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 
 %description
-A Media Player Daemon library in Tizen Native API.
-
+A Media Player module for muse server and Tizen Native API.
 %package devel
-Summary:  A Media Player Daemon library in Tizen Native API.(Development)
+Summary:  A Media Player module for muse server.(Development)
 Group:    Development/Multimedia
 Requires: %{name} = %{version}-%{release}
 
 %description devel
+%devel_desc
 
 %prep
 %setup -q
+cp %{SOURCE1001} .
 
 
 %build
@@ -81,30 +83,22 @@ make %{?jobs:-j%jobs}
 
 %install
 rm -rf %{buildroot}
-mkdir -p %{buildroot}/usr/share/license
-mkdir -p %{buildroot}/usr/bin
-cp LICENSE.APLv2 %{buildroot}/usr/share/license/%{name}
-cp client/test/player_test %{buildroot}/usr/bin
-cp client/test/player_media_packet_test %{buildroot}/usr/bin
-cp client/test/player_es_push_test %{buildroot}/usr/bin
 
 %make_install
 
-%post
-/sbin/ldconfig
+%post -p /sbin/ldconfig
 
 %postun -p /sbin/ldconfig
 
-
 %files
-%manifest capi-media-player.manifest
+%manifest mmsvc-player.manifest
+%license LICENSE.APLv2
+%{_libdir}/liblegacy-player.so*
 %{_libdir}/libmuse-player.so*
-%{_libdir}/libcapi-media-player.so*
-%{_datadir}/license/%{name}
-/usr/bin/player_test
-/usr/bin/player_media_packet_test
-/usr/bin/player_es_push_test
+%{_bindir}/*
 
 %files devel
 %{_includedir}/media/*.h
 %{_libdir}/pkgconfig/*.pc
+%{_libdir}/liblegacy-player.so
+%{_libdir}/libmuse-player.so

@@ -14,19 +14,18 @@
 * limitations under the License.
 */
 
-#ifndef __PLAYER_MSG_PRIVATE_H__
-#define __PLAYER_MSG_PRIVATE_H__
+#ifndef __TIZEN_MEDIA_MUSE_PLAYER_MSG_H__
+#define __TIZEN_MEDIA_MUSE_PLAYER_MSG_H__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <muse_core_msg_json.h>
-#include <media_format.h>
 #include <tbm_bufmgr.h>
-#include <player2_private.h>
-
-#define CALLBACK_TIME_OUT 5
+#include <media_packet.h>
+#include <media_format.h>
+#include <muse_core_ipc.h>
+#include <muse_core_msg_json.h>
 
 typedef int32_t INT;
 typedef int64_t INT64;
@@ -413,7 +412,7 @@ typedef struct {
  * @param[in] api The enum of module API.
  * @param[in] player The handle of capi media player.
  * @param[out] ret set ERROR when fail to send msg.
- * @param[in] event_type type of event (_player_event_e).
+ * @param[in] event_type type of event (muse_player_event_e).
  * @param[in] set 1 is set the user callback, 0 is unset the user callback.
  */
 #define player_msg_set_callback(api, player, ret, event_type, set) \
@@ -644,31 +643,6 @@ typedef struct {
  * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
  * @param[in] param# the name of param is key, must be local variable. never be pointer.
  */
-#define player_msg_event3(api, event, module, type1, param1, type2, param2, type3, param3) \
-	do{	\
-		char *__sndMsg__; \
-		type1 __value1__ = (type1)param1; \
-		type2 __value2__ = (type2)param2; \
-		type3 __value3__ = (type3)param3; \
-		__sndMsg__ = muse_core_msg_json_factory_new(api, \
-				MUSE_TYPE_INT, MUSE_PARAM_EVENT, event, \
-				MUSE_TYPE_##type1, #param1, __value1__, \
-				MUSE_TYPE_##type2, #param2, __value2__, \
-				MUSE_TYPE_##type3, #param3, __value3__, \
-				0); \
-		muse_core_ipc_send_msg(muse_core_client_get_msg_fd(module), __sndMsg__); \
-		muse_core_msg_json_factory_free(__sndMsg__); \
-	}while(0)
-
-/**
- * @brief Create and send return message.
- * @remarks Does NOT guarantee thread safe.
- * @param[in] api The enum of module API.
- * @param[in] event The event number.
- * @param[in] module mused module information
- * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
- * @param[in] param# the name of param is key, must be local variable. never be pointer.
- */
 #define player_msg_event4(api, event, module, type1, param1, type2, param2, type3, param3, type4, param4) \
 	do{	\
 		char *__sndMsg__; \
@@ -731,46 +705,6 @@ typedef struct {
  * @param[in] length The size of array.
  * @param[in] datum_size The size of a array's datum.
  */
-#define player_msg_event6_array(api, event, module, type1, param1, type2, param2, type3, param3, type4, param4, type5, param5, type6, param6, arr_param, length, datum_size) \
-	do{	\
-		char *__sndMsg__; \
-		type1 __value1__ = (type1)param1; \
-		type2 __value2__ = (type2)param2; \
-		type3 __value3__ = (type3)param3; \
-		type4 __value4__ = (type4)param4; \
-		type5 __value5__ = (type5)param5; \
-		type6 __value6__ = (type6)param6; \
-		int *__arr_value__ = (int *)arr_param; \
-		__sndMsg__ = muse_core_msg_json_factory_new(api, \
-				MUSE_TYPE_INT, MUSE_PARAM_EVENT, event, \
-				MUSE_TYPE_##type1, #param1, __value1__, \
-				MUSE_TYPE_##type2, #param2, __value2__, \
-				MUSE_TYPE_##type3, #param3, __value3__, \
-				MUSE_TYPE_##type4, #param4, __value4__, \
-				MUSE_TYPE_##type5, #param5, __value5__, \
-				MUSE_TYPE_##type6, #param6, __value6__, \
-				MUSE_TYPE_INT, #length, length, \
-				MUSE_TYPE_ARRAY, #arr_param, \
-					datum_size == sizeof(int)? length :  \
-					length / sizeof(int) + (length % sizeof(int)?1:0), \
-					__arr_value__, \
-				0); \
-		muse_core_ipc_send_msg(muse_core_client_get_msg_fd(module), __sndMsg__); \
-		muse_core_msg_json_factory_free(__sndMsg__); \
-	}while(0)
-
-/**
- * @brief Create and send return message.
- * @remarks Does NOT guarantee thread safe.
- * @param[in] api The enum of module API.
- * @param[in] event The event number.
- * @param[in] module mused module information
- * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
- * @param[in] param# the name of param is key, must be local variable. never be pointer.
- * @param[in] arr_param the name of param is key, must be local array/pointer variable.
- * @param[in] length The size of array.
- * @param[in] datum_size The size of a array's datum.
- */
 #define player_msg_event7_array(api, event, module, type1, param1, type2, param2, type3, param3, type4, param4, type5, param5, type6, param6, type7, param7, arr_param, length, datum_size) \
 	do{	\
 		char *__sndMsg__; \
@@ -806,4 +740,4 @@ typedef struct {
 }
 #endif
 
-#endif /*__PLAYER_MSG_PRIVATE_H__*/
+#endif /*__TIZEN_MEDIA_MUSE_PLAYER_MSG_H__*/

@@ -17,8 +17,8 @@
 #include <Elementary.h>
 #include <tbm_surface.h>
 #include <dlog.h>
-#include <player.h>
-#include <player_internal.h>
+#include <legacy_player.h>
+#include <legacy_player_internal.h>
 #include <glib.h>
 #include <appcore-efl.h>
 #ifdef HAVE_WAYLAND
@@ -153,8 +153,7 @@ static void create_base_gui(appdata_s *ad)
 	elm_config_preferred_engine_set("3d");
 
 	/* Window */
-	/* elm_win_util_standard_add(PACKAGE, PACKAGE); */
-	ad->win = create_win(PACKAGE);
+	ad->win = create_win(PACKAGE);	/* elm_win_util_standard_add(PACKAGE, PACKAGE); */
 	ad->rect = create_render_rect(ad->win);
 	/* This is not supported in 3.0
 	   elm_win_wm_desktop_layout_support_set(ad->win, EINA_TRUE); */
@@ -201,7 +200,7 @@ static int app_pause(void *data)
 	}
 
 	if (ad->player_handle == NULL) {
-		g_print("player_handle is NULL");
+		LOGE("player_handle is NULL");
 		return -1;
 	}
 
@@ -210,14 +209,14 @@ static int app_pause(void *data)
 		ad->feeding_thread_id = 0;
 	}
 
-	player_unset_media_stream_buffer_status_cb_ex(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO);
-	player_unset_media_stream_buffer_status_cb_ex(ad->player_handle, PLAYER_STREAM_TYPE_AUDIO);
-	player_unset_media_stream_seek_cb(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO);
-	player_unset_media_stream_seek_cb(ad->player_handle, PLAYER_STREAM_TYPE_AUDIO);
+	legacy_player_unset_media_stream_buffer_status_cb_ex(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO);
+	legacy_player_unset_media_stream_buffer_status_cb_ex(ad->player_handle, PLAYER_STREAM_TYPE_AUDIO);
+	legacy_player_unset_media_stream_seek_cb(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO);
+	legacy_player_unset_media_stream_seek_cb(ad->player_handle, PLAYER_STREAM_TYPE_AUDIO);
 
-	ret = player_unprepare(ad->player_handle);
+	ret = legacy_player_unprepare(ad->player_handle);
 	if (ret != PLAYER_ERROR_NONE) {
-		g_print("player_unprepare failed : 0x%x", ret);
+		LOGE("legacy_player_unprepare failed : 0x%x", ret);
 		return false;
 	}
 
@@ -228,9 +227,9 @@ static int app_pause(void *data)
 	fclose(ad->file_src);
 
 	/* destroy player handle */
-	ret = player_destroy(ad->player_handle);
+	ret = legacy_player_destroy(ad->player_handle);
 	if (ret != PLAYER_ERROR_NONE) {
-		g_print("player_destroy failed : 0x%x", ret);
+		LOGE("legacy_player_destroy failed : 0x%x", ret);
 		return false;
 	}
 
@@ -257,14 +256,14 @@ static void _player_prepared_cb(void *user_data)
 
 	LOGD("prepared");
 
-	ret = player_start(ad->player_handle);
+	ret = legacy_player_start(ad->player_handle);
 	if (ret != PLAYER_ERROR_NONE)
 		LOGE("player start failed : 0x%x", ret);
 
 	LOGD("done");
 }
 
-int bytestream2nalunit(FILE * fd, unsigned char *nal)
+int bytestream2nalunit(FILE *fd, unsigned char *nal)
 {
 	int nal_length = 0;
 	size_t result;
@@ -281,17 +280,19 @@ int bytestream2nalunit(FILE * fd, unsigned char *nal)
 	result = fread(buffer, 1, read_size, fd);
 
 	if (result != read_size)
-	return -1;
+		return -1;
 
 	val = buffer[0];
 	while (!val) {
 		if ((zero_count == 2 || zero_count == 3) && val == 1)
 			break;
+
 		zero_count++;
 		result = fread(buffer, 1, read_size, fd);
 
 		if (result != read_size)
 			break;
+
 		val = buffer[0];
 	}
 	nal[nal_length++] = 0;
@@ -324,6 +325,7 @@ int bytestream2nalunit(FILE * fd, unsigned char *nal)
 			} else {
 				for (i = 0; i < zero_count; i++)
 					nal[nal_length++] = 0;
+
 				nal[nal_length++] = val;
 				zero_count = 0;
 			}
@@ -357,13 +359,18 @@ static void feed_eos_data(appdata_s *appdata)
 
 	LOGD("push EOS");
 
-	if (media_packet_create(ad->video_fmt, NULL, NULL, &ad->video_pkt) != MEDIA_PACKET_ERROR_NONE) {
+	if (media_packet_create_alloc(ad->video_fmt, NULL, NULL, &ad->video_pkt) != MEDIA_PACKET_ERROR_NONE) {
 		LOGE("media_packet_create_alloc failed\n");
 		return;
 	}
 
+	if (media_packet_set_buffer_size(ad->video_pkt, (uint64_t)0) != MEDIA_PACKET_ERROR_NONE) {
+		LOGE("media_packet_set_buffer_size failed\n");
+		return;
+	}
+
 	media_packet_set_flags(ad->video_pkt, MEDIA_PACKET_END_OF_STREAM);
-	if (player_push_media_stream(ad->player_handle, ad->video_pkt) != PLAYER_ERROR_NONE)
+	if (legacy_player_push_media_stream(ad->player_handle, ad->video_pkt) != PLAYER_ERROR_NONE)
 		LOGE("fail to push media packet\n");
 
 	media_packet_destroy(ad->video_pkt);
@@ -406,15 +413,9 @@ static bool feed_video_data(appdata_s *appdata)
 		goto ERROR;
 	} else if (read < 0) {
 		LOGD("push EOS");
-		media_packet_destroy(ad->video_pkt);
-		ad->video_pkt = NULL;
-
-		if (media_packet_create(ad->video_fmt, NULL, NULL, &ad->video_pkt) != MEDIA_PACKET_ERROR_NONE) {
-			LOGE("media_packet_create failed\n");
-			goto ERROR;
-		}
+		media_packet_set_buffer_size(ad->video_pkt, (uint64_t)0);
 		media_packet_set_flags(ad->video_pkt, MEDIA_PACKET_END_OF_STREAM);
-		if (player_push_media_stream(ad->player_handle, ad->video_pkt) != PLAYER_ERROR_NONE)
+		if (legacy_player_push_media_stream(ad->player_handle, ad->video_pkt) != PLAYER_ERROR_NONE)
 			LOGE("fail to push media packet\n");
 		goto ERROR;
 	}
@@ -425,7 +426,7 @@ static bool feed_video_data(appdata_s *appdata)
 	}
 
 	/* push media packet */
-	player_push_media_stream(ad->player_handle, ad->video_pkt);
+	legacy_player_push_media_stream(ad->player_handle, ad->video_pkt);
 	pts += ES_DEFAULT_VIDEO_PTS_OFFSET;
 	ret = TRUE;
 
@@ -442,6 +443,7 @@ static void feed_video_data_thread_func(void *data)
 
 	while (TRUE) {
 		static int frame_count = 0;
+
 		if (frame_count < ES_DEFAULT_NUMBER_OF_FEED) {
 			if (!feed_video_data(ad))
 				break;
@@ -496,15 +498,15 @@ static int app_reset(bundle *b, void *data)
 		return -1;
 	}
 
-	ret = player_create(&ad->player_handle);
+	ret = legacy_player_create(&ad->player_handle);
 	if (ret != PLAYER_ERROR_NONE) {
-		LOGE("player_create failed : 0x%x", ret);
+		LOGE("legacy_player_create failed : 0x%x", ret);
 		return -1;
 	}
 
-	ret = player_set_display(ad->player_handle, PLAYER_DISPLAY_TYPE_OVERLAY, GET_DISPLAY(ad->win));
+	ret = legacy_player_set_display(ad->player_handle, PLAYER_DISPLAY_TYPE_OVERLAY, GET_DISPLAY(ad->win));
 	if (ret != PLAYER_ERROR_NONE) {
-		LOGE("player_set_display failed : 0x%x", ret);
+		LOGE("legacy_player_set_display failed : 0x%x", ret);
 		goto FAILED;
 	}
 
@@ -520,35 +522,35 @@ static int app_reset(bundle *b, void *data)
 	media_format_set_video_width(ad->video_fmt, ES_DEFAULT_VIDEO_FORMAT_WIDTH);
 	media_format_set_video_height(ad->video_fmt, ES_DEFAULT_VIDEO_FORMAT_HEIGHT);
 
-	player_set_media_stream_buffer_max_size(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO, (unsigned long long)3*1024*1024);
-	player_set_media_stream_buffer_min_threshold(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO, 50);
+	legacy_player_set_media_stream_buffer_max_size(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO, (unsigned long long)3*1024*1024);
+	legacy_player_set_media_stream_buffer_min_threshold(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO, 50);
 
-	ret = player_set_media_stream_buffer_status_cb_ex(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO, _video_buffer_status_cb_ex, (void *)ad);
+	ret = legacy_player_set_media_stream_buffer_status_cb_ex(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO, _video_buffer_status_cb_ex, (void *)ad);
 	if (ret != PLAYER_ERROR_NONE) {
 		LOGE("player set video buffer status cb failed : 0x%x", ret);
 		goto FAILED;
 	}
-	ret = player_set_media_stream_buffer_status_cb_ex(ad->player_handle, PLAYER_STREAM_TYPE_AUDIO, _audio_buffer_status_cb_ex, (void *)ad);
+	ret = legacy_player_set_media_stream_buffer_status_cb_ex(ad->player_handle, PLAYER_STREAM_TYPE_AUDIO, _audio_buffer_status_cb_ex, (void *)ad);
 	if (ret != PLAYER_ERROR_NONE) {
 		LOGE("player set audio buffer status cb failed : 0x%x", ret);
 		goto FAILED;
 	}
 
-	ret = player_set_media_stream_seek_cb(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO, _video_seek_data_cb, (void *)ad);
+	ret = legacy_player_set_media_stream_seek_cb(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO, _video_seek_data_cb, (void *)ad);
 	if (ret != PLAYER_ERROR_NONE) {
 		LOGE("player set seek data cb for video failed : 0x%x", ret);
 		goto FAILED;
 	}
-	ret = player_set_media_stream_seek_cb(ad->player_handle, PLAYER_STREAM_TYPE_AUDIO, _audio_seek_data_cb, (void *)ad);
+	ret = legacy_player_set_media_stream_seek_cb(ad->player_handle, PLAYER_STREAM_TYPE_AUDIO, _audio_seek_data_cb, (void *)ad);
 	if (ret != PLAYER_ERROR_NONE) {
 		LOGE("player set seek data cb for audio failed : 0x%x", ret);
 		goto FAILED;
 	}
 
 	/* send media packet to player */
-	player_set_media_stream_info(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO, ad->video_fmt);
+	legacy_player_set_media_stream_info(ad->player_handle, PLAYER_STREAM_TYPE_VIDEO, ad->video_fmt);
 
-	ret = player_prepare_async(ad->player_handle, _player_prepared_cb, (void *)ad);
+	ret = legacy_player_prepare_async(ad->player_handle, _player_prepared_cb, (void *)ad);
 	if (ret != PLAYER_ERROR_NONE) {
 		LOGE("player prepare failed : 0x%x", ret);
 		goto FAILED;
@@ -562,7 +564,7 @@ static int app_reset(bundle *b, void *data)
 
 FAILED:
 	if (ad->player_handle) {
-		player_destroy(ad->player_handle);
+		legacy_player_destroy(ad->player_handle);
 		ad->player_handle = NULL;
 	}
 
