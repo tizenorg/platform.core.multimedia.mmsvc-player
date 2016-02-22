@@ -146,6 +146,7 @@ int legacy_player_set_display_for_mused(player_h player, player_display_type_e t
 #endif
 int legacy_player_set_audio_policy_info_for_mused(player_h player, char *stream_type, int stream_index);
 int legacy_player_sound_register(player_h player, int pid);
+int legacy_player_get_timeout_for_muse(player_h player, int *timeout);
 
 
 #ifdef __cplusplus

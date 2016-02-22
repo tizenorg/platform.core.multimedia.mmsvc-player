@@ -3057,7 +3057,7 @@ static MMDisplaySurfaceType __player_mused_convet_display_type(player_display_ty
 {
 	switch (type) {
 	case PLAYER_DISPLAY_TYPE_OVERLAY:
-		return PLAYER_DISPLAY_TYPE_OVERLAY;
+		return MM_DISPLAY_SURFACE_OVERLAY;
 #ifdef TIZEN_MOBILE
 	case PLAYER_DISPLAY_TYPE_EVAS:
 		return MM_DISPLAY_SURFACE_REMOTE;
@@ -3300,6 +3300,19 @@ int legacy_player_sound_register(player_h player, int pid)
 	PLAYER_STATE_CHECK(handle, PLAYER_STATE_IDLE);
 
 	ret = mm_player_sound_register(handle->mm_handle, pid);
+	if (ret != MM_ERROR_NONE)
+		return __player_convert_error_code(ret, (char *)__FUNCTION__);
+
+	return PLAYER_ERROR_NONE;
+}
+
+int legacy_player_get_timeout_for_muse(player_h player, int *timeout)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	player_s *handle = (player_s *)player;
+	int ret;
+
+	ret = mm_player_get_timeout(handle->mm_handle, timeout);
 	if (ret != MM_ERROR_NONE)
 		return __player_convert_error_code(ret, (char *)__FUNCTION__);
 

@@ -621,13 +621,19 @@ static int player_disp_prepare(muse_module_h module)
 	intptr_t handle;
 	muse_player_api_e api = MUSE_PLAYER_API_PREPARE;
 	player_h player;
+	int timeout = 0;
 
 	handle = muse_core_ipc_get_handle(module);
 
 	player = (player_h)handle;
 
 	ret = legacy_player_prepare(player);
-	player_msg_return(api, ret, module);
+	if (ret == PLAYER_ERROR_NONE) {
+		legacy_player_get_timeout_for_muse(player, &timeout);
+		player_msg_return1(api, ret, module, INT, timeout);
+	} else {
+		player_msg_return(api, ret, module);
+	}
 
 	return ret;
 }
@@ -639,6 +645,7 @@ static int player_disp_prepare_async(muse_module_h module)
 	muse_player_api_e api = MUSE_PLAYER_API_PREPARE_ASYNC;
 	player_h player;
 	prepare_data_t *prepare_data;
+	int timeout = 0;
 
 	handle = muse_core_ipc_get_handle(module);
 
@@ -649,7 +656,12 @@ static int player_disp_prepare_async(muse_module_h module)
 	prepare_data->module = module;
 
 	ret = legacy_player_prepare_async(player, _prepare_async_cb, prepare_data);
-	player_msg_return(api, ret, module);
+	if (ret == PLAYER_ERROR_NONE) {
+		legacy_player_get_timeout_for_muse(player, &timeout);
+		player_msg_return1(api, ret, module, INT, timeout);
+	} else {
+		player_msg_return(api, ret, module);
+	}
 
 	return ret;
 }
@@ -665,7 +677,6 @@ static int player_disp_unprepare(muse_module_h module)
 	player = (player_h)handle;
 
 	ret = legacy_player_unprepare(player);
-
 	player_msg_return(api, ret, module);
 
 	return ret;
