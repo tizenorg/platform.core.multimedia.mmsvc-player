@@ -1627,6 +1627,8 @@ static int _push_media_stream(intptr_t handle, player_push_media_msg_type *push_
 	media_format_h format;
 	media_packet_h packet;
 	media_format_mimetype_e mimetype;
+	int width = 0;
+	int height = 0;
 
 	if (push_media->mimetype & MEDIA_FORMAT_VIDEO) {
 		if (!video_format) {
@@ -1636,12 +1638,16 @@ static int _push_media_stream(intptr_t handle, player_push_media_msg_type *push_
 				return PLAYER_ERROR_INVALID_PARAMETER;
 			}
 			ret |= media_format_set_video_mime(video_format, push_media->mimetype);
+			ret |= media_format_set_video_width(video_format, push_media->width);
+			ret |= media_format_set_video_height(video_format, push_media->height);
 		}
-		ret |= media_format_get_video_info(video_format, &mimetype, NULL, NULL, NULL, NULL);
+		ret |= media_format_get_video_info(video_format, &mimetype, &width, &height, NULL, NULL);
 		if (mimetype != push_media->mimetype) {
 			media_format_unref(video_format);
 			media_format_create(&video_format);
 			ret |= media_format_set_video_mime(video_format, push_media->mimetype);
+			ret |= media_format_set_video_width(video_format, push_media->width);
+			ret |= media_format_set_video_height(video_format, push_media->height);
 		}
 		format = video_format;
 	} else if (push_media->mimetype & MEDIA_FORMAT_AUDIO) {
