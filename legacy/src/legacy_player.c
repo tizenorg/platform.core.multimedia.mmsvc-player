@@ -1028,7 +1028,7 @@ static MMDisplaySurfaceType __player_convet_display_type(player_display_type_e t
 		return MM_DISPLAY_SURFACE_OVERLAY;
 #ifdef TIZEN_MOBILE
 	case PLAYER_DISPLAY_TYPE_EVAS:
-		return MM_DISPLAY_SURFACE_EVAS;
+		return MM_DISPLAY_SURFACE_REMOTE;
 #endif
 	case PLAYER_DISPLAY_TYPE_NONE:
 		return MM_DISPLAY_SURFACE_NULL;
@@ -3132,7 +3132,7 @@ int legacy_player_set_display_wl_for_mused(player_h player, player_display_type_
 		} else if (type == PLAYER_DISPLAY_TYPE_EVAS) {
 			LOGI("Evas surface type");
 			set_handle = &(handle->display_handle);
-			mmClientType = MM_DISPLAY_SURFACE_EVAS;
+			mmClientType = MM_DISPLAY_SURFACE_REMOTE;
 #endif
 		} else {
 			LOGE("invalid surface type");
