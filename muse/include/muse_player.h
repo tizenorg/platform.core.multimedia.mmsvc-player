@@ -21,6 +21,8 @@
 extern "C" {
 #endif
 
+#include "muse_core_ipc.h"
+
 #ifdef LOG_TAG
 #undef LOG_TAG
 #endif
@@ -111,7 +113,6 @@ typedef enum {
 
 /**
  * @brief Enumeration for the muse player events.
- * @remark This enum should be sync with _player_event_e.
  */
 typedef enum {
 	MUSE_PLAYER_EVENT_TYPE_PREPARE,

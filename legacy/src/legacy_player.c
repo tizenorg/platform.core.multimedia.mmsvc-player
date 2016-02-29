@@ -36,6 +36,7 @@
 #include <tbm_surface_internal.h>
 #include <mm_sound.h>
 
+#include "muse_player.h"
 #include "legacy_player.h"
 #include "legacy_player_private.h"
 
@@ -499,11 +500,11 @@ bool __player_state_validate(player_s *handle, player_state_e threshold)
 	return TRUE;
 }
 
-static int __set_callback(_player_event_e type, player_h player, void *callback, void *user_data)
+static int __set_callback(muse_player_event_e type, player_h player, void *callback, void *user_data)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(callback);
-	if (_PLAYER_EVENT_TYPE_BUFFERING == type) {
+	if (MUSE_PLAYER_EVENT_TYPE_BUFFERING == type) {
 		if (!_player_network_availability_check())
 			return PLAYER_ERROR_FEATURE_NOT_SUPPORTED_ON_DEVICE;
 	}
@@ -515,7 +516,7 @@ static int __set_callback(_player_event_e type, player_h player, void *callback,
 	return PLAYER_ERROR_NONE;
 }
 
-static int __unset_callback(_player_event_e type, player_h player)
+static int __unset_callback(muse_player_event_e type, player_h player)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	player_s *handle = (player_s *)player;
@@ -532,9 +533,9 @@ static void __job_prepared_cb(void *user_data)
 	LOGI("Start");
 	handle->is_doing_jobs = TRUE;
 	handle->state = PLAYER_STATE_READY;
-	((player_prepared_cb)handle->user_cb[_PLAYER_EVENT_TYPE_PREPARE])(handle->user_data[_PLAYER_EVENT_TYPE_PREPARE]);
-	handle->user_cb[_PLAYER_EVENT_TYPE_PREPARE] = NULL;
-	handle->user_data[_PLAYER_EVENT_TYPE_PREPARE] = NULL;
+	((player_prepared_cb)handle->user_cb[MUSE_PLAYER_EVENT_TYPE_PREPARE])(handle->user_data[MUSE_PLAYER_EVENT_TYPE_PREPARE]);
+	handle->user_cb[MUSE_PLAYER_EVENT_TYPE_PREPARE] = NULL;
+	handle->user_data[MUSE_PLAYER_EVENT_TYPE_PREPARE] = NULL;
 	__REMOVE_ECORE_JOB(handle, __JOB_KEY_PREPARED);
 	LOGI("End");
 }
@@ -544,7 +545,7 @@ static void __job_error_cb(void *user_data)
 	player_s *handle = (player_s *)user_data;
 	LOGI("Start");
 	handle->is_doing_jobs = TRUE;
-	((player_error_cb)handle->user_cb[_PLAYER_EVENT_TYPE_ERROR])(handle->error_code, handle->user_data[_PLAYER_EVENT_TYPE_ERROR]);
+	((player_error_cb)handle->user_cb[MUSE_PLAYER_EVENT_TYPE_ERROR])(handle->error_code, handle->user_data[MUSE_PLAYER_EVENT_TYPE_ERROR]);
 	__REMOVE_ECORE_JOB(handle, __JOB_KEY_ERROR);
 	LOGI("End");
 }
@@ -554,9 +555,9 @@ static void __job_seek_done_cb(void *user_data)
 	player_s *handle = (player_s *)user_data;
 	LOGI("Start");
 	handle->is_doing_jobs = TRUE;
-	((player_seek_completed_cb)handle->user_cb[_PLAYER_EVENT_TYPE_SEEK])(handle->user_data[_PLAYER_EVENT_TYPE_SEEK]);
-	handle->user_cb[_PLAYER_EVENT_TYPE_SEEK] = NULL;
-	handle->user_data[_PLAYER_EVENT_TYPE_SEEK] = NULL;
+	((player_seek_completed_cb)handle->user_cb[MUSE_PLAYER_EVENT_TYPE_SEEK])(handle->user_data[MUSE_PLAYER_EVENT_TYPE_SEEK]);
+	handle->user_cb[MUSE_PLAYER_EVENT_TYPE_SEEK] = NULL;
+	handle->user_data[MUSE_PLAYER_EVENT_TYPE_SEEK] = NULL;
 	__REMOVE_ECORE_JOB(handle, __JOB_KEY_SEEK_DONE);
 	LOGI("End");
 }
@@ -566,7 +567,7 @@ static void __job_eos_cb(void *user_data)
 	player_s *handle = (player_s *)user_data;
 	LOGI("Start");
 	handle->is_doing_jobs = TRUE;
-	((player_completed_cb)handle->user_cb[_PLAYER_EVENT_TYPE_COMPLETE])(handle->user_data[_PLAYER_EVENT_TYPE_COMPLETE]);
+	((player_completed_cb)handle->user_cb[MUSE_PLAYER_EVENT_TYPE_COMPLETE])(handle->user_data[MUSE_PLAYER_EVENT_TYPE_COMPLETE]);
 	__REMOVE_ECORE_JOB(handle, __JOB_KEY_EOS);
 	LOGI("End");
 }
@@ -591,12 +592,12 @@ static void __message_cb_loop(void *data)
 		case PLAYER_MESSAGE_PREPARED:
 			{
 				LOGW("PLAYER_MESSAGE_PREPARED");
-				if (handle->user_cb[_PLAYER_EVENT_TYPE_PREPARE]) {
+				if (handle->user_cb[MUSE_PLAYER_EVENT_TYPE_PREPARE]) {
 					handle->is_doing_jobs = TRUE;
 					handle->state = PLAYER_STATE_READY;
-					((player_prepared_cb)handle->user_cb[_PLAYER_EVENT_TYPE_PREPARE])(handle->user_data[_PLAYER_EVENT_TYPE_PREPARE]);
-					handle->user_cb[_PLAYER_EVENT_TYPE_PREPARE] = NULL;
-					handle->user_data[_PLAYER_EVENT_TYPE_PREPARE] = NULL;
+					((player_prepared_cb)handle->user_cb[MUSE_PLAYER_EVENT_TYPE_PREPARE])(handle->user_data[MUSE_PLAYER_EVENT_TYPE_PREPARE]);
+					handle->user_cb[MUSE_PLAYER_EVENT_TYPE_PREPARE] = NULL;
+					handle->user_data[MUSE_PLAYER_EVENT_TYPE_PREPARE] = NULL;
 					handle->is_doing_jobs = FALSE;
 				} else {
 					LOGE("null handle in PLAYER_MESSAGE_PREPARED");
@@ -606,9 +607,9 @@ static void __message_cb_loop(void *data)
 		case PLAYER_MESSAGE_ERROR:
 			{
 				LOGW("PLAYER_MESSAGE_ERROR");
-				if (handle->user_cb[_PLAYER_EVENT_TYPE_ERROR]) {
+				if (handle->user_cb[MUSE_PLAYER_EVENT_TYPE_ERROR]) {
 					handle->is_doing_jobs = TRUE;
-					((player_error_cb)handle->user_cb[_PLAYER_EVENT_TYPE_ERROR])(handle->error_code, handle->user_data[_PLAYER_EVENT_TYPE_ERROR]);
+					((player_error_cb)handle->user_cb[MUSE_PLAYER_EVENT_TYPE_ERROR])(handle->error_code, handle->user_data[MUSE_PLAYER_EVENT_TYPE_ERROR]);
 					handle->is_doing_jobs = FALSE;
 				} else {
 					LOGE("null handle in PLAYER_MESSAGE_ERROR");
@@ -618,11 +619,11 @@ static void __message_cb_loop(void *data)
 		case PLAYER_MESSAGE_SEEK_DONE:
 			{
 				LOGW("PLAYER_MESSAGE_SEEK_DONE");
-				if (handle->user_cb[_PLAYER_EVENT_TYPE_SEEK]) {
+				if (handle->user_cb[MUSE_PLAYER_EVENT_TYPE_SEEK]) {
 					handle->is_doing_jobs = TRUE;
-					((player_seek_completed_cb)handle->user_cb[_PLAYER_EVENT_TYPE_SEEK])(handle->user_data[_PLAYER_EVENT_TYPE_SEEK]);
-					handle->user_cb[_PLAYER_EVENT_TYPE_SEEK] = NULL;
-					handle->user_data[_PLAYER_EVENT_TYPE_SEEK] = NULL;
+					((player_seek_completed_cb)handle->user_cb[MUSE_PLAYER_EVENT_TYPE_SEEK])(handle->user_data[MUSE_PLAYER_EVENT_TYPE_SEEK]);
+					handle->user_cb[MUSE_PLAYER_EVENT_TYPE_SEEK] = NULL;
+					handle->user_data[MUSE_PLAYER_EVENT_TYPE_SEEK] = NULL;
 					handle->is_doing_jobs = FALSE;
 				} else {
 					LOGE("null handle in PLAYER_MESSAGE_SEEK_DONE");
@@ -632,9 +633,9 @@ static void __message_cb_loop(void *data)
 		case PLAYER_MESSAGE_EOS:
 			{
 				LOGW("PLAYER_MESSAGE_EOS");
-				if (handle->user_cb[_PLAYER_EVENT_TYPE_COMPLETE]) {
+				if (handle->user_cb[MUSE_PLAYER_EVENT_TYPE_COMPLETE]) {
 					handle->is_doing_jobs = TRUE;
-					((player_completed_cb)handle->user_cb[_PLAYER_EVENT_TYPE_COMPLETE])(handle->user_data[_PLAYER_EVENT_TYPE_COMPLETE]);
+					((player_completed_cb)handle->user_cb[MUSE_PLAYER_EVENT_TYPE_COMPLETE])(handle->user_data[MUSE_PLAYER_EVENT_TYPE_COMPLETE]);
 					handle->is_doing_jobs = FALSE;
 				} else {
 					LOGE("null handle in PLAYER_MESSAGE_EOS");
@@ -674,7 +675,7 @@ static int __msg_callback(int message, void *param, void *user_data)
 	case MM_MESSAGE_STATE_CHANGED:	/* 0x03 */
 		LOGI("STATE CHANGED INTERNALLY - from : %d,  to : %d (CAPI State : %d)", msg->state.previous, msg->state.current, handle->state);
 		if ((handle->is_progressive_download && msg->state.previous == MM_PLAYER_STATE_NULL && msg->state.current == MM_PLAYER_STATE_READY) || (msg->state.previous == MM_PLAYER_STATE_READY && msg->state.current == MM_PLAYER_STATE_PAUSED)) {
-			if (handle->user_cb[_PLAYER_EVENT_TYPE_PREPARE]) {
+			if (handle->user_cb[MUSE_PLAYER_EVENT_TYPE_PREPARE]) {
 				/* asyc && prepared cb has been set */
 				LOGI("[%s] Prepared! [current state : %d]", __FUNCTION__, handle->state);
 				PLAYER_TRACE_ASYNC_END("MM:PLAYER:PREPARE_ASYNC", *(int *)handle);
@@ -687,14 +688,14 @@ static int __msg_callback(int message, void *param, void *user_data)
 		}
 		break;
 	case MM_MESSAGE_READY_TO_RESUME:	/* 0x05 */
-		if (handle->user_cb[_PLAYER_EVENT_TYPE_INTERRUPT])
-			((player_interrupted_cb)handle->user_cb[_PLAYER_EVENT_TYPE_INTERRUPT])(PLAYER_INTERRUPTED_COMPLETED, handle->user_data[_PLAYER_EVENT_TYPE_INTERRUPT]);
+		if (handle->user_cb[MUSE_PLAYER_EVENT_TYPE_INTERRUPT])
+			((player_interrupted_cb)handle->user_cb[MUSE_PLAYER_EVENT_TYPE_INTERRUPT])(PLAYER_INTERRUPTED_COMPLETED, handle->user_data[MUSE_PLAYER_EVENT_TYPE_INTERRUPT]);
 		break;
 	case MM_MESSAGE_BEGIN_OF_STREAM:	/* 0x104 */
 		LOGI("[%s] Ready to streaming information (BOS) [current state : %d]", __FUNCTION__, handle->state);
 		break;
 	case MM_MESSAGE_END_OF_STREAM:	/* 0x105 */
-		if (handle->user_cb[_PLAYER_EVENT_TYPE_COMPLETE]) {
+		if (handle->user_cb[MUSE_PLAYER_EVENT_TYPE_COMPLETE]) {
 #ifdef USE_ECORE_FUNCTIONS
 			__ADD_ECORE_JOB(handle, __JOB_KEY_EOS, __job_eos_cb);
 #else
@@ -703,15 +704,15 @@ static int __msg_callback(int message, void *param, void *user_data)
 		}
 		break;
 	case MM_MESSAGE_BUFFERING:	/* 0x103 */
-		if (handle->user_cb[_PLAYER_EVENT_TYPE_BUFFERING])
-			((player_buffering_cb)handle->user_cb[_PLAYER_EVENT_TYPE_BUFFERING])(msg->connection.buffering, handle->user_data[_PLAYER_EVENT_TYPE_BUFFERING]);
+		if (handle->user_cb[MUSE_PLAYER_EVENT_TYPE_BUFFERING])
+			((player_buffering_cb)handle->user_cb[MUSE_PLAYER_EVENT_TYPE_BUFFERING])(msg->connection.buffering, handle->user_data[MUSE_PLAYER_EVENT_TYPE_BUFFERING]);
 		break;
 	case MM_MESSAGE_STATE_INTERRUPTED:	/* 0x04 */
-		if (handle->user_cb[_PLAYER_EVENT_TYPE_INTERRUPT]) {
+		if (handle->user_cb[MUSE_PLAYER_EVENT_TYPE_INTERRUPT]) {
 			handle->state = __convert_player_state(msg->state.current);
 			if (handle->state == PLAYER_STATE_READY)
 				handle->is_stopped = TRUE;
-			((player_interrupted_cb)handle->user_cb[_PLAYER_EVENT_TYPE_INTERRUPT])(__convert_interrupted_code(msg->code), handle->user_data[_PLAYER_EVENT_TYPE_INTERRUPT]);
+			((player_interrupted_cb)handle->user_cb[MUSE_PLAYER_EVENT_TYPE_INTERRUPT])(__convert_interrupted_code(msg->code), handle->user_data[MUSE_PLAYER_EVENT_TYPE_INTERRUPT]);
 		}
 		break;
 	case MM_MESSAGE_CONNECTION_TIMEOUT:	/* 0x102 */
@@ -719,20 +720,20 @@ static int __msg_callback(int message, void *param, void *user_data)
 		err_code = PLAYER_ERROR_CONNECTION_FAILED;
 		break;
 	case MM_MESSAGE_UPDATE_SUBTITLE:	/* 0x109 */
-		if (handle->user_cb[_PLAYER_EVENT_TYPE_SUBTITLE])
-			((player_subtitle_updated_cb)handle->user_cb[_PLAYER_EVENT_TYPE_SUBTITLE])(msg->subtitle.duration, (char *)msg->data, handle->user_data[_PLAYER_EVENT_TYPE_SUBTITLE]);
+		if (handle->user_cb[MUSE_PLAYER_EVENT_TYPE_SUBTITLE])
+			((player_subtitle_updated_cb)handle->user_cb[MUSE_PLAYER_EVENT_TYPE_SUBTITLE])(msg->subtitle.duration, (char *)msg->data, handle->user_data[MUSE_PLAYER_EVENT_TYPE_SUBTITLE]);
 		break;
 	case MM_MESSAGE_VIDEO_NOT_CAPTURED:	/* 0x113 */
 		LOGI("[%s] PLAYER_ERROR_VIDEO_CAPTURE_FAILED (0x%08x)", __FUNCTION__, PLAYER_ERROR_VIDEO_CAPTURE_FAILED);
-		if (handle->user_cb[_PLAYER_EVENT_TYPE_ERROR])
-			((player_error_cb)handle->user_cb[_PLAYER_EVENT_TYPE_ERROR])(PLAYER_ERROR_VIDEO_CAPTURE_FAILED, handle->user_data[_PLAYER_EVENT_TYPE_ERROR]);
+		if (handle->user_cb[MUSE_PLAYER_EVENT_TYPE_ERROR])
+			((player_error_cb)handle->user_cb[MUSE_PLAYER_EVENT_TYPE_ERROR])(PLAYER_ERROR_VIDEO_CAPTURE_FAILED, handle->user_data[MUSE_PLAYER_EVENT_TYPE_ERROR]);
 		break;
 	case MM_MESSAGE_VIDEO_CAPTURED:	/* 0x110 */
-		if (handle->user_cb[_PLAYER_EVENT_TYPE_CAPTURE]) {
+		if (handle->user_cb[MUSE_PLAYER_EVENT_TYPE_CAPTURE]) {
 			int w;
 			int h;
 			int ret = mm_player_get_attribute(handle->mm_handle, NULL, MM_PLAYER_VIDEO_WIDTH, &w, MM_PLAYER_VIDEO_HEIGHT, &h, (char *)NULL);
-			if (ret != MM_ERROR_NONE && handle->user_cb[_PLAYER_EVENT_TYPE_ERROR]) {
+			if (ret != MM_ERROR_NONE && handle->user_cb[MUSE_PLAYER_EVENT_TYPE_ERROR]) {
 				LOGE("[%s] PLAYER_ERROR_VIDEO_CAPTURE_FAILED (0x%08x) : Failed to get video size on video captured (0x%x)", __FUNCTION__, PLAYER_ERROR_VIDEO_CAPTURE_FAILED, ret);
 				err_code = PLAYER_ERROR_VIDEO_CAPTURE_FAILED;
 			} else {
@@ -760,15 +761,15 @@ static int __msg_callback(int message, void *param, void *user_data)
 				LOGI("[%s] captured image width : %d   height : %d", __FUNCTION__, w, h);
 
 				/* call application callback */
-				((player_video_captured_cb)handle->user_cb[_PLAYER_EVENT_TYPE_CAPTURE])(capture->data, w, h, capture->size, handle->user_data[_PLAYER_EVENT_TYPE_CAPTURE]);
+				((player_video_captured_cb)handle->user_cb[MUSE_PLAYER_EVENT_TYPE_CAPTURE])(capture->data, w, h, capture->size, handle->user_data[MUSE_PLAYER_EVENT_TYPE_CAPTURE]);
 
 				if (capture->data) {
 					g_free(capture->data);
 					capture->data = NULL;
 				}
 			}
-			handle->user_cb[_PLAYER_EVENT_TYPE_CAPTURE] = NULL;
-			handle->user_data[_PLAYER_EVENT_TYPE_CAPTURE] = NULL;
+			handle->user_cb[MUSE_PLAYER_EVENT_TYPE_CAPTURE] = NULL;
+			handle->user_data[MUSE_PLAYER_EVENT_TYPE_CAPTURE] = NULL;
 		}
 		break;
 	case MM_MESSAGE_FILE_NOT_SUPPORTED:	/* 0x10f */
@@ -784,7 +785,7 @@ static int __msg_callback(int message, void *param, void *user_data)
 			if (handle->is_display_visible)
 				mm_player_set_attribute(handle->mm_handle, NULL, "display_visible", 1, (char *)NULL);
 		}
-		if (handle->user_cb[_PLAYER_EVENT_TYPE_SEEK]) {
+		if (handle->user_cb[MUSE_PLAYER_EVENT_TYPE_SEEK]) {
 #ifdef USE_ECORE_FUNCTIONS
 			__ADD_ECORE_JOB(handle, __JOB_KEY_SEEK_DONE, __job_seek_done_cb);
 #else
@@ -807,7 +808,7 @@ static int __msg_callback(int message, void *param, void *user_data)
 		break;
 	}
 
-	if (err_code != PLAYER_ERROR_NONE && handle->user_cb[_PLAYER_EVENT_TYPE_ERROR]) {
+	if (err_code != PLAYER_ERROR_NONE && handle->user_cb[MUSE_PLAYER_EVENT_TYPE_ERROR]) {
 		handle->error_code = err_code;
 #ifdef USE_ECORE_FUNCTIONS
 		__ADD_ECORE_JOB(handle, __JOB_KEY_ERROR, __job_error_cb);
@@ -824,7 +825,7 @@ static bool __video_stream_callback(void *stream, void *user_data)
 	player_s *handle = (player_s *)user_data;
 	MMPlayerVideoStreamDataType *video_stream = (MMPlayerVideoStreamDataType *)stream;
 
-	if (handle->user_cb[_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME]) {
+	if (handle->user_cb[MUSE_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME]) {
 		/* media packet and zero-copy */
 		media_packet_h pkt = NULL;
 		tbm_surface_h tsurf = NULL;
@@ -975,7 +976,7 @@ static bool __video_stream_callback(void *stream, void *user_data)
 				mm_player_media_packet_video_stream_internal_buffer_ref(video_stream->internal_buffer);
 
 				/* call media packet callback */
-				((player_media_packet_video_decoded_cb)handle->user_cb[_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME])(pkt, handle->user_data[_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME]);
+				((player_media_packet_video_decoded_cb)handle->user_cb[MUSE_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME])(pkt, handle->user_data[MUSE_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME]);
 
 				if (bo_num == 0)
 					tbm_surface_unmap(tsurf);
@@ -1000,8 +1001,8 @@ static int __pd_message_callback(int message, void *param, void *user_data)
 		return 0;
 	}
 
-	if (handle->user_cb[_PLAYER_EVENT_TYPE_PD])
-		((player_pd_message_cb)handle->user_cb[_PLAYER_EVENT_TYPE_PD])(type, handle->user_data[_PLAYER_EVENT_TYPE_PD]);
+	if (handle->user_cb[MUSE_PLAYER_EVENT_TYPE_PD])
+		((player_pd_message_cb)handle->user_cb[MUSE_PLAYER_EVENT_TYPE_PD])(type, handle->user_data[MUSE_PLAYER_EVENT_TYPE_PD]);
 
 	return 0;
 }
@@ -1174,13 +1175,13 @@ int legacy_player_prepare_async(player_h player, player_prepared_cb callback, vo
 	int visible;
 	int value;
 
-	if (handle->user_cb[_PLAYER_EVENT_TYPE_PREPARE]) {
+	if (handle->user_cb[MUSE_PLAYER_EVENT_TYPE_PREPARE]) {
 		LOGE("[%s] PLAYER_ERROR_INVALID_OPERATION (0x%08x) : preparing... we can't do any more ", __FUNCTION__, PLAYER_ERROR_INVALID_OPERATION);
 		return PLAYER_ERROR_INVALID_OPERATION;
 	} else {
-		/* LOGI("[%s] Event type : %d ",__FUNCTION__, _PLAYER_EVENT_TYPE_PREPARE); */
-		handle->user_cb[_PLAYER_EVENT_TYPE_PREPARE] = callback;
-		handle->user_data[_PLAYER_EVENT_TYPE_PREPARE] = user_data;
+		/* LOGI("[%s] Event type : %d ",__FUNCTION__, MUSE_PLAYER_EVENT_TYPE_PREPARE); */
+		handle->user_cb[MUSE_PLAYER_EVENT_TYPE_PREPARE] = callback;
+		handle->user_data[MUSE_PLAYER_EVENT_TYPE_PREPARE] = user_data;
 	}
 
 	ret = mm_player_set_message_callback(handle->mm_handle, __msg_callback, (void *)handle);
@@ -1304,14 +1305,14 @@ int legacy_player_unprepare(player_h player)
 	if (ret != MM_ERROR_NONE) {
 		return __player_convert_error_code(ret, (char *)__FUNCTION__);
 	} else {
-		if (handle->user_cb[_PLAYER_EVENT_TYPE_SEEK]) {
-			handle->user_cb[_PLAYER_EVENT_TYPE_SEEK] = NULL;
-			handle->user_data[_PLAYER_EVENT_TYPE_SEEK] = NULL;
+		if (handle->user_cb[MUSE_PLAYER_EVENT_TYPE_SEEK]) {
+			handle->user_cb[MUSE_PLAYER_EVENT_TYPE_SEEK] = NULL;
+			handle->user_data[MUSE_PLAYER_EVENT_TYPE_SEEK] = NULL;
 		}
 
-		if (handle->user_cb[_PLAYER_EVENT_TYPE_PREPARE]) {
-			handle->user_cb[_PLAYER_EVENT_TYPE_PREPARE] = NULL;
-			handle->user_data[_PLAYER_EVENT_TYPE_PREPARE] = NULL;
+		if (handle->user_cb[MUSE_PLAYER_EVENT_TYPE_PREPARE]) {
+			handle->user_cb[MUSE_PLAYER_EVENT_TYPE_PREPARE] = NULL;
+			handle->user_data[MUSE_PLAYER_EVENT_TYPE_PREPARE] = NULL;
 		}
 
 		handle->state = PLAYER_STATE_IDLE;
@@ -1580,9 +1581,9 @@ int legacy_player_stop(player_h player)
 		if (ret != MM_ERROR_NONE) {
 			return __player_convert_error_code(ret, (char *)__FUNCTION__);
 		} else {
-			if (handle->user_cb[_PLAYER_EVENT_TYPE_SEEK]) {
-				handle->user_cb[_PLAYER_EVENT_TYPE_SEEK] = NULL;
-				handle->user_data[_PLAYER_EVENT_TYPE_SEEK] = NULL;
+			if (handle->user_cb[MUSE_PLAYER_EVENT_TYPE_SEEK]) {
+				handle->user_cb[MUSE_PLAYER_EVENT_TYPE_SEEK] = NULL;
+				handle->user_data[MUSE_PLAYER_EVENT_TYPE_SEEK] = NULL;
 			}
 
 			handle->state = PLAYER_STATE_READY;
@@ -1623,13 +1624,13 @@ int legacy_player_set_play_position(player_h player, int millisecond, bool accur
 		return PLAYER_ERROR_INVALID_STATE;
 	}
 
-	if (handle->user_cb[_PLAYER_EVENT_TYPE_SEEK]) {
+	if (handle->user_cb[MUSE_PLAYER_EVENT_TYPE_SEEK]) {
 		LOGE("[%s] PLAYER_ERROR_SEEK_FAILED (0x%08x) : seeking... we can't do any more ", __FUNCTION__, PLAYER_ERROR_SEEK_FAILED);
 		return PLAYER_ERROR_SEEK_FAILED;
 	} else {
-		LOGI("[%s] Event type : %d, pos : %d ", __FUNCTION__, _PLAYER_EVENT_TYPE_SEEK, millisecond);
-		handle->user_cb[_PLAYER_EVENT_TYPE_SEEK] = callback;
-		handle->user_data[_PLAYER_EVENT_TYPE_SEEK] = user_data;
+		LOGI("[%s] Event type : %d, pos : %d ", __FUNCTION__, MUSE_PLAYER_EVENT_TYPE_SEEK, millisecond);
+		handle->user_cb[MUSE_PLAYER_EVENT_TYPE_SEEK] = callback;
+		handle->user_data[MUSE_PLAYER_EVENT_TYPE_SEEK] = user_data;
 	}
 	int accurated = accurate ? 1 : 0;
 	int ret = mm_player_set_attribute(handle->mm_handle, NULL, "accurate_seek", accurated, (char *)NULL);
@@ -1638,8 +1639,8 @@ int legacy_player_set_play_position(player_h player, int millisecond, bool accur
 
 	ret = mm_player_set_position(handle->mm_handle, MM_PLAYER_POS_FORMAT_TIME, millisecond);
 	if (ret != MM_ERROR_NONE) {
-		handle->user_cb[_PLAYER_EVENT_TYPE_SEEK] = NULL;
-		handle->user_data[_PLAYER_EVENT_TYPE_SEEK] = NULL;
+		handle->user_cb[MUSE_PLAYER_EVENT_TYPE_SEEK] = NULL;
+		handle->user_data[MUSE_PLAYER_EVENT_TYPE_SEEK] = NULL;
 		return __player_convert_error_code(ret, (char *)__FUNCTION__);
 	} else {
 		return PLAYER_ERROR_NONE;
@@ -2383,33 +2384,33 @@ int legacy_player_capture_video(player_h player, player_video_captured_cb callba
 	PLAYER_NULL_ARG_CHECK(callback);
 
 	player_s *handle = (player_s *)player;
-	if (handle->user_cb[_PLAYER_EVENT_TYPE_CAPTURE]) {
+	if (handle->user_cb[MUSE_PLAYER_EVENT_TYPE_CAPTURE]) {
 		LOGE("[%s] PLAYER_ERROR_VIDEO_CAPTURE_FAILED (0x%08x) : capturing... we can't do any more ", __FUNCTION__, PLAYER_ERROR_VIDEO_CAPTURE_FAILED);
 		return PLAYER_ERROR_VIDEO_CAPTURE_FAILED;
 	} else {
-		LOGI("[%s] Event type : %d ", __FUNCTION__, _PLAYER_EVENT_TYPE_CAPTURE);
-		handle->user_cb[_PLAYER_EVENT_TYPE_CAPTURE] = callback;
-		handle->user_data[_PLAYER_EVENT_TYPE_CAPTURE] = user_data;
+		LOGI("[%s] Event type : %d ", __FUNCTION__, MUSE_PLAYER_EVENT_TYPE_CAPTURE);
+		handle->user_cb[MUSE_PLAYER_EVENT_TYPE_CAPTURE] = callback;
+		handle->user_data[MUSE_PLAYER_EVENT_TYPE_CAPTURE] = user_data;
 	}
 
 	if (handle->state >= PLAYER_STATE_READY) {
 		int ret = mm_player_do_video_capture(handle->mm_handle);
 		if (ret == MM_ERROR_PLAYER_NO_OP) {
-			handle->user_cb[_PLAYER_EVENT_TYPE_CAPTURE] = NULL;
-			handle->user_data[_PLAYER_EVENT_TYPE_CAPTURE] = NULL;
+			handle->user_cb[MUSE_PLAYER_EVENT_TYPE_CAPTURE] = NULL;
+			handle->user_data[MUSE_PLAYER_EVENT_TYPE_CAPTURE] = NULL;
 			LOGE("[%s] PLAYER_ERROR_INVALID_OPERATION (0x%08x) : video display must be set : %d", __FUNCTION__, PLAYER_ERROR_INVALID_OPERATION, handle->display_type);
 			return PLAYER_ERROR_INVALID_OPERATION;
 		}
 		if (ret != MM_ERROR_NONE) {
-			handle->user_cb[_PLAYER_EVENT_TYPE_CAPTURE] = NULL;
-			handle->user_data[_PLAYER_EVENT_TYPE_CAPTURE] = NULL;
+			handle->user_cb[MUSE_PLAYER_EVENT_TYPE_CAPTURE] = NULL;
+			handle->user_data[MUSE_PLAYER_EVENT_TYPE_CAPTURE] = NULL;
 			return __player_convert_error_code(ret, (char *)__FUNCTION__);
 		} else
 			return PLAYER_ERROR_NONE;
 	} else {
 		LOGE("[%s] PLAYER_ERROR_INVALID_STATE (0x%08x) : current state - %d", __FUNCTION__, PLAYER_ERROR_INVALID_STATE, handle->state);
-		handle->user_cb[_PLAYER_EVENT_TYPE_CAPTURE] = NULL;
-		handle->user_data[_PLAYER_EVENT_TYPE_CAPTURE] = NULL;
+		handle->user_cb[MUSE_PLAYER_EVENT_TYPE_CAPTURE] = NULL;
+		handle->user_data[MUSE_PLAYER_EVENT_TYPE_CAPTURE] = NULL;
 		return PLAYER_ERROR_INVALID_STATE;
 	}
 }
@@ -2468,52 +2469,52 @@ int legacy_player_get_streaming_download_progress(player_h player, int *start, i
 
 int legacy_player_set_completed_cb(player_h player, player_completed_cb callback, void *user_data)
 {
-	return __set_callback(_PLAYER_EVENT_TYPE_COMPLETE, player, callback, user_data);
+	return __set_callback(MUSE_PLAYER_EVENT_TYPE_COMPLETE, player, callback, user_data);
 }
 
 int legacy_player_unset_completed_cb(player_h player)
 {
-	return __unset_callback(_PLAYER_EVENT_TYPE_COMPLETE, player);
+	return __unset_callback(MUSE_PLAYER_EVENT_TYPE_COMPLETE, player);
 }
 
 int legacy_player_set_interrupted_cb(player_h player, player_interrupted_cb callback, void *user_data)
 {
-	return __set_callback(_PLAYER_EVENT_TYPE_INTERRUPT, player, callback, user_data);
+	return __set_callback(MUSE_PLAYER_EVENT_TYPE_INTERRUPT, player, callback, user_data);
 }
 
 int legacy_player_unset_interrupted_cb(player_h player)
 {
-	return __unset_callback(_PLAYER_EVENT_TYPE_INTERRUPT, player);
+	return __unset_callback(MUSE_PLAYER_EVENT_TYPE_INTERRUPT, player);
 }
 
 int legacy_player_set_error_cb(player_h player, player_error_cb callback, void *user_data)
 {
-	return __set_callback(_PLAYER_EVENT_TYPE_ERROR, player, callback, user_data);
+	return __set_callback(MUSE_PLAYER_EVENT_TYPE_ERROR, player, callback, user_data);
 }
 
 int legacy_player_unset_error_cb(player_h player)
 {
-	return __unset_callback(_PLAYER_EVENT_TYPE_ERROR, player);
+	return __unset_callback(MUSE_PLAYER_EVENT_TYPE_ERROR, player);
 }
 
 int legacy_player_set_buffering_cb(player_h player, player_buffering_cb callback, void *user_data)
 {
-	return __set_callback(_PLAYER_EVENT_TYPE_BUFFERING, player, callback, user_data);
+	return __set_callback(MUSE_PLAYER_EVENT_TYPE_BUFFERING, player, callback, user_data);
 }
 
 int legacy_player_unset_buffering_cb(player_h player)
 {
-	return __unset_callback(_PLAYER_EVENT_TYPE_BUFFERING, player);
+	return __unset_callback(MUSE_PLAYER_EVENT_TYPE_BUFFERING, player);
 }
 
 int legacy_player_set_subtitle_updated_cb(player_h player, player_subtitle_updated_cb callback, void *user_data)
 {
-	return __set_callback(_PLAYER_EVENT_TYPE_SUBTITLE, player, callback, user_data);
+	return __set_callback(MUSE_PLAYER_EVENT_TYPE_SUBTITLE, player, callback, user_data);
 }
 
 int legacy_player_unset_subtitle_updated_cb(player_h player)
 {
-	return __unset_callback(_PLAYER_EVENT_TYPE_SUBTITLE, player);
+	return __unset_callback(MUSE_PLAYER_EVENT_TYPE_SUBTITLE, player);
 }
 
 int legacy_player_set_progressive_download_message_cb(player_h player, player_pd_message_cb callback, void *user_data)
@@ -2534,9 +2535,9 @@ int legacy_player_set_progressive_download_message_cb(player_h player, player_pd
 	if (ret != MM_ERROR_NONE)
 		return __player_convert_error_code(ret, (char *)__FUNCTION__);
 
-	handle->user_cb[_PLAYER_EVENT_TYPE_PD] = callback;
-	handle->user_data[_PLAYER_EVENT_TYPE_PD] = user_data;
-	LOGI("[%s] Event type : %d ", __FUNCTION__, _PLAYER_EVENT_TYPE_PD);
+	handle->user_cb[MUSE_PLAYER_EVENT_TYPE_PD] = callback;
+	handle->user_data[MUSE_PLAYER_EVENT_TYPE_PD] = user_data;
+	LOGI("[%s] Event type : %d ", __FUNCTION__, MUSE_PLAYER_EVENT_TYPE_PD);
 	return PLAYER_ERROR_NONE;
 }
 
@@ -2545,9 +2546,9 @@ int legacy_player_unset_progressive_download_message_cb(player_h player)
 	PLAYER_INSTANCE_CHECK(player);
 	player_s *handle = (player_s *)player;
 
-	handle->user_cb[_PLAYER_EVENT_TYPE_PD] = NULL;
-	handle->user_data[_PLAYER_EVENT_TYPE_PD] = NULL;
-	LOGI("[%s] Event type : %d ", __FUNCTION__, _PLAYER_EVENT_TYPE_PD);
+	handle->user_cb[MUSE_PLAYER_EVENT_TYPE_PD] = NULL;
+	handle->user_data[MUSE_PLAYER_EVENT_TYPE_PD] = NULL;
+	LOGI("[%s] Event type : %d ", __FUNCTION__, MUSE_PLAYER_EVENT_TYPE_PD);
 
 	int ret = mm_player_set_pd_message_callback(handle->mm_handle, NULL, NULL);
 	if (ret != MM_ERROR_NONE)
@@ -2573,9 +2574,9 @@ int legacy_player_set_media_packet_video_frame_decoded_cb(player_h player, playe
 	if (ret != MM_ERROR_NONE)
 		return __player_convert_error_code(ret, (char *)__FUNCTION__);
 
-	handle->user_cb[_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME] = callback;
-	handle->user_data[_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME] = user_data;
-	LOGI("Event type : %d ", _PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME);
+	handle->user_cb[MUSE_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME] = callback;
+	handle->user_data[MUSE_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME] = user_data;
+	LOGI("Event type : %d ", MUSE_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME);
 
 	return PLAYER_ERROR_NONE;
 }
@@ -2584,9 +2585,9 @@ int legacy_player_unset_media_packet_video_frame_decoded_cb(player_h player)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	player_s *handle = (player_s *)player;
-	handle->user_cb[_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME] = NULL;
-	handle->user_data[_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME] = NULL;
-	LOGI("Event type : %d ", _PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME);
+	handle->user_cb[MUSE_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME] = NULL;
+	handle->user_data[MUSE_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME] = NULL;
+	LOGI("Event type : %d ", MUSE_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME);
 
 	int ret = mm_player_set_video_stream_callback(handle->mm_handle, NULL, NULL);
 	if (ret != MM_ERROR_NONE)
@@ -2598,7 +2599,7 @@ int legacy_player_unset_media_packet_video_frame_decoded_cb(player_h player)
 static bool __video_stream_changed_callback(void *user_data)
 {
 	player_s *handle = (player_s *)user_data;
-	_player_event_e event_type = _PLAYER_EVENT_TYPE_VIDEO_STREAM_CHANGED;
+	muse_player_event_e event_type = MUSE_PLAYER_EVENT_TYPE_VIDEO_STREAM_CHANGED;
 
 	LOGE("[%s] event type %d", __FUNCTION__, event_type);
 
@@ -2641,7 +2642,7 @@ int legacy_player_set_video_stream_changed_cb(player_h player, player_video_stre
 	if (ret != MM_ERROR_NONE)
 		return __player_convert_error_code(ret, (char *)__FUNCTION__);
 
-	return __set_callback(_PLAYER_EVENT_TYPE_VIDEO_STREAM_CHANGED, player, callback, user_data);
+	return __set_callback(MUSE_PLAYER_EVENT_TYPE_VIDEO_STREAM_CHANGED, player, callback, user_data);
 }
 
 int legacy_player_unset_video_stream_changed_cb(player_h player)
@@ -2650,7 +2651,7 @@ int legacy_player_unset_video_stream_changed_cb(player_h player)
 	PLAYER_INSTANCE_CHECK(player);
 	player_s *handle = (player_s *)player;
 
-	__unset_callback(_PLAYER_EVENT_TYPE_VIDEO_STREAM_CHANGED, player);
+	__unset_callback(MUSE_PLAYER_EVENT_TYPE_VIDEO_STREAM_CHANGED, player);
 
 	ret = mm_player_set_video_stream_changed_callback(handle->mm_handle, NULL, NULL);
 	if (ret != MM_ERROR_NONE)
@@ -2662,12 +2663,12 @@ int legacy_player_unset_video_stream_changed_cb(player_h player)
 static bool __media_stream_buffer_status_callback(player_stream_type_e type, player_media_stream_buffer_status_e status, unsigned long long bytes, void *user_data)
 {
 	player_s *handle = (player_s *)user_data;
-	_player_event_e event_type;
+	muse_player_event_e event_type;
 
 	if (type == PLAYER_STREAM_TYPE_AUDIO)
-		event_type = _PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_BUFFER_STATUS;
+		event_type = MUSE_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_BUFFER_STATUS;
 	else if (type == PLAYER_STREAM_TYPE_VIDEO)
-		event_type = _PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_BUFFER_STATUS;
+		event_type = MUSE_PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_BUFFER_STATUS;
 	else
 		return FALSE;
 
@@ -2686,12 +2687,12 @@ static bool __media_stream_buffer_status_callback(player_stream_type_e type, pla
 static bool __media_stream_seek_data_callback(player_stream_type_e type, unsigned long long offset, void *user_data)
 {
 	player_s *handle = (player_s *)user_data;
-	_player_event_e event_type;
+	muse_player_event_e event_type;
 
 	if (type == PLAYER_STREAM_TYPE_AUDIO)
-		event_type = _PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_SEEK;
+		event_type = MUSE_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_SEEK;
 	else if (type == PLAYER_STREAM_TYPE_VIDEO)
-		event_type = _PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_SEEK;
+		event_type = MUSE_PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_SEEK;
 	else
 		return FALSE;
 
@@ -2730,9 +2731,9 @@ int legacy_player_set_media_stream_buffer_status_cb(player_h player, player_stre
 		return __player_convert_error_code(ret, (char *)__FUNCTION__);
 
 	if (type == PLAYER_STREAM_TYPE_VIDEO)
-		return __set_callback(_PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_BUFFER_STATUS, player, callback, user_data);
+		return __set_callback(MUSE_PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_BUFFER_STATUS, player, callback, user_data);
 	else
-		return __set_callback(_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_BUFFER_STATUS, player, callback, user_data);
+		return __set_callback(MUSE_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_BUFFER_STATUS, player, callback, user_data);
 }
 
 int legacy_player_unset_media_stream_buffer_status_cb(player_h player, player_stream_type_e type)
@@ -2742,9 +2743,9 @@ int legacy_player_unset_media_stream_buffer_status_cb(player_h player, player_st
 	player_s *handle = (player_s *)player;
 
 	if (type == PLAYER_STREAM_TYPE_VIDEO)
-		__unset_callback(_PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_BUFFER_STATUS, player);
+		__unset_callback(MUSE_PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_BUFFER_STATUS, player);
 	else if (type == PLAYER_STREAM_TYPE_AUDIO)
-		__unset_callback(_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_BUFFER_STATUS, player);
+		__unset_callback(MUSE_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_BUFFER_STATUS, player);
 	else
 		return PLAYER_ERROR_INVALID_PARAMETER;
 
@@ -2778,9 +2779,9 @@ int legacy_player_set_media_stream_seek_cb(player_h player, player_stream_type_e
 		return __player_convert_error_code(ret, (char *)__FUNCTION__);
 
 	if (type == PLAYER_STREAM_TYPE_VIDEO)
-		return __set_callback(_PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_SEEK, player, callback, user_data);
+		return __set_callback(MUSE_PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_SEEK, player, callback, user_data);
 	else
-		return __set_callback(_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_SEEK, player, callback, user_data);
+		return __set_callback(MUSE_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_SEEK, player, callback, user_data);
 }
 
 int legacy_player_unset_media_stream_seek_cb(player_h player, player_stream_type_e type)
@@ -2790,9 +2791,9 @@ int legacy_player_unset_media_stream_seek_cb(player_h player, player_stream_type
 	player_s *handle = (player_s *)player;
 
 	if (type == PLAYER_STREAM_TYPE_VIDEO)
-		__unset_callback(_PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_SEEK, player);
+		__unset_callback(MUSE_PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_SEEK, player);
 	else if (type == PLAYER_STREAM_TYPE_AUDIO)
-		__unset_callback(_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_SEEK, player);
+		__unset_callback(MUSE_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_SEEK, player);
 	else
 		return PLAYER_ERROR_INVALID_PARAMETER;
 

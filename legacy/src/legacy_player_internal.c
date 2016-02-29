@@ -23,6 +23,7 @@
 #include <mm_player.h>
 #include <mm_player_internal.h>
 #include <mm_types.h>
+#include "muse_player.h"
 #include "legacy_player.h"
 #include "legacy_player_internal.h"
 #include "legacy_player_private.h"
@@ -48,8 +49,8 @@ bool __audio_stream_callback_ex(MMPlayerAudioStreamDataType *stream, void *user_
 		return TRUE;
 	}
 
-	if (handle->user_cb[_PLAYER_EVENT_TYPE_AUDIO_FRAME])
-		((player_audio_pcm_extraction_cb)handle->user_cb[_PLAYER_EVENT_TYPE_AUDIO_FRAME])((player_audio_raw_data_s *)stream, handle->user_data[_PLAYER_EVENT_TYPE_AUDIO_FRAME]);
+	if (handle->user_cb[MUSE_PLAYER_EVENT_TYPE_AUDIO_FRAME])
+		((player_audio_pcm_extraction_cb)handle->user_cb[MUSE_PLAYER_EVENT_TYPE_AUDIO_FRAME])((player_audio_raw_data_s *)stream, handle->user_data[MUSE_PLAYER_EVENT_TYPE_AUDIO_FRAME]);
 	return TRUE;
 }
 
@@ -70,7 +71,7 @@ int legacy_player_set_pcm_extraction_mode(player_h player, bool sync, player_aud
 	if (ret != MM_ERROR_NONE)
 		return __player_convert_error_code(ret, (char *)__FUNCTION__);
 
-	PLAYER_SET_CALLBACK(_PLAYER_EVENT_TYPE_AUDIO_FRAME, handle, callback, user_data);
+	PLAYER_SET_CALLBACK(MUSE_PLAYER_EVENT_TYPE_AUDIO_FRAME, handle, callback, user_data);
 	return PLAYER_ERROR_NONE;
 }
 
@@ -125,12 +126,12 @@ int legacy_player_set_streaming_playback_rate(player_h player, float rate)
 static bool __media_stream_buffer_status_callback_ex(player_stream_type_e type, player_media_stream_buffer_status_e status, unsigned long long bytes, void *user_data)
 {
 	player_s *handle = (player_s *)user_data;
-	_player_event_e event_type;
+	muse_player_event_e event_type;
 
 	if (type == PLAYER_STREAM_TYPE_AUDIO)
-		event_type = _PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_BUFFER_STATUS_WITH_INFO;
+		event_type = MUSE_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_BUFFER_STATUS_WITH_INFO;
 	else if (type == PLAYER_STREAM_TYPE_VIDEO)
-		event_type = _PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_BUFFER_STATUS_WITH_INFO;
+		event_type = MUSE_PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_BUFFER_STATUS_WITH_INFO;
 	else
 		return FALSE;
 
@@ -153,7 +154,7 @@ int legacy_player_set_media_stream_buffer_status_cb_ex(player_h player, player_s
 	PLAYER_INSTANCE_CHECK(player);
 	PLAYER_NULL_ARG_CHECK(callback);
 	player_s *handle = (player_s *)player;
-	_player_event_e event_type;
+	muse_player_event_e event_type;
 
 	if (handle->state != PLAYER_STATE_IDLE) {
 		LOGE("[%s] PLAYER_ERROR_INVALID_STATE(0x%08x) : current state - %d", __FUNCTION__, PLAYER_ERROR_INVALID_STATE, handle->state);
@@ -171,9 +172,9 @@ int legacy_player_set_media_stream_buffer_status_cb_ex(player_h player, player_s
 		return __player_convert_error_code(ret, (char *)__FUNCTION__);
 
 	if (type == PLAYER_STREAM_TYPE_VIDEO)
-		event_type = _PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_BUFFER_STATUS_WITH_INFO;
+		event_type = MUSE_PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_BUFFER_STATUS_WITH_INFO;
 	else
-		event_type = _PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_BUFFER_STATUS_WITH_INFO;
+		event_type = MUSE_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_BUFFER_STATUS_WITH_INFO;
 
 	LOGI("[%s] Event type : %d ", __FUNCTION__, type);
 
@@ -188,12 +189,12 @@ int legacy_player_unset_media_stream_buffer_status_cb_ex(player_h player, player
 	int ret;
 	PLAYER_INSTANCE_CHECK(player);
 	player_s *handle = (player_s *)player;
-	_player_event_e event_type;
+	muse_player_event_e event_type;
 
 	if (type == PLAYER_STREAM_TYPE_VIDEO)
-		event_type = _PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_BUFFER_STATUS_WITH_INFO;
+		event_type = MUSE_PLAYER_EVENT_TYPE_MEDIA_STREAM_VIDEO_BUFFER_STATUS_WITH_INFO;
 	else if (type == PLAYER_STREAM_TYPE_AUDIO)
-		event_type = _PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_BUFFER_STATUS_WITH_INFO;
+		event_type = MUSE_PLAYER_EVENT_TYPE_MEDIA_STREAM_AUDIO_BUFFER_STATUS_WITH_INFO;
 	else
 		return PLAYER_ERROR_INVALID_PARAMETER;
 
