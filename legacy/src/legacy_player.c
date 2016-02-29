@@ -1846,6 +1846,7 @@ int legacy_player_set_display(player_h player, player_display_type_e type, playe
 		/* first time or same type */
 		ret = mm_player_set_attribute(handle->mm_handle, NULL, "display_surface_type", __player_convet_display_type(type),
 #ifdef HAVE_WAYLAND
+									  "use_wl_surface", TRUE,
 									  "wl_display", set_wl_display, sizeof(void *),
 #endif
 									  "display_overlay", set_handle, sizeof(player_display_h), (char *)NULL);
