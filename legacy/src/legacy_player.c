@@ -3055,22 +3055,6 @@ int legacy_player_get_track_language_code(player_h player, player_stream_type_e 
 	}
 }
 
-static MMDisplaySurfaceType __player_mused_convet_display_type(player_display_type_e type)
-{
-	switch (type) {
-	case PLAYER_DISPLAY_TYPE_OVERLAY:
-		return MM_DISPLAY_SURFACE_OVERLAY;
-#ifdef TIZEN_MOBILE
-	case PLAYER_DISPLAY_TYPE_EVAS:
-		return MM_DISPLAY_SURFACE_REMOTE;
-#endif
-	case PLAYER_DISPLAY_TYPE_NONE:
-		return MM_DISPLAY_SURFACE_NULL;
-	default:
-		return MM_DISPLAY_SURFACE_NULL;
-	}
-}
-
 #ifdef HAVE_WAYLAND
 int legacy_player_resize_video_render_rect(player_h player, int x, int y, int w, int h)
 {
@@ -3095,7 +3079,7 @@ int legacy_player_set_display_wl_for_mused(player_h player, player_display_type_
 	PLAYER_INSTANCE_CHECK(player);
 	player_s *handle = (player_s *)player;
 	void *set_handle = NULL;
-	MMDisplaySurfaceType mmType = __player_mused_convet_display_type(type);
+	MMDisplaySurfaceType mmType = __player_convet_display_type(type);
 	MMDisplaySurfaceType mmClientType = MM_DISPLAY_SURFACE_NULL;
 	MMPlayerPipelineType mmPipelineType = MM_PLAYER_PIPELINE_SERVER;
 
@@ -3197,7 +3181,7 @@ int legacy_player_set_display_for_mused(player_h player, player_display_type_e t
 	PLAYER_INSTANCE_CHECK(player);
 	player_s *handle = (player_s *)player;
 	void *set_handle = NULL;
-	MMDisplaySurfaceType mmType = __player_mused_convet_display_type(type);
+	MMDisplaySurfaceType mmType = __player_convet_display_type(type);
 
 	int ret;
 	if (!__player_state_validate(handle, PLAYER_STATE_IDLE)) {
