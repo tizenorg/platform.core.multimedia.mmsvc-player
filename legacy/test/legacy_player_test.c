@@ -322,7 +322,7 @@ int _save(unsigned char *src, int length)
 	static int WRITE_COUNT = 0;
 
 	/* gchar *filename  = CAPTUERD_IMAGE_SAVE_PATH; */
-	snprintf(filename, 256, "ALBUM_ART_IMAGE_%d", WRITE_COUNT);
+	snprintf(filename, 256, "/tmp/ALBUM_ART_IMAGE_%d", WRITE_COUNT);
 	WRITE_COUNT++;
 	fp = fopen(filename, "w+");
 	if (fp == NULL) {
@@ -1045,6 +1045,7 @@ static void get_stream_info()
 	void *album;
 	int size;
 	legacy_player_get_album_art(g_player[0], &album, &size);
+	_save(album, size);
 	g_print("                                                            ==> [Player_Test] Album art : [ data : %p, size : %d ]\n", (unsigned int *)album, size);
 	if (value != NULL) {
 		free(value);
