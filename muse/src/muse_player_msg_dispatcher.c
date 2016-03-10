@@ -1308,16 +1308,59 @@ static int player_disp_get_album_art(muse_module_h module)
 	muse_player_api_e api = MUSE_PLAYER_API_GET_ALBUM_ART;
 	void *album_art;
 	int size;
+	tbm_bo bo;
+	tbm_bo_handle thandle;
+	tbm_key key;
+	char checker = 1;
+	unsigned int expired = 0x0fffffff;
 
 	handle = muse_core_ipc_get_handle(module);
 
 	ret = legacy_player_get_album_art((player_h)handle, &album_art, &size);
+	if (ret == PLAYER_ERROR_NONE) {
+		bo = tbm_bo_alloc(bufmgr, size+1, TBM_BO_DEFAULT);
+		if (!bo) {
+			LOGE("TBM get error : tbm_bo_alloc return NULL");
+			ret = PLAYER_ERROR_INVALID_OPERATION; /* according to the api desc */
+			goto exit;
+		}
+		thandle = tbm_bo_map(bo, TBM_DEVICE_CPU, TBM_OPTION_WRITE);
+		if (thandle.ptr == NULL) {
+			LOGE("TBM get error : handle pointer is NULL");
+			ret = PLAYER_ERROR_INVALID_OPERATION; /* according to the api desc */
+			tbm_bo_unref(bo);
+			goto exit;
+		}
 
-	if (ret == PLAYER_ERROR_NONE)
-		player_msg_return_array(api, ret, module, album_art, size, sizeof(char));
+		memcpy(thandle.ptr, album_art, size);
+		/* mark to write */
+		*((char *)thandle.ptr + size) = 1;
+		tbm_bo_unmap(bo);
+
+		key = tbm_bo_export(bo);
+		if (key == 0) {
+			LOGE("TBM get error : export key is 0");
+			ret = PLAYER_ERROR_INVALID_OPERATION; /* according to the api desc */
+			tbm_bo_unref(bo);
+			goto exit;
+		}
+
+		LOGE("size %d key %d", size, key);
+		player_msg_return2(api, ret, module, INT, size, INT, key);
+
+		while (checker && expired--) {
+			thandle = tbm_bo_map(bo, TBM_DEVICE_CPU, TBM_OPTION_READ);
+			checker = *((char *)thandle.ptr + size);
+			tbm_bo_unmap(bo);
+		}
+	}
 	else
 		player_msg_return(api, ret, module);
 
+	return ret;
+
+exit:
+	player_msg_return(api, ret, module);
 	return ret;
 }
 
