@@ -10,10 +10,9 @@ ENDIF(X11_SUPPORT)
 IF(WAYLAND_SUPPORT)
        SET(WIN_PKG "${WIN_PKG} ecore-wayland")
 ENDIF(WAYLAND_SUPPORT)
+
 INCLUDE(FindPkgConfig)
 pkg_check_modules(${fw_test} REQUIRED libtbm mm-player appcore-efl elementary ecore evas capi-media-sound-manager ${WIN_PKG})
-
-
 FOREACH(flag ${${fw_test}_CFLAGS})
     SET(EXTRA_CFLAGS "${EXTRA_CFLAGS} ${flag}")
 ENDFOREACH(flag)

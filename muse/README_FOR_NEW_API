@@ -1,0 +1,64 @@
+Copyright (c) 2011 Samsung Electronics Co., Ltd All Rights Reserved
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+------------------------------------------------------------------------
+
+API can be added using make_api.py python script with muse daemon
+1. Write new API except "player_" in api.list
+2. Write code for muse module in muse_player.c
+3. Write coed for client proxy in player.c
+
+Example>
+New api name is "player_xxx".
++-------------------------- api.list ---------------------------+
+|                                                               |
+| xxx                                                           |
+|                                                               |
++---------------------------------------------------------------+
+
++----------------------- muse_player.c -------------------------+
+|                                                               |
+| int player_disp_xxx(muse_module_h module)                     |
+| {                                                             |
+|     int ret = -1;                                             |
+|     intptr_t handle;                                          |
+|     muse_player_api_e api = MUSE_PLAYER_API_XXX;              |
+|                                                               |
+|     handle = muse_core_ipc_get_handle(module);                |
+|                                                               |
+|     ret = legacy_player_xxx((player_h)handle);                |
+|                                                               |
+|     player_msg_return(api, ret, module);                      |
+|                                                               |
+|     return ret;                                               |
+| }                                                             |
+|                                                               |
++---------------------------------------------------------------+
+
++------------------------- player.c ----------------------------+
+|                                                               |
+| int player_xxx(player_h player)                               |
+| {                                                             |
+|     PLAYER_INSTANCE_CHECK(player);                            |
+|     int ret = PLAYER_ERROR_NONE;                              |
+|     muse_player_api_e api = MUSE_PLAYER_API_XXX;              |
+|     player_cli_s *pc = (player_cli_s *)player;                |
+|     char *ret_buf = NULL;                                     |
+|                                                               |
+|     player_msg_send(api, pc, ret_buf, ret);                   |
+|                                                               |
+|     g_free(ret_buf);                                          |
+|     return ret;                                               |
+| }                                                             |
+|                                                               |
++---------------------------------------------------------------+

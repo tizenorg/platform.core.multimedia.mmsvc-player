@@ -99,6 +99,7 @@ rm -rf %{buildroot}
 
 %files devel
 %{_includedir}/media/*.h
+%{_includedir}/media/*.def
 %{_libdir}/pkgconfig/*.pc
 %{_libdir}/liblegacy-player.so
 %{_libdir}/libmuse-player.so

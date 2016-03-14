@@ -38,6 +38,8 @@ ADD_DEFINITIONS("-DTIZEN_DEBUG")
 
 SET(CMAKE_EXE_LINKER_FLAGS "-Wl,--as-needed -Wl,--rpath=${LIB_INSTALL_DIR}")
 
+execute_process(COMMAND python make_api.py -l api.list WORKING_DIRECTORY ${service})
+
 aux_source_directory(src MUSED_SOURCES)
 ADD_LIBRARY(${fw_name} SHARED ${MUSED_SOURCES})
 
@@ -56,5 +58,7 @@ INSTALL(
         FILES_MATCHING
         PATTERN "*_private.h" EXCLUDE
         PATTERN "${INC_DIR}/*.h"
+        PATTERN "${INC_DIR}/*.def"
         )
 
+ADD_SUBDIRECTORY(test)

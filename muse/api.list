@@ -1,0 +1,7 @@
+get_track_count
+get_current_track
+select_track
+get_track_language_code
+set_pcm_extraction_mode
+set_pcm_spec
+set_streaming_playback_rate
