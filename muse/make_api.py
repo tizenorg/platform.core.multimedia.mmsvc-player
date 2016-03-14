@@ -40,7 +40,12 @@ def main(argv):
 	for line in ListFile:
 		line = line.replace('\n', '')
 		if len(line) > 1:
-			DefFile.write("MUSE_PLAYER_API_" + line.upper() +",\n")
+			if line=="create":
+				DefFile.write("MUSE_PLAYER_API_" + line.upper() +" = API_CREATE,\n")
+			elif line=="destroy":
+				DefFile.write("MUSE_PLAYER_API_" + line.upper() +" = API_DESTROY,\n")
+			else:
+				DefFile.write("MUSE_PLAYER_API_" + line.upper() +",\n")
 			FuncFile.write("player_disp_" + line + ",\n")
 			HeadFile.write("int player_disp_" + line + "(muse_module_h module);\n")
 
