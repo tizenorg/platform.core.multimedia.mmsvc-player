@@ -17,6 +17,8 @@
 #include <dlog.h>
 #include "muse_core.h"
 #include "muse_core_ipc.h"
+#include "muse_player.h"
+#include "muse_player_api.h"
 #include "legacy_player.h"
 
 static int player_cmd_shutdown(muse_module_h module)
@@ -56,3 +58,18 @@ int (*cmd_dispatcher[MUSE_MODULE_EVENT_MAX])(muse_module_h module) = {
 	player_cmd_shutdown,	/* MUSE_MODULE_EVENT_SHUTDOWN */
 	NULL,	/* MUSE_MODULE_EVENT_DEBUG_INFO_DUMP */
 };
+
+/**
+ * @brief Auto-generated dispatcher for the muse player APIs.
+ * @details muse_player_api.func file which is a list of function name
+ *          will be created during build time automatically like below.
+ *          player_disp_create,
+ * 			player_disp_destroy,
+ *          ...
+ * @see ../api.list
+ * @see ../make_api.py
+ */
+int (*dispatcher[MUSE_PLAYER_API_MAX])(muse_module_h module) = {
+#include "muse_player_api.func"
+};
+
