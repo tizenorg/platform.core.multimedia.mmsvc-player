@@ -1296,6 +1296,7 @@ static int player_disp_get_album_art(muse_module_h module)
 			checker = *((char *)thandle.ptr + size);
 			tbm_bo_unmap(bo);
 		}
+		tbm_bo_unref(bo);
 	}
 	else
 		player_msg_return(api, ret, module);
