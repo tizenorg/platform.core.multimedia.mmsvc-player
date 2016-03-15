@@ -14,12 +14,16 @@ limitations under the License.
 ------------------------------------------------------------------------
 
 API can be added using make_api.py python script with muse daemon
-1. Write new API except "player_" in api.list
-2. Write code for muse module in muse_player.c
-3. Write coed for client proxy in player.c
++----------------------------------- console ----------------------------------------+
+| $ python make_api.py -l api.list -s src/muse_player.c -c ../../player/src/player.c |
+| Input new API                                                                      |
+| player_                                                                            |
+|                                                                                    |
+|                                                                                    |
++------------------------------------------------------------------------------------+
 
-Example>
-New api name is "player_xxx".
+This python script make fallowing code.
+If new api name is "player_xxx".
 +-------------------------- api.list ---------------------------+
 |                                                               |
 | xxx                                                           |
