@@ -1374,7 +1374,7 @@ int player_disp_get_album_art(muse_module_h module)
 	handle = muse_core_ipc_get_handle(module);
 
 	ret = legacy_player_get_album_art((player_h)handle, &album_art, &size);
-	if (ret == PLAYER_ERROR_NONE) {
+	if (ret == PLAYER_ERROR_NONE && size > 0) {
 		bo = tbm_bo_alloc(bufmgr, size+1, TBM_BO_DEFAULT);
 		if (!bo) {
 			LOGE("TBM get error : tbm_bo_alloc return NULL");
@@ -1411,6 +1411,9 @@ int player_disp_get_album_art(muse_module_h module)
 			tbm_bo_unmap(bo);
 		}
 		tbm_bo_unref(bo);
+	} else if (ret == PLAYER_ERROR_NONE) {
+		LOGD("album art size is zero, didn't make tbm_bo");
+		player_msg_return2(api, ret, module, INT, size, INT, 0);
 	}
 	else
 		player_msg_return(api, ret, module);
