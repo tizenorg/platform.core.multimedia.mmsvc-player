@@ -12,9 +12,9 @@ def usage(ret):
 	print "\t-p, --product"
 	print "\t\tuse for product API"
 	print "\t-s SOURCEFILE, --server SOURCEFILE"
-	print "\t\tmake body template for mused module(server). must use with -c option"
+	print "\t\tmake body template for mused module(server). must use with -s option"
 	print "\t-c SOURCEFILE, --client SOURCEFILE"
-	print "\t\tmake body template for capi(client). must use with -s option"
+	print "\t\tmake body template for capi(client). must use with -c option"
 	print "\nEXAMPLE"
 	print "\tpython make_api.py -l api.list"
 	print "\t\tbuild time script"
@@ -56,24 +56,28 @@ def make_body(ListFileName, ServerFileName, ClientFileName):
 		ServerFile.write("\n")
 		ServerFile.write("\thandle = muse_core_ipc_get_handle(module);\n")
 		ServerFile.write("\n")
-		ServerFile.write("\tret = ACTUAL_OPERATION_FUNCTION((player_h)handle);\n")
+		ServerFile.write("\tret = ACTUAL_OPERATION_FUNCTION((player_h)handle); /* Template Guide: add legacy_player_function with parames. */\n")
 		ServerFile.write("\n")
-		ServerFile.write("\tplayer_msg_return(api, ret, module);\n")
+		ServerFile.write("\tplayer_msg_return(api, ret, module); /* Template Guide: call right return function with values */\n")
 		ServerFile.write("\n")
 		ServerFile.write("\treturn ret;\n")
 		ServerFile.write("}\n")
 
 	with open(ClientFileName, "a") as ClientFile:
 		ClientFile.write("\n")
-		ClientFile.write("int player_" + ApiName + "(player_h player)\n")
+		ClientFile.write("int player_" + ApiName + "(player_h player) /* Template Guide: modify parameters. */\n")
 		ClientFile.write("{\n")
+		ClientFile.write("\t/* Template Guide: add checking about parameter validation. */\n")
 		ClientFile.write("\tPLAYER_INSTANCE_CHECK(player);\n")
+		ClientFile.write("\n")
 		ClientFile.write("\tint ret = PLAYER_ERROR_NONE;\n")
 		ClientFile.write("\tmuse_player_api_e api = MUSE_PLAYER_API_" + ApiName.upper() +";\n")
 		ClientFile.write("\tplayer_cli_s *pc = (player_cli_s *)player;\n")
 		ClientFile.write("\n")
 		ClientFile.write("\tchar *ret_buf = NULL;\n")
 		ClientFile.write("\n")
+		ClientFile.write("\t/* Template Guide: add needed implementation and call send function with values. */\n")
+		ClientFile.write("\t/* ... */\n")
 		ClientFile.write("\tplayer_msg_send(api, pc, ret_buf, ret);\n")
 		ClientFile.write("\n")
 		ClientFile.write("\tg_free(ret_buf);\n")
