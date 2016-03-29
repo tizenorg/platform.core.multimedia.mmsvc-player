@@ -35,12 +35,15 @@ def make_body(ListFileName, ServerFileName, ClientFileName):
 		ApiName = raw_input("player_")
 	ApiName = ApiName.strip()
 
+	if(not ApiName):
+		return 0
+
 	with open(ListFileName, "r") as ListFile:
 		ApiList = ListFile.readlines()
 		for Api in ApiList:
 			if Api.strip() == ApiName:
 				print("API already exist\n")
-				sys.exit(1)
+				return 1
 
 	with open(ListFileName, "a") as ListFile:
 		ListFile.write(ApiName + '\n')
@@ -84,6 +87,7 @@ def make_body(ListFileName, ServerFileName, ClientFileName):
 		ClientFile.write("\n")
 		ClientFile.write("\treturn ret;\n")
 		ClientFile.write("}\n")
+	return 1
 
 def build_running(ListFileName, product):
 
@@ -148,7 +152,10 @@ def main(argv):
 	if not ListFileName:
 		usage(1)
 	elif make_body_opt >= 2:
-		make_body(ListFileName, ServerFileName, ClientFileName)
+		print("please <ENTER> for exit")
+		make_result = 1
+		while make_result:
+			make_result = make_body(ListFileName, ServerFileName, ClientFileName)
 	elif make_body_opt:
 		usage(1)
 	else:
