@@ -108,6 +108,27 @@ typedef struct {
 	muse_core_msg_json_deserialize(#param, buf, &len, &param, &e, MUSE_TYPE_INT)
 
 /**
+ * @brief Create and send address of server side module infomation structure.
+ * @remarks Does NOT guarantee thread safe.
+ * @param[in] module The server side module infomation.
+ * @param[in] fd socket fd
+ */
+#define muse_core_send_module_addr(module, fd) \
+	do {\
+	        char *__sndMsg__; \
+	        int __len__; \
+	        __sndMsg__ = muse_core_msg_json_factory_new(0, \
+	                        MUSE_TYPE_POINTER, #module, module, \
+	                        0); \
+	        __len__ = muse_core_ipc_send_msg(fd, __sndMsg__); \
+	        muse_core_msg_json_factory_free(__sndMsg__); \
+	        if (__len__ <= 0) { \
+	                LOGE("sending message failed"); \
+	                return PLAYER_ERROR_INVALID_OPERATION; \
+	        } \
+	} while (0)
+
+/**
  * @brief Create and send message. Wait for server result.
  * @remarks Does NOT guarantee thread safe.
  * @param[in] api The enum of module API.
