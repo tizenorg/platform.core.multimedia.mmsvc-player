@@ -21,7 +21,7 @@
 extern "C" {
 #endif
 
-#include "muse_core_ipc.h"
+#include <muse_core_ipc.h>
 
 #ifdef LOG_TAG
 #undef LOG_TAG
@@ -84,9 +84,8 @@ typedef enum {
 	MUSE_PLAYER_EVENT_TYPE_NUM
 }muse_player_event_e;
 
-
 #ifdef __cplusplus
 }
 #endif
 
-#endif //__TIZEN_MEDIA_MUSE_PLAYER_H__
+#endif /* __TIZEN_MEDIA_MUSE_PLAYER_H__ */

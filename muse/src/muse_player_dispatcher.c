@@ -15,35 +15,38 @@
 */
 
 #include <dlog.h>
-#include "muse_core.h"
-#include "muse_core_ipc.h"
+#include <muse_core.h>
+#include <muse_core_ipc.h>
 #include "muse_player.h"
-#include "muse_player_api.h"
+#include "muse_player_api.h" /* generated during build, ref ../make_api.py */
+#include "muse_player_private.h"
 #include "legacy_player.h"
 
 static int player_cmd_shutdown(muse_module_h module)
 {
-	intptr_t handle;
+	muse_player_handle_s *muse_player = NULL;
 	player_state_e state;
 	int ret;
 
-	handle = muse_core_ipc_get_handle(module);
+	muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
 
-	ret = legacy_player_get_state((player_h)handle, &state);
+	ret = legacy_player_get_state(muse_player->player_handle, &state);
 
 	if (ret != PLAYER_ERROR_NONE)
 		return ret;
 
+	LOGW("player shutdown, state:%d", state);
+
 	switch (state) {
 	case PLAYER_STATE_PLAYING:
-		legacy_player_stop((player_h)handle);
+		legacy_player_stop(muse_player->player_handle);
 		/* FALLTHROUGH */
 	case PLAYER_STATE_PAUSED:
 	case PLAYER_STATE_READY:
-		legacy_player_unprepare((player_h)handle);
+		legacy_player_unprepare(muse_player->player_handle);
 		/* FALLTHROUGH */
 	case PLAYER_STATE_IDLE:
-		legacy_player_destroy((player_h)handle);
+		legacy_player_destroy(muse_player->player_handle);
 		break;
 
 	default:
@@ -67,6 +70,7 @@ int (*cmd_dispatcher[MUSE_MODULE_COMMAND_MAX])(muse_module_h module) = {
  *          player_disp_create,
  *          player_disp_destroy,
  *          ...
+ * @see ../README_FOR_NEW_API
  * @see ../api.list
  * @see ../make_api.py
  */
