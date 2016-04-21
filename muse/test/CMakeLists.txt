@@ -1,7 +1,7 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 SET(fw_test "${fw_name}-test")
 
-INCLUDE_DIRECTORIES(../muse/include)
+INCLUDE_DIRECTORIES(../include, ../../legacy/include)
 link_directories(${CMAKE_SOURCE_DIR}/../)
 
 INCLUDE(FindPkgConfig)
