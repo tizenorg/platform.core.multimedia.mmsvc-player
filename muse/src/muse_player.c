@@ -286,6 +286,7 @@ static void _pd_msg_cb(player_pd_message_type_e type, void *user_data)
 
 static void _media_packet_video_decoded_cb(media_packet_h pkt, void *user_data)
 {
+#define MAX_NUM_OF_EXPORT 3
 	int ret;
 	muse_player_cb_e api = MUSE_PLAYER_CB_EVENT;
 	muse_player_event_e ev = MUSE_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME;
@@ -330,6 +331,13 @@ static void _media_packet_video_decoded_cb(media_packet_h pkt, void *user_data)
 	/* add packet to the data_list */
 	muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
 	g_mutex_lock(&muse_player->list_lock);
+	if (g_list_length(muse_player->packet_list) > MAX_NUM_OF_EXPORT) {
+		LOGE("Too many buffers are not released. packet(%p) will be drop.", pkt);
+		media_packet_destroy(pkt);
+		g_mutex_unlock(&muse_player->list_lock);
+		return;
+	}
+
 	muse_player->packet_list = g_list_append(muse_player->packet_list, (gpointer)pkt);
 	g_mutex_unlock(&muse_player->list_lock);
 
