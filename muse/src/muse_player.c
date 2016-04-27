@@ -184,8 +184,9 @@ static void _remove_export_media_packet(muse_module_h module)
 		GList *packet = NULL;
 		g_mutex_lock(&muse_player->list_lock);
 
-		LOGE("number of remained packet %d", g_list_length(muse_player->packet_list));
+		LOGW("number of remained packet %d", g_list_length(muse_player->packet_list));
 		for (packet = g_list_first(muse_player->packet_list); packet; packet = g_list_next(packet)) {
+			LOGW("%p will be removed", packet->data);
 			media_packet_destroy ((media_packet_h)packet->data);
 		}
 		g_list_free (muse_player->packet_list);
@@ -333,8 +334,8 @@ static void _media_packet_video_decoded_cb(media_packet_h pkt, void *user_data)
 	g_mutex_lock(&muse_player->list_lock);
 	if (g_list_length(muse_player->packet_list) > MAX_NUM_OF_EXPORT) {
 		LOGE("Too many buffers are not released. packet(%p) will be drop.", pkt);
-		media_packet_destroy(pkt);
 		g_mutex_unlock(&muse_player->list_lock);
+		media_packet_destroy(pkt);
 		return;
 	}
 
@@ -343,6 +344,7 @@ static void _media_packet_video_decoded_cb(media_packet_h pkt, void *user_data)
 
 	media_packet_get_format(pkt, &fmt);
 	media_format_get_video_info(fmt, &mimetype, NULL, NULL, NULL, NULL);
+	media_format_unref(fmt);
 	media_packet_get_pts(pkt, &pts);
 	player_msg_event7_array(api, ev, module, INT, key[0], INT, key[1], INT, key[2], INT, key[3], POINTER, packet, INT, mimetype, INT64, pts, surface_info, surface_info_size, sizeof(char));
 }
@@ -2015,17 +2017,25 @@ int player_disp_media_packet_finalize_cb(muse_module_h module)
 {
 	media_packet_h packet = NULL;
 	muse_player_handle_s *muse_player = NULL;
+	bool find_pkt = FALSE;
 
 	player_msg_get_type(packet, muse_core_client_get_msg(module), POINTER);
 
 	muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
 	if (muse_player && muse_player->packet_list) {
 		g_mutex_lock(&muse_player->list_lock);
-		muse_player->packet_list = g_list_remove(muse_player->packet_list, packet);
+		if (g_list_find(muse_player->packet_list, packet)) {
+			muse_player->packet_list = g_list_remove(muse_player->packet_list, packet);
+			find_pkt = TRUE;
+		} else {
+			LOGW("the packet(%p) is not in the exported packet list.", packet);
+		}
 		g_mutex_unlock(&muse_player->list_lock);
+
+		if (find_pkt)
+			media_packet_destroy(packet);
 	}
 
-	media_packet_destroy(packet);
 	return PLAYER_ERROR_NONE;
 }
 

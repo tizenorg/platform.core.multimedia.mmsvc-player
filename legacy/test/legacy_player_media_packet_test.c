@@ -225,6 +225,7 @@ static void pipe_cb(void *data, void *buf, unsigned int len)
 
 	media_packet_get_format(ad->packet, &format);
 	media_format_get_video_info(format, &mimetype, NULL, NULL, NULL, NULL);
+	media_format_unref(format);
 
 	if (mimetype == MEDIA_FORMAT_I420 || mimetype == MEDIA_FORMAT_NV12 || mimetype == MEDIA_FORMAT_NV12T) {
 
