@@ -29,6 +29,10 @@ static int player_cmd_shutdown(muse_module_h module)
 	int ret;
 
 	muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
+	if (!muse_player) {
+		LOGE("handle is NULL.");
+		return PLAYER_ERROR_NONE;
+	}
 
 	ret = legacy_player_get_state(muse_player->player_handle, &state);
 

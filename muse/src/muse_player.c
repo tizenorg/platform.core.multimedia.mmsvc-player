@@ -331,6 +331,11 @@ static void _media_packet_video_decoded_cb(media_packet_h pkt, void *user_data)
 
 	/* add packet to the data_list */
 	muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
+	if (muse_player == NULL) {
+		LOGE("handle is NULL");
+		return;
+	}
+
 	g_mutex_lock(&muse_player->list_lock);
 	if (g_list_length(muse_player->packet_list) > MAX_NUM_OF_EXPORT) {
 		LOGE("Too many buffers are not released. packet(%p) will be drop.", pkt);
