@@ -125,6 +125,3 @@ int legacy_player_get_timeout_for_muse(player_h player, int *timeout);
 #endif
 
 #endif //__TIZEN_MEDIA_LEGACY_PLAYER_PRIVATE_H__
-
-
-
