@@ -127,6 +127,3 @@ int legacy_player_get_num_of_video_out_buffers(player_h player, int *num, int *e
 #endif
 
 #endif //__TIZEN_MEDIA_LEGACY_PLAYER_PRIVATE_H__
-
-
-
