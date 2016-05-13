@@ -150,7 +150,7 @@ static bool _remove_export_data(muse_module_h module, int key, int remove_all)
 				export_data = NULL;
 
 				if (!remove_all) {
-					LOGD("key %d, remove done");
+					LOGD("key %d, remove done", key);
 					g_mutex_unlock(&muse_player->list_lock);
 					return ret;
 				}
