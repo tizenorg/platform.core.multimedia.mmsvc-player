@@ -3,7 +3,7 @@
 
 Name:       mmsvc-player
 Summary:    A Media Player module for muse server
-Version:    0.2.10
+Version:    0.2.11
 Release:    0
 Group:      Multimedia/Libraries
 License:    Apache-2.0

@@ -209,3 +209,17 @@ int legacy_player_unset_media_stream_buffer_status_cb_ex(player_h player, player
 	else
 		return PLAYER_ERROR_NONE;
 }
+
+int legacy_player_set_media_stream_dynamic_resolution(player_h player, bool drc)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	player_s *handle = (player_s *)player;
+	PLAYER_STATE_CHECK(handle, PLAYER_STATE_IDLE);
+
+	int ret = mm_player_set_media_stream_dynamic_resolution(player, drc);
+
+	if (ret != MM_ERROR_NONE)
+		return __player_convert_error_code(ret, (char *)__FUNCTION__);
+	else
+		return PLAYER_ERROR_NONE;
+}

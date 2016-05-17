@@ -157,6 +157,22 @@ int legacy_player_set_media_stream_buffer_status_cb_ex(player_h player, player_s
 int legacy_player_unset_media_stream_buffer_status_cb_ex(player_h player, player_stream_type_e type);
 
 /**
+ * @brief Sets DRC(dynamic resolution change) information of media stream data.
+ * @since_tizen 3.0
+ * @remarks This API is used for media stream playback only.
+ *          If the hw codec can not support drc, app have to set DRC information before calling legacy_player_prepare().
+ * @param[in] player The handle to the media player
+ * @param[in] drc The drc status: (@c true = drc, @c false = non drc)
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @pre The player state must be set to #PLAYER_STATE_IDLE by calling legacy_player_create() or legacy_player_unprepare().
+ */
+int legacy_player_set_media_stream_dynamic_resolution(player_h player, bool drc);
+
+/**
  * @}
  */
 
