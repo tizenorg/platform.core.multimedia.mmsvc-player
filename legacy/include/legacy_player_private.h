@@ -88,6 +88,7 @@ typedef struct _player_s{
 	bool is_stopped;
 	bool is_display_visible;
 	bool is_progressive_download;
+	bool is_media_stream;
 	pthread_t prepare_async_thread;
 #ifdef USE_ECORE_FUNCTIONS
 	GHashTable *ecore_jobs;

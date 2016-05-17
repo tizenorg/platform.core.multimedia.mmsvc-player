@@ -98,7 +98,7 @@
 			} \
 			handle->current_message = (int)(intptr_t)g_queue_pop_head(handle->message_queue); \
 			g_mutex_unlock(&handle->message_queue_lock); \
-			LOGI("Retrived  message [%d] from queue", handle->current_message); \
+			LOGI("Retrieved  message [%d] from queue", handle->current_message); \
 		} else { \
 			LOGI("Failed to retrive message from queue"); \
 			handle->current_message = PLAYER_MESSAGE_NONE; \
@@ -834,7 +834,7 @@ static bool __video_stream_callback(void *stream, void *user_data)
 		int bo_num;
 		int ret = 0;
 		media_format_mimetype_e mimetype = MEDIA_FORMAT_NV12;
-		bool make_pkt_fmt = false;
+		bool make_pkt_fmt = FALSE;
 
 		/* create tbm surface */
 		for (i = 0, bo_num = 0; i < BUFFER_MAX_PLANE_NUM; i++) {
@@ -916,10 +916,10 @@ static bool __video_stream_callback(void *stream, void *user_data)
 						video_stream->width, video_stream->height);
 					media_format_unref(handle->pkt_fmt);
 					handle->pkt_fmt = NULL;
-					make_pkt_fmt = true;
+					make_pkt_fmt = TRUE;
 				}
 			} else {
-				make_pkt_fmt = true;
+				make_pkt_fmt = TRUE;
 			}
 
 			/* create packet format */
@@ -1065,8 +1065,9 @@ int legacy_player_create(player_h *player)
 		*player = (player_h)handle;
 		handle->state = PLAYER_STATE_IDLE;
 		handle->display_type = PLAYER_DISPLAY_TYPE_NONE;
-		handle->is_stopped = false;
-		handle->is_display_visible = true;
+		handle->is_stopped = FALSE;
+		handle->is_display_visible = TRUE;
+		handle->is_media_stream = FALSE;
 #ifdef USE_ECORE_FUNCTIONS
 		handle->ecore_jobs = g_hash_table_new_full(g_str_hash, g_str_equal, __job_key_to_remove, __job_value_to_destroy);
 #else
@@ -1317,10 +1318,10 @@ int legacy_player_unprepare(player_h player)
 
 		handle->state = PLAYER_STATE_IDLE;
 		handle->display_type = PLAYER_DISPLAY_TYPE_NONE;
-		handle->is_set_pixmap_cb = false;
-		handle->is_stopped = false;
-		handle->is_display_visible = true;
-		handle->is_progressive_download = false;
+		handle->is_set_pixmap_cb = FALSE;
+		handle->is_stopped = FALSE;
+		handle->is_display_visible = TRUE;
+		handle->is_progressive_download = FALSE;
 		LOGI("[%s] End", __FUNCTION__);
 		PLAYER_TRACE_END();
 		return PLAYER_ERROR_NONE;
@@ -1334,6 +1335,7 @@ int legacy_player_set_uri(player_h player, const char *uri)
 	player_s *handle = (player_s *)player;
 	PLAYER_STATE_CHECK(handle, PLAYER_STATE_IDLE);
 
+	handle->is_media_stream = FALSE;
 	int ret = mm_player_set_uri(handle->mm_handle, uri);
 
 	if (ret != MM_ERROR_NONE)
@@ -1352,6 +1354,7 @@ int legacy_player_set_memory_buffer(player_h player, const void *data, int size)
 
 	char uri[PATH_MAX];
 
+	handle->is_media_stream = FALSE;
 	snprintf(uri, sizeof(uri), "mem:///ext=%s,size=%d", "", size);
 	int ret = mm_player_set_attribute(handle->mm_handle, NULL, MM_PLAYER_CONTENT_URI, uri, strlen(uri), MM_PLAYER_MEMORY_SRC, data, size, (char *)NULL);
 	if (ret != MM_ERROR_NONE)
@@ -1464,7 +1467,7 @@ int legacy_player_set_audio_policy_info(player_h player, sound_stream_info_h str
 	player_s *handle = (player_s *)player;
 	PLAYER_STATE_CHECK(handle, PLAYER_STATE_IDLE);
 
-	bool is_available = false;
+	bool is_available = FALSE;
 
 	/* check if stream_info is valid */
 	int ret = sound_manager_is_available_stream_information(stream_info, NATIVE_API_PLAYER, &is_available);
@@ -1472,7 +1475,7 @@ int legacy_player_set_audio_policy_info(player_h player, sound_stream_info_h str
 	if (ret != MM_ERROR_NONE) {
 		return __player_convert_error_code(ret, (char *)__FUNCTION__);
 	} else {
-		if (is_available == false)
+		if (is_available == FALSE)
 			ret = MM_ERROR_NOT_SUPPORT_API;
 		else {
 			char *stream_type = NULL;
@@ -1624,8 +1627,9 @@ int legacy_player_set_play_position(player_h player, int millisecond, bool accur
 		return PLAYER_ERROR_INVALID_STATE;
 	}
 
-	if (handle->user_cb[MUSE_PLAYER_EVENT_TYPE_SEEK]) {
-		LOGE("[%s] PLAYER_ERROR_SEEK_FAILED (0x%08x) : seeking... we can't do any more ", __FUNCTION__, PLAYER_ERROR_SEEK_FAILED);
+	if (handle->user_cb[MUSE_PLAYER_EVENT_TYPE_SEEK] && handle->is_media_stream == FALSE)
+	{
+		LOGE("[%s] PLAYER_ERROR_SEEK_FAILED temp (0x%08x) : seeking... we can't do any more ", __FUNCTION__, PLAYER_ERROR_SEEK_FAILED);
 		return PLAYER_ERROR_SEEK_FAILED;
 	} else {
 		LOGI("[%s] Event type : %d, pos : %d ", __FUNCTION__, MUSE_PLAYER_EVENT_TYPE_SEEK, millisecond);
@@ -1779,7 +1783,7 @@ int legacy_player_set_display(player_h player, player_display_type_e type, playe
 	if (handle->is_set_pixmap_cb) {
 		if (handle->state < PLAYER_STATE_READY) {
 			/* just set below and go to "changing surface case" */
-			handle->is_set_pixmap_cb = false;
+			handle->is_set_pixmap_cb = FALSE;
 		} else {
 			LOGE("[%s] pixmap callback was set, try it again after calling legacy_player_unprepare()", __FUNCTION__, PLAYER_ERROR_INVALID_OPERATION);
 			LOGE("[%s] PLAYER_ERROR_INVALID_OPERATION(0x%08x)", __FUNCTION__, PLAYER_ERROR_INVALID_OPERATION);
@@ -2826,6 +2830,8 @@ int legacy_player_set_media_stream_info(player_h player, player_stream_type_e ty
 	player_s *handle = (player_s *)player;
 	PLAYER_STATE_CHECK(handle, PLAYER_STATE_IDLE);
 
+	handle->is_media_stream = TRUE;
+
 	if (type == PLAYER_STREAM_TYPE_VIDEO)
 		ret = mm_player_set_video_info(handle->mm_handle, format);
 	else if (type == PLAYER_STREAM_TYPE_AUDIO)
@@ -3091,7 +3097,7 @@ int legacy_player_set_display_wl_for_mused(player_h player, player_display_type_
 	if (handle->is_set_pixmap_cb) {
 		if (handle->state < PLAYER_STATE_READY) {
 			/* just set below and go to "changing surface case" */
-			handle->is_set_pixmap_cb = false;
+			handle->is_set_pixmap_cb = FALSE;
 		} else {
 			LOGE("[%s] pixmap callback was set, try it again after calling legacy_player_unprepare()", __FUNCTION__, PLAYER_ERROR_INVALID_OPERATION);
 			LOGE("[%s] PLAYER_ERROR_INVALID_OPERATION(0x%08x)", __FUNCTION__, PLAYER_ERROR_INVALID_OPERATION);
@@ -3192,7 +3198,7 @@ int legacy_player_set_display_for_mused(player_h player, player_display_type_e t
 	if (handle->is_set_pixmap_cb) {
 		if (handle->state < PLAYER_STATE_READY) {
 			/* just set below and go to "changing surface case" */
-			handle->is_set_pixmap_cb = false;
+			handle->is_set_pixmap_cb = FALSE;
 		} else {
 			LOGE("[%s] pixmap callback was set, try it again after calling legacy_player_unprepare()", __FUNCTION__, PLAYER_ERROR_INVALID_OPERATION);
 			LOGE("[%s] PLAYER_ERROR_INVALID_OPERATION(0x%08x)", __FUNCTION__, PLAYER_ERROR_INVALID_OPERATION);
