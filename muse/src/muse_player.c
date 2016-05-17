@@ -2139,6 +2139,24 @@ int player_disp_get_media_stream_buffer_min_threshold(muse_module_h module)
 	return ret;
 }
 
+int player_disp_set_media_stream_dynamic_resolution(muse_module_h module)
+{
+	int ret = PLAYER_ERROR_NONE;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_MEDIA_STREAM_DYNAMIC_RESOLUTION;
+	muse_player_handle_s *muse_player = NULL;
+	int drc = 0;
+
+	muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
+	player_msg_get(drc, muse_core_client_get_msg(module));
+
+	ret = legacy_player_set_media_stream_dynamic_resolution(muse_player->player_handle, (bool)drc);
+
+	player_msg_return(api, ret, module);
+
+	return ret;
+}
+
+
 int player_disp_get_track_count(muse_module_h module)
 {
 	int ret = PLAYER_ERROR_NONE;
