@@ -3311,4 +3311,17 @@ int legacy_player_get_timeout_for_muse(player_h player, int *timeout)
 	return PLAYER_ERROR_NONE;
 }
 
+int legacy_player_get_num_of_video_out_buffers(player_h player, int *num, int *extra_num)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	PLAYER_NULL_ARG_CHECK(num);
+	PLAYER_NULL_ARG_CHECK(extra_num);
+	player_s *handle = (player_s *)player;
+
+	int ret = mm_player_get_num_of_video_out_buffers(handle->mm_handle, num, extra_num);
+	if (ret != MM_ERROR_NONE)
+		return __player_convert_error_code(ret, (char *)__FUNCTION__);
+
+	return PLAYER_ERROR_NONE;
+}
 

@@ -27,6 +27,8 @@
 #include "legacy_player_private.h"
 #include "legacy_player_internal.h"
 
+#define DEFAULT_VDEC_EXTRA_SIZE_OF_BUFFER 3
+
 /**
  * msg dispatcher functions
  * To add new disp function with new player API,
@@ -202,6 +204,9 @@ static void _prepare_async_cb(void *user_data)
 	muse_player_cb_e api = MUSE_PLAYER_CB_EVENT;
 	prepare_data_s *prepare_data = (prepare_data_s *)user_data;
 	muse_module_h module;
+	muse_player_handle_s *muse_player = NULL;
+	int ret = PLAYER_ERROR_NONE;
+	int num = 0, extra_num = 0;
 
 	if (!prepare_data) {
 		LOGE("user data of callback is NULL");
@@ -209,6 +214,18 @@ static void _prepare_async_cb(void *user_data)
 	}
 	module = prepare_data->module;
 	g_free(prepare_data);
+
+	muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
+	if (muse_player == NULL) {
+		LOGE("muse handle is NULL");
+		return;
+	}
+
+	ret = legacy_player_get_num_of_video_out_buffers(muse_player->player_handle, &num, &extra_num);
+	if (ret == PLAYER_ERROR_NONE) {
+		muse_player->extra_size_of_buffers = extra_num;
+		LOGD("num of vdec out buffer, total:%d, extra:%d", num, extra_num);
+	}
 
 	player_msg_event(api, ev, module);
 }
@@ -287,7 +304,6 @@ static void _pd_msg_cb(player_pd_message_type_e type, void *user_data)
 
 static void _media_packet_video_decoded_cb(media_packet_h pkt, void *user_data)
 {
-#define MAX_NUM_OF_EXPORT 3
 	int ret;
 	muse_player_cb_e api = MUSE_PLAYER_CB_EVENT;
 	muse_player_event_e ev = MUSE_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME;
@@ -337,7 +353,7 @@ static void _media_packet_video_decoded_cb(media_packet_h pkt, void *user_data)
 	}
 
 	g_mutex_lock(&muse_player->list_lock);
-	if (g_list_length(muse_player->packet_list) > MAX_NUM_OF_EXPORT) {
+	if (g_list_length(muse_player->packet_list) > muse_player->extra_size_of_buffers) {
 		LOGE("Too many buffers are not released. packet(%p) will be drop.", pkt);
 		g_mutex_unlock(&muse_player->list_lock);
 		media_packet_destroy(pkt);
@@ -807,7 +823,7 @@ int player_disp_create(muse_module_h module)
 	if (ret != PLAYER_ERROR_NONE) {
 		goto ERROR;
 	}
-
+	muse_player->extra_size_of_buffers = DEFAULT_VDEC_EXTRA_SIZE_OF_BUFFER;
 	g_mutex_init(&muse_player->list_lock);
 
 	LOGD("handle : %p, module : %p", muse_player, module);
@@ -863,12 +879,19 @@ int player_disp_prepare(muse_module_h module)
 	muse_player_api_e api = MUSE_PLAYER_API_PREPARE;
 	muse_player_handle_s *muse_player = NULL;
 	int timeout = 0;
+	int num = 0, extra_num = 0;
 
 	muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
 
 	ret = legacy_player_prepare(muse_player->player_handle);
 	if (ret == PLAYER_ERROR_NONE) {
+		ret = legacy_player_get_num_of_video_out_buffers(muse_player->player_handle, &num, &extra_num);
+		LOGD("num of vdec out buffer, total:%d, extra:%d", num, extra_num);
+	}
+
+	if (ret == PLAYER_ERROR_NONE) {
 		legacy_player_get_timeout_for_muse(muse_player->player_handle, &timeout);
+		muse_player->extra_size_of_buffers = extra_num;
 		player_msg_return1(api, ret, module, INT, timeout);
 	} else {
 		player_msg_return(api, ret, module);
