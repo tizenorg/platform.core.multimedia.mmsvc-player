@@ -72,3 +72,5 @@ set_pcm_spec
 set_streaming_playback_rate
 return_buffer
 set_media_stream_dynamic_resolution
+set_next_uri
+get_next_uri
