@@ -173,6 +173,86 @@ int legacy_player_unset_media_stream_buffer_status_cb_ex(player_h player, player
 int legacy_player_set_media_stream_dynamic_resolution(player_h player, bool drc);
 
 /**
+ * @brief Sets the data source (http or local file) to transite.
+ * @since_tizen 3.0
+ *
+ * @details Player will transite the media source as seamlessly as possible after finishing current playback.
+ *             If the function call is successful, the uri will be added at the end of uri list.
+ * 		  You can add several uris and the set of uris will be played repeatedly if you call the player_set_looping().
+ * 		  The first uri in the list is the original uri which is set by player_set_uri().
+ *
+ * @remarks  Uri list will be cleared except first one when the player_unprepare() is called.
+ *			If you call the player_set_uri(), you can change the first uri too.
+ *
+ * @param[in]   player The handle to the media player
+ * @param[in]   uri Specifies the data location.
+ *
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @retval #PLAYER_ERROR_NOT_SUPPORTD Not supported
+ * @pre The original uri must be set first by player_set_uri().
+ * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ * @see player_set_uri(), player_set_looping()
+ */
+int legacy_player_set_next_uri (player_h player, const char *uri);
+
+/**
+ * @brief Gets the data source path.
+ * @since_tizen 3.0
+ *
+ * @param[in]   player The handle to the media player
+ * @param[out]  uri Specifies the next data location.
+ *
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @retval #PLAYER_ERROR_NOT_SUPPORTD Not supported
+ * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ * @see player_set_uri()
+ */
+int legacy_player_get_next_uri (player_h player, char **uri);
+
+/**
+ * @brief Sets the gapless playback status
+ * @since_tizen 3.0
+ * @details If it is @c true, player will play next content without(or with minimized) gap.
+ *          If it is @c false, it won't. The default value is @c false.
+ * @param[in] player   The handle to the media player
+ * @param[in] gapless  The new gapless status : (@c true = gapless, @c false = non-gapless )
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid state
+ * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ * @see	player_is_gapless()
+ */
+int legacy_player_set_gapless(player_h player, bool gapless);
+
+/**
+ * @brief Gets the player's gapless status.
+ * @since_tizen 3.0
+ * @details If it is @c true, player will play next content without(or with minimized) gap.
+ *          If it is @c false, it won't. The default value is @c false.
+ * @param[in]   player The handle to the media player
+ * @param[out]  gapless The gapless status: (@c true = gapless, @c false = non-gapless )
+ * @return @c 0 on success,
+ *         otherwise a negative error value
+ * @retval #PLAYER_ERROR_NONE Successful
+ * @retval #PLAYER_ERROR_INVALID_PARAMETER Invalid parameter
+ * @retval #PLAYER_ERROR_INVALID_OPERATION Invalid operation
+ * @retval #PLAYER_ERROR_INVALID_STATE Invalid player state
+ * @pre The player state must be one of these: #PLAYER_STATE_IDLE, #PLAYER_STATE_READY, #PLAYER_STATE_PLAYING, or #PLAYER_STATE_PAUSED.
+ * @see player_set_gapless()
+ */
+int legacy_player_is_gapless(player_h player, bool *gapless);
+
+/**
  * @}
  */
 

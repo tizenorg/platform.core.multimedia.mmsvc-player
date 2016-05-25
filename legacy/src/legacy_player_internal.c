@@ -223,3 +223,83 @@ int legacy_player_set_media_stream_dynamic_resolution(player_h player, bool drc)
 	else
 		return PLAYER_ERROR_NONE;
 }
+
+int legacy_player_set_next_uri (player_h player, const char *uri)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	player_s * handle = (player_s *) player;
+	if (!__player_state_validate(handle, PLAYER_STATE_IDLE))
+	{
+		LOGE("[%s] PLAYER_ERROR_INVALID_STATE(0x%08x) : current state - %d" ,__FUNCTION__,PLAYER_ERROR_INVALID_STATE, handle->state);
+		return PLAYER_ERROR_INVALID_STATE;
+	}
+
+	int ret = mm_player_set_next_uri(handle->mm_handle, uri);
+
+	if(ret != MM_ERROR_NONE)
+	{
+		return __player_convert_error_code(ret,(char*)__FUNCTION__);
+	}
+	else
+		return PLAYER_ERROR_NONE;
+}
+
+int legacy_player_get_next_uri (player_h player, char **uri)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	player_s *handle = (player_s *) player;
+
+	if (!__player_state_validate(handle, PLAYER_STATE_IDLE))
+	{
+		LOGE("[%s] PLAYER_ERROR_INVALID_STATE(0x%08x) : current state - %d" ,__FUNCTION__,PLAYER_ERROR_INVALID_STATE, handle->state);
+		return PLAYER_ERROR_INVALID_STATE;
+	}
+
+	int ret = mm_player_get_next_uri(handle->mm_handle, uri); /* uri will be free in muse_player.c*/
+
+	if(ret != MM_ERROR_NONE)
+	{
+		return __player_convert_error_code(ret,(char*)__FUNCTION__);
+	}
+	else
+	{
+		return PLAYER_ERROR_NONE;
+	}
+}
+
+int legacy_player_set_gapless(player_h player, bool gapless)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	player_s *handle = (player_s *)player;
+
+	int value = 0;
+	if (gapless == TRUE)
+		value = 1;
+
+	int ret = mm_player_set_attribute(handle->mm_handle, NULL, MM_PLAYER_GAPLESS_MODE, value, (char *)NULL);
+
+	if (ret != MM_ERROR_NONE)
+		return __player_convert_error_code(ret, (char *)__FUNCTION__);
+	else
+		return PLAYER_ERROR_NONE;
+}
+
+int legacy_player_is_gapless(player_h player, bool *gapless)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	PLAYER_NULL_ARG_CHECK(gapless);
+	player_s *handle = (player_s *)player;
+	int value;
+
+	int ret = mm_player_get_attribute(handle->mm_handle, NULL, MM_PLAYER_GAPLESS_MODE, &value, (char *)NULL);
+	if (ret != MM_ERROR_NONE) {
+		return __player_convert_error_code(ret, (char *)__FUNCTION__);
+	} else {
+		if (value == 1)
+			*gapless = TRUE;
+		else
+			*gapless = FALSE;
+
+		return PLAYER_ERROR_NONE;
+	}
+}
