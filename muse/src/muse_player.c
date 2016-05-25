@@ -2338,3 +2338,39 @@ int player_disp_return_buffer(muse_module_h module)	/* MUSE_PLAYER_API_RETURN_BU
 	return PLAYER_ERROR_NONE;
 }
 
+int player_disp_set_next_uri(muse_module_h module)
+{
+	int ret = PLAYER_ERROR_NONE;
+	muse_player_api_e api = MUSE_PLAYER_API_SET_NEXT_URI;
+	muse_player_handle_s *muse_player = NULL;
+	char uri[MUSE_URI_MAX_LENGTH] = { 0, };
+
+	muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
+	player_msg_get_string(uri, muse_core_client_get_msg(module));
+
+	ret = legacy_player_set_next_uri(muse_player->player_handle, uri);
+
+	player_msg_return(api, ret, module);
+
+	return ret;
+}
+
+int player_disp_get_next_uri(muse_module_h module)
+{
+	int ret = PLAYER_ERROR_NONE;
+	muse_player_api_e api = MUSE_PLAYER_API_GET_NEXT_URI;
+	muse_player_handle_s *muse_player = NULL;
+	char *next_uri = NULL;
+
+	muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
+
+	ret = legacy_player_get_next_uri(muse_player->player_handle, &next_uri);
+	if (ret == PLAYER_ERROR_NONE) {
+		player_msg_return1(api, ret, module, STRING, next_uri);
+		free(next_uri);
+	} else {
+		player_msg_return(api, ret, module);
+	}
+
+	return ret;
+}
