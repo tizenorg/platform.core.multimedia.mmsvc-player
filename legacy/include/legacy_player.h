@@ -199,6 +199,7 @@ typedef enum {
     PLAYER_DISPLAY_MODE_CROPPED_FULL,       /**< Cropped full-screen */
     PLAYER_DISPLAY_MODE_ORIGIN_OR_LETTER,   /**< Origin size (if surface size is larger than video size(width/height)) or Letter box (if video size(width/height) is larger than surface size) */
     PLAYER_DISPLAY_MODE_DST_ROI,            /**< Dst ROI mode (Deprecated since [3.0]).*/
+    PLAYER_DISPLAY_MODE_NUM
 } player_display_mode_e;
 
 /**
