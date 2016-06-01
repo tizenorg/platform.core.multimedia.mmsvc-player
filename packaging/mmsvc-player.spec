@@ -32,6 +32,7 @@ BuildRequires:  pkgconfig(libtbm)
 BuildRequires:  pkgconfig(ttrace)
 BuildRequires:  pkgconfig(capi-system-info)
 BuildRequires:  pkgconfig(mm-sound)
+BuildRequires:  pkgconfig(mm-session)
 BuildRequires:  pkgconfig(eom)
 
 Requires(post): /sbin/ldconfig
@@ -59,6 +60,7 @@ export CFLAGS="$CFLAGS -DTIZEN_DEBUG_ENABLE"
 export CXXFLAGS="$CXXFLAGS -DTIZEN_DEBUG_ENABLE"
 export FFLAGS="$FFLAGS -DTIZEN_DEBUG_ENABLE"
 %endif
+export CFLAGS+=" -DPLAYER_ASM_COMPATIBILITY"
 MAJORVER=`echo %{version} | awk 'BEGIN {FS="."}{print $1}'`
 %cmake . -DFULLVER=%{version} -DMAJORVER=${MAJORVER} \
 %if "%{?profile}" == "wearable"
