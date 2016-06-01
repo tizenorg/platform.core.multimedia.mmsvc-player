@@ -35,7 +35,10 @@
 #include <tbm_bufmgr.h>
 #include <tbm_surface_internal.h>
 #include <mm_sound.h>
-
+#ifdef PLAYER_ASM_COMPATIBILITY
+#include <mm_session.h>
+#include <mm_session_private.h>
+#endif
 #include "muse_player.h"
 #include "legacy_player.h"
 #include "legacy_player_private.h"
@@ -1415,50 +1418,65 @@ int legacy_player_set_sound_type(player_h player, sound_type_e type)
 
 	PLAYER_STATE_CHECK(handle, PLAYER_STATE_IDLE);
 
-	int sig_value = 0;
 	char *stream_type = NULL;
 	int stream_index = -1;
+	int ret = 0;
+#ifdef PLAYER_ASM_COMPATIBILITY
+	int pid = -1;
+	int session_type = 0;
+	int session_flags = 0;
 
-	/* check if focus is released */
-	mm_sound_get_signal_value(MM_SOUND_SIGNAL_RELEASE_INTERNAL_FOCUS, &sig_value);
-	if(sig_value)
-		return PLAYER_ERROR_SOUND_POLICY;
-
-	/* convert volume_type to stream_type */
-	switch(type) {
-	case SOUND_TYPE_SYSTEM:
-		stream_type = "system";
-		break;
-	case SOUND_TYPE_NOTIFICATION:
-		stream_type = "notification";
-		break;
-	case SOUND_TYPE_ALARM:
-		stream_type = "alarm";
-		break;
-	case SOUND_TYPE_RINGTONE:
-		stream_type = "ringtone-voip";
-		break;
-	case SOUND_TYPE_MEDIA:
-	case SOUND_TYPE_CALL:
-		stream_type = "media";
-		break;
-	case SOUND_TYPE_VOIP:
-		stream_type = "voip";
-		break;
-	case SOUND_TYPE_VOICE:
-		stream_type = "voice-information";
-		break;
-	default:
-		LOGW("check the value[%d].\n", type);
-		return PLAYER_ERROR_INVALID_PARAMETER;
-	}
-	LOGI("[%s] sound type = %s", __FUNCTION__, stream_type);
-
-	int ret = mm_player_set_attribute(handle->mm_handle, NULL, "sound_stream_type", stream_type, strlen(stream_type), "sound_stream_index", stream_index, (char *)NULL);
-	if (ret != MM_ERROR_NONE)
+	ret = mm_player_get_client_pid (handle->mm_handle, &pid);
+	if (ret != MM_ERROR_NONE) {
 		return __player_convert_error_code(ret, (char *)__FUNCTION__);
-	else
-		return PLAYER_ERROR_NONE;
+	}
+
+	/* read session information */
+	ret = _mm_session_util_read_information(pid, &session_type, &session_flags);
+	if (ret == MM_ERROR_NONE) {
+		/* in this case, this process is using stream info created by using sound-manager,
+		 * we're going to skip working on backward compatibility of session. */
+		if (session_type == MM_SESSION_TYPE_REPLACED_BY_STREAM)
+			return PLAYER_ERROR_SOUND_POLICY;
+	} else if (ret == MM_ERROR_INVALID_HANDLE) { /* if there is no session */
+#endif
+		/* convert volume_type to stream_type */
+		switch(type) {
+		case SOUND_TYPE_SYSTEM:
+			stream_type = "system";
+			break;
+		case SOUND_TYPE_NOTIFICATION:
+			stream_type = "notification";
+			break;
+		case SOUND_TYPE_ALARM:
+			stream_type = "alarm";
+			break;
+		case SOUND_TYPE_RINGTONE:
+			stream_type = "ringtone-voip";
+			break;
+		case SOUND_TYPE_MEDIA:
+		case SOUND_TYPE_CALL:
+			stream_type = "media";
+			break;
+		case SOUND_TYPE_VOIP:
+			stream_type = "voip";
+			break;
+		case SOUND_TYPE_VOICE:
+			stream_type = "voice-information";
+			break;
+		default:
+			LOGW("check the value[%d].\n", type);
+			return PLAYER_ERROR_INVALID_PARAMETER;
+		}
+		LOGI("[%s] sound type = %s", __FUNCTION__, stream_type);
+
+		ret = mm_player_set_attribute(handle->mm_handle, NULL, "sound_stream_type", stream_type, strlen(stream_type), "sound_stream_index", stream_index, (char *)NULL);
+		if (ret == MM_ERROR_NONE)
+			return PLAYER_ERROR_NONE;
+#ifdef PLAYER_ASM_COMPATIBILITY
+	}
+#endif
+	return __player_convert_error_code(ret, (char *)__FUNCTION__);
 }
 
 int legacy_player_set_audio_policy_info(player_h player, sound_stream_info_h stream_info)
