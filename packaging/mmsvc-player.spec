@@ -32,6 +32,7 @@ BuildRequires:  pkgconfig(libtbm)
 BuildRequires:  pkgconfig(ttrace)
 BuildRequires:  pkgconfig(capi-system-info)
 BuildRequires:  pkgconfig(mm-sound)
+BuildRequires:  pkgconfig(mm-session)
 BuildRequires:  pkgconfig(eom)
 
 Requires(post): /sbin/ldconfig
