@@ -35,6 +35,8 @@
 #include <tbm_bufmgr.h>
 #include <tbm_surface_internal.h>
 #include <mm_sound.h>
+#include <mm_session.h>
+#include <mm_session_private.h>
 
 #include "muse_player.h"
 #include "legacy_player.h"
@@ -1415,14 +1417,27 @@ int legacy_player_set_sound_type(player_h player, sound_type_e type)
 
 	PLAYER_STATE_CHECK(handle, PLAYER_STATE_IDLE);
 
-	int sig_value = 0;
 	char *stream_type = NULL;
 	int stream_index = -1;
+	int pid = -1;
+	int session_type = 0;
+	int session_flags = 0;
 
-	/* check if focus is released */
-	mm_sound_get_signal_value(MM_SOUND_SIGNAL_RELEASE_INTERNAL_FOCUS, &sig_value);
-	if(sig_value)
-		return PLAYER_ERROR_SOUND_POLICY;
+	int ret = mm_player_get_client_pid (handle->mm_handle, &pid);
+	if (ret != MM_ERROR_NONE) {
+		return __player_convert_error_code(ret, (char *)__FUNCTION__);
+	}
+
+	/* read session information */
+	ret = _mm_session_util_read_information(pid, &session_type, &session_flags);
+
+	if (ret == MM_ERROR_NONE)
+	{
+		/* in this case, this process is using stream info created by using sound-manager,
+		 * we're going to skip working on backward compatibility of session. */
+		if (session_type == MM_SESSION_TYPE_REPLACED_BY_STREAM) /* MM_SESSION_TYPE_REPLACED_BY_STREAM = 1111 */
+			return PLAYER_ERROR_SOUND_POLICY;
+	}
 
 	/* convert volume_type to stream_type */
 	switch(type) {
@@ -1454,7 +1469,7 @@ int legacy_player_set_sound_type(player_h player, sound_type_e type)
 	}
 	LOGI("[%s] sound type = %s", __FUNCTION__, stream_type);
 
-	int ret = mm_player_set_attribute(handle->mm_handle, NULL, "sound_stream_type", stream_type, strlen(stream_type), "sound_stream_index", stream_index, (char *)NULL);
+	ret = mm_player_set_attribute(handle->mm_handle, NULL, "sound_stream_type", stream_type, strlen(stream_type), "sound_stream_index", stream_index, (char *)NULL);
 	if (ret != MM_ERROR_NONE)
 		return __player_convert_error_code(ret, (char *)__FUNCTION__);
 	else
