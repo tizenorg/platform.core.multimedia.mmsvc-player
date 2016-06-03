@@ -73,7 +73,7 @@ typedef struct {
  * @remarks Does NOT guarantee thread safe.
  * @param[out] param the name of param is key, must be local variable. never be pointer.
  * @param[in] buf string of message buffer. has key and value
- * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE, STRING, ARRAY)
+ * @param[in] type The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE)
  */
 #define player_msg_get_type(param, buf, type) \
 	muse_core_msg_json_deserialize(#param, buf, NULL, &param, NULL, MUSE_TYPE_##type)
@@ -99,13 +99,161 @@ typedef struct {
 /**
  * @brief Get value from Message.
  * @remarks Does NOT guarantee thread safe.
- * @param[out] param the name of param is key, must be local variable. never be pointer.
  * @param[in] buf string of message buffer. has key and value
- * @param[in/out] len size of buffer. After retrun len is set parsed length.
- * @param[out] e the error number.
+ * @param[out] param# the name of param is key, must be local variable. never be pointer.
+ * @param[in] type# The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE)
+ * @param[out] ret result of get value
  */
-#define player_msg_get_error_e(param, buf, len, e) \
-	muse_core_msg_json_deserialize(#param, buf, &len, &param, &e, MUSE_TYPE_INT)
+#define player_msg_get2(buf, param1, type1, param2, type2, ret) \
+	do { \
+		muse_core_msg_parse_err_e __err__ = MUSE_MSG_PARSE_ERROR_NONE; \
+		void *__jobj__ = muse_core_msg_json_object_new(buf, NULL, &__err__); \
+		if (!__jobj__) { \
+			LOGE("failed to get msg object. err:%d", __err__); \
+			ret = FALSE; \
+		} else { \
+			if (!muse_core_msg_json_object_get_value(#param1, __jobj__, &param1, MUSE_TYPE_##type1)) { \
+				ret = FALSE; \
+				LOGE("failed to get %s value", #param1); \
+			} \
+			if (ret && !muse_core_msg_json_object_get_value(#param2, __jobj__, &param2, MUSE_TYPE_##type2)) { \
+				ret = FALSE; \
+				LOGE("failed to get %s value", #param2); \
+			} \
+			muse_core_msg_json_object_free(__jobj__); \
+		} \
+	} while(0)
+
+/**
+ * @brief Get value from Message.
+ * @remarks Does NOT guarantee thread safe.
+ * @param[in] buf string of message buffer. has key and value
+ * @param[out] param# the name of param is key, must be local variable. never be pointer.
+ * @param[in] type# The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE)
+ * @param[out] ret result of get value
+ */
+#define player_msg_get3(buf, param1, type1, param2, type2, param3, type3, ret) \
+	do { \
+		muse_core_msg_parse_err_e __err__ = MUSE_MSG_PARSE_ERROR_NONE; \
+		void *__jobj__ = muse_core_msg_json_object_new(buf, NULL, &__err__); \
+		if (!__jobj__) { \
+			LOGE("failed to get msg object. err:%d", __err__); \
+			ret = FALSE; \
+		} else { \
+			if (!muse_core_msg_json_object_get_value(#param1, __jobj__, &param1, MUSE_TYPE_##type1)) { \
+				ret = FALSE; \
+				LOGE("failed to get %s value", #param1); \
+			} \
+			if (ret && !muse_core_msg_json_object_get_value(#param2, __jobj__, &param2, MUSE_TYPE_##type2)) { \
+				ret = FALSE; \
+				LOGE("failed to get %s value", #param2); \
+			} \
+			if (ret && !muse_core_msg_json_object_get_value(#param3, __jobj__, &param3, MUSE_TYPE_##type3)) { \
+				ret = FALSE; \
+				LOGE("failed to get %s value", #param3); \
+			} \
+			muse_core_msg_json_object_free(__jobj__); \
+		} \
+	} while(0)
+
+/**
+ * @brief Get value from Message.
+ * @remarks Does NOT guarantee thread safe.
+ * @param[in] buf string of message buffer. has key and value
+ * @param[out] param# the name of param is key, must be local variable. never be pointer.
+ * @param[in] type# The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE)
+ * @param[out] ret result of get value
+ */
+#define player_msg_get4(buf, param1, type1, param2, type2, param3, type3, param4, type4, ret) \
+	do { \
+		muse_core_msg_parse_err_e __err__ = MUSE_MSG_PARSE_ERROR_NONE; \
+		void *__jobj__ = muse_core_msg_json_object_new(buf, NULL, &__err__); \
+		if (!__jobj__) { \
+			LOGE("failed to get msg object. err:%d", __err__); \
+			ret = FALSE; \
+		} else { \
+			if (!muse_core_msg_json_object_get_value(#param1, __jobj__, &param1, MUSE_TYPE_##type1)) { \
+				ret = FALSE; \
+				LOGE("failed to get %s value", #param1); \
+			} \
+			if (ret && !muse_core_msg_json_object_get_value(#param2, __jobj__, &param2, MUSE_TYPE_##type2)) { \
+				ret = FALSE; \
+				LOGE("failed to get %s value", #param2); \
+			} \
+			if (ret && !muse_core_msg_json_object_get_value(#param3, __jobj__, &param3, MUSE_TYPE_##type3)) { \
+				ret = FALSE; \
+				LOGE("failed to get %s value", #param3); \
+			} \
+			if (ret && !muse_core_msg_json_object_get_value(#param4, __jobj__, &param4, MUSE_TYPE_##type4)) { \
+				ret = FALSE; \
+				LOGE("failed to get %s value", #param4); \
+			} \
+			muse_core_msg_json_object_free(__jobj__); \
+		} \
+	} while(0)
+
+/**
+ * @brief Get value from Message.
+ * @remarks Does NOT guarantee thread safe.
+ * @param[in] buf string of message buffer. has key and value
+ * @param[out] param# the name of param is key, must be local variable. never be pointer.
+ * @param[in] type# The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE)
+ * @param[out] str_param the name of param is key, must be local pointer variable.
+ * @param[out] ret result of get value
+ */
+#define player_msg_get1_string(buf, param1, type1, str_param, ret) \
+	do { \
+		muse_core_msg_parse_err_e __err__ = MUSE_MSG_PARSE_ERROR_NONE; \
+		void *__jobj__ = muse_core_msg_json_object_new(buf, NULL, &__err__); \
+		if (!__jobj__) { \
+			LOGE("failed to get msg object. err:%d", __err__); \
+			ret = FALSE; \
+		} else { \
+			if (!muse_core_msg_json_object_get_value(#param1, __jobj__, &param1, MUSE_TYPE_##type1)) { \
+				LOGE("failed to get %s value", #param1); \
+				ret = FALSE; \
+			} \
+			if (ret && !muse_core_msg_json_object_get_value(#str_param, __jobj__, str_param, MUSE_TYPE_STRING)) { \
+				LOGE("failed to get %s value", #str_param); \
+				ret = FALSE; \
+			} \
+			muse_core_msg_json_object_free(__jobj__); \
+		} \
+	} while(0)
+
+
+/**
+ * @brief Get value from Message.
+ * @remarks Does NOT guarantee thread safe.
+ * @param[in] buf string of message buffer. has key and value
+ * @param[out] param# the name of param is key, must be local variable. never be pointer.
+ * @param[in] type# The enum of parameter type. Muse be one of thease(INT, INT64, POINTER, DOUBLE)
+ * @param[out] str_param the name of param is key, must be local pointer variable.
+ * @param[out] ret result of get value
+ */
+#define player_msg_get2_string(buf, param1, type1, param2, type2, str_param, ret) \
+	do { \
+		muse_core_msg_parse_err_e __err__ = MUSE_MSG_PARSE_ERROR_NONE; \
+		void *__jobj__ = muse_core_msg_json_object_new(buf, NULL, &__err__); \
+		if (!__jobj__) { \
+			LOGE("failed to get msg object. err:%d", __err__); \
+			ret = FALSE; \
+		} else { \
+			if (!muse_core_msg_json_object_get_value(#param1, __jobj__, &param1, MUSE_TYPE_##type1)) { \
+				LOGE("failed to get %s value", #param1); \
+				ret = FALSE; \
+			} \
+			if (ret && !muse_core_msg_json_object_get_value(#param2, __jobj__, &param2, MUSE_TYPE_##type2)) { \
+				LOGE("failed to get %s value", #param2); \
+				ret = FALSE; \
+			} \
+			if (ret && !muse_core_msg_json_object_get_value(#str_param, __jobj__, str_param, MUSE_TYPE_STRING)) { \
+				LOGE("failed to get %s value", #str_param); \
+				ret = FALSE; \
+			} \
+			muse_core_msg_json_object_free(__jobj__); \
+		} \
+	} while(0)
 
 /**
  * @brief Create and send return message.

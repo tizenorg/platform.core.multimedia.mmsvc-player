@@ -28,6 +28,7 @@
 #include "legacy_player_internal.h"
 
 #define DEFAULT_VDEC_EXTRA_SIZE_OF_BUFFER 3
+#define INVALID_TBM_KEY 0
 
 /**
  * msg dispatcher functions
@@ -39,7 +40,6 @@
  */
 static tbm_key _create_export_data (muse_player_handle_s *muse_player, void *data, int size)
 {
-#define INVALID_TBM_KEY 0
 	muse_player_export_data_s *export_data = NULL;
 	tbm_bo bo = NULL;
 	tbm_key key = INVALID_TBM_KEY;
@@ -1011,35 +1011,46 @@ int player_disp_set_memory_buffer(muse_module_h module)
 	muse_player_api_e api = MUSE_PLAYER_API_SET_MEMORY_BUFFER;
 	muse_player_handle_s *muse_player = NULL;
 
-	tbm_bo bo;
-	tbm_bo_handle thandle;
-	tbm_key key;
-	int size;
-	intptr_t bo_addr;
+	tbm_bo bo = NULL;
+	tbm_bo_handle thandle = {NULL, };;
+	tbm_key key = INVALID_TBM_KEY;
+	int size = 0;
+	intptr_t bo_addr = 0;
+	bool ret_val = TRUE;
 
 	muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
-	player_msg_get(key, muse_core_client_get_msg(module));
-	player_msg_get(size, muse_core_client_get_msg(module));
+	player_msg_get2(muse_core_client_get_msg(module), key, INT, size, INT, ret_val);
+	if (!ret_val) {
+		ret = PLAYER_ERROR_INVALID_OPERATION;
+		goto ERROR;
+	}
 
 	bo = tbm_bo_import(muse_player->bufmgr, key);
 	if (bo == NULL) {
 		LOGE("TBM get error : bo is NULL");
 		ret = PLAYER_ERROR_INVALID_OPERATION;
-		player_msg_return(api, ret, module);
-		return ret;
+		goto ERROR;
 	}
 	thandle = tbm_bo_map(bo, TBM_DEVICE_CPU, TBM_OPTION_READ);
 	if (thandle.ptr == NULL) {
 		LOGE("TBM get error : handle pointer is NULL");
 		ret = PLAYER_ERROR_INVALID_OPERATION;
-		player_msg_return(api, ret, module);
-		return ret;
+		goto ERROR;
 	}
 
 	bo_addr = (intptr_t)bo;
 	ret = legacy_player_set_memory_buffer(muse_player->player_handle, thandle.ptr, size);
 	player_msg_return1(api, ret, module, INT, bo_addr);
 
+	/* don't call bo unmap/unref here *
+	 * it will be released at player_disp_deinit_memory_buffer() */
+
+	return ret;
+ERROR:
+	if(bo)
+		tbm_bo_unref(bo);
+
+	player_msg_return(api, ret, module);
 	return ret;
 }
 
@@ -1081,13 +1092,15 @@ int player_disp_set_volume(muse_module_h module)
 	muse_player_api_e api = MUSE_PLAYER_API_SET_VOLUME;
 	muse_player_handle_s *muse_player = NULL;
 	double left, right;
+	bool ret_val = TRUE;
 
-	muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
-	player_msg_get_type(left, muse_core_client_get_msg(module), DOUBLE);
-	player_msg_get_type(right, muse_core_client_get_msg(module), DOUBLE);
-
-	ret = legacy_player_set_volume(muse_player->player_handle, (float)left, (float)right);
-
+	player_msg_get2(muse_core_client_get_msg(module), left, DOUBLE, right, DOUBLE, ret_val);
+	if (ret_val) {
+		muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
+		ret = legacy_player_set_volume(muse_player->player_handle, (float)left, (float)right);
+	} else {
+		ret = PLAYER_ERROR_INVALID_OPERATION;
+	}
 	player_msg_return(api, ret, module);
 
 	return ret;
@@ -1131,14 +1144,17 @@ int player_disp_set_audio_policy_info(muse_module_h module)
 	int ret = PLAYER_ERROR_NONE;
 	muse_player_api_e api = MUSE_PLAYER_API_SET_AUDIO_POLICY_INFO;
 	muse_player_handle_s *muse_player = NULL;
-	int stream_index;
+	int stream_index = 0;
 	char stream_type[MUSE_URI_MAX_LENGTH] = { 0, };
+	bool ret_val = TRUE;
 
-	muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
-	player_msg_get(stream_index, muse_core_client_get_msg(module));
-	player_msg_get_string(stream_type, muse_core_client_get_msg(module));
-
-	ret = legacy_player_set_audio_policy_info_for_mused(muse_player->player_handle, stream_type, stream_index);
+	player_msg_get1_string(muse_core_client_get_msg(module), stream_index, INT, stream_type, ret_val);
+	if (ret_val) {
+		muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
+		ret = legacy_player_set_audio_policy_info_for_mused(muse_player->player_handle, stream_type, stream_index);
+	} else {
+		ret = PLAYER_ERROR_INVALID_OPERATION;
+	}
 
 	player_msg_return(api, ret, module);
 
@@ -1183,14 +1199,17 @@ int player_disp_set_play_position(muse_module_h module)
 	int ret = PLAYER_ERROR_NONE;
 	muse_player_api_e api = MUSE_PLAYER_API_SET_PLAY_POSITION;
 	muse_player_handle_s *muse_player = NULL;
-	int pos;
-	int accurate;
+	int pos = 0;
+	int accurate = 0;
+	bool ret_val = TRUE;
 
-	muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
-	player_msg_get(pos, muse_core_client_get_msg(module));
-	player_msg_get(accurate, muse_core_client_get_msg(module));
-
-	ret = legacy_player_set_play_position(muse_player->player_handle, pos, accurate, _seek_complate_cb, module);
+	player_msg_get2(muse_core_client_get_msg(module), pos, INT, accurate, INT, ret_val);
+	if (ret_val) {
+		muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
+		ret = legacy_player_set_play_position(muse_player->player_handle, pos, accurate, _seek_complate_cb, module);
+	} else {
+		ret = PLAYER_ERROR_INVALID_OPERATION;
+	}
 
 	player_msg_return(api, ret, module);
 
@@ -1304,20 +1323,22 @@ int player_disp_set_display(muse_module_h module)
 	wl_win_msg_type wl_win;
 	char *wl_win_msg = (char *)&wl_win;
 #else
-	int type;
-	unsigned int xhandle;
+	bool ret_val = TRUE;
+	int type = 0;
+	unsigned int xhandle = 0;
 #endif
 
 	muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
 #ifdef HAVE_WAYLAND
 	player_msg_get_array(wl_win_msg, muse_core_client_get_msg(module));
-
 	ret = legacy_player_set_display_wl_for_mused(muse_player->player_handle, wl_win.type, wl_win.wl_surface_id, wl_win.wl_window_x, wl_win.wl_window_y, wl_win.wl_window_width, wl_win.wl_window_height);
 #else
-	player_msg_get(type, muse_core_client_get_msg(module));
-	player_msg_get(xhandle, muse_core_client_get_msg(module));
-
-	ret = legacy_player_set_display_for_mused(muse_player->player_handle, type, xhandle);
+	player_msg_get2(muse_core_client_get_msg(module), type, INT, xhandle, INT, ret_val);
+	if (ret_val) {
+		ret = legacy_player_set_display_for_mused(muse_player->player_handle, type, xhandle);
+	} else {
+		ret = PLAYER_ERROR_INVALID_OPERATION;
+	}
 #endif
 	player_msg_return(api, ret, module);
 
@@ -1623,19 +1644,34 @@ int player_disp_audio_effect_set_equalizer_all_bands(muse_module_h module)
 	int ret = PLAYER_ERROR_NONE;
 	muse_player_handle_s *muse_player = NULL;
 	muse_player_api_e api = MUSE_PLAYER_API_AUDIO_EFFECT_SET_EQUALIZER_ALL_BANDS;
-	int *band_levels;
-	int length;
+	muse_core_msg_parse_err_e err = MUSE_MSG_PARSE_ERROR_NONE;
+	int *band_levels = NULL;
+	int length = 0;
 
-	muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
-	player_msg_get(length, muse_core_client_get_msg(module));
-	band_levels = (int *)g_try_new(int, length);
-
-	if (band_levels) {
-		player_msg_get_array(band_levels, muse_core_client_get_msg(module));
-		ret = legacy_player_audio_effect_set_equalizer_all_bands(muse_player->player_handle, band_levels, length);
-		g_free(band_levels);
-	} else
+	void *jobj = muse_core_msg_json_object_new(muse_core_client_get_msg(module), NULL, &err);
+	if (!jobj || !muse_core_msg_json_object_get_value("length", jobj, &length, MUSE_TYPE_INT)) {
+		LOGE("failed to get msg object. jobj:%p, err:%d, length:%d", jobj, err, length);
 		ret = PLAYER_ERROR_INVALID_OPERATION;
+		goto DONE;
+	}
+
+	band_levels = (int *)g_try_new(int, length);
+	if (band_levels) {
+		if(muse_core_msg_json_object_get_value("band_levels", jobj, band_levels, MUSE_TYPE_ARRAY)) {
+			muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
+			ret = legacy_player_audio_effect_set_equalizer_all_bands(muse_player->player_handle, band_levels, length);
+		} else {
+			LOGE("failed to get cookie value from msg");
+			ret = PLAYER_ERROR_INVALID_OPERATION;
+		}
+		g_free(band_levels);
+	} else {
+		ret = PLAYER_ERROR_INVALID_OPERATION;
+	}
+
+DONE:
+	if (jobj)
+		muse_core_msg_json_object_free(jobj);
 
 	player_msg_return(api, ret, module);
 
@@ -1647,13 +1683,16 @@ int player_disp_audio_effect_set_equalizer_band_level(muse_module_h module)
 	int ret = PLAYER_ERROR_NONE;
 	muse_player_handle_s *muse_player = NULL;
 	muse_player_api_e api = MUSE_PLAYER_API_AUDIO_EFFECT_SET_EQUALIZER_BAND_LEVEL;
-	int index, level;
+	int index = 0, level = 0;
+	bool ret_val = TRUE;
 
-	muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
-	player_msg_get(index, muse_core_client_get_msg(module));
-	player_msg_get(level, muse_core_client_get_msg(module));
-
-	ret = legacy_player_audio_effect_set_equalizer_band_level(muse_player->player_handle, index, level);
+	player_msg_get2(muse_core_client_get_msg(module), index, INT, level, INT, ret_val);
+	if (ret_val) {
+		muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
+		ret = legacy_player_audio_effect_set_equalizer_band_level(muse_player->player_handle, index, level);
+	} else {
+		ret = PLAYER_ERROR_INVALID_OPERATION;
+	}
 
 	player_msg_return(api, ret, module);
 
@@ -1811,18 +1850,34 @@ int player_disp_set_streaming_cookie(muse_module_h module)
 	int ret = PLAYER_ERROR_NONE;
 	muse_player_handle_s *muse_player = NULL;
 	muse_player_api_e api = MUSE_PLAYER_API_SET_STREAMING_COOKIE;
+	muse_core_msg_parse_err_e err = MUSE_MSG_PARSE_ERROR_NONE;
 	char *cookie = NULL;
-	int size;
+	int size = 0;
 
-	muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
-	player_msg_get(size, muse_core_client_get_msg(module));
+	void *jobj = muse_core_msg_json_object_new(muse_core_client_get_msg(module), NULL, &err);
+	if (!jobj || !muse_core_msg_json_object_get_value("size", jobj, &size, MUSE_TYPE_INT)) {
+		LOGE("failed to get msg object. jobj:%p, err:%d, size:%d", jobj, err, size);
+		ret = PLAYER_ERROR_INVALID_OPERATION;
+		goto DONE;
+	}
+
 	cookie = (char *)g_try_new(char, size + 1);
 	if (cookie) {
-		player_msg_get_string(cookie, muse_core_client_get_msg(module));
-		ret = legacy_player_set_streaming_cookie(muse_player->player_handle, cookie, size);
+		if(muse_core_msg_json_object_get_value("cookie", jobj, cookie, MUSE_TYPE_STRING)) {
+			muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
+			ret = legacy_player_set_streaming_cookie(muse_player->player_handle, cookie, size);
+		} else {
+			LOGE("failed to get cookie value from msg");
+			ret = PLAYER_ERROR_INVALID_OPERATION;
+		}
 		g_free(cookie);
-	} else
+	} else {
 		ret = PLAYER_ERROR_INVALID_OPERATION;
+	}
+
+DONE:
+	if (jobj)
+		muse_core_msg_json_object_free(jobj);
 
 	player_msg_return(api, ret, module);
 
@@ -1834,18 +1889,34 @@ int player_disp_set_streaming_user_agent(muse_module_h module)
 	int ret = PLAYER_ERROR_NONE;
 	muse_player_handle_s *muse_player = NULL;
 	muse_player_api_e api = MUSE_PLAYER_API_SET_STREAMING_USER_AGENT;
-	char *user_agent;
-	int size;
+	muse_core_msg_parse_err_e err = MUSE_MSG_PARSE_ERROR_NONE;
+	char *user_agent = NULL;
+	int size = 0;
 
-	muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
-	player_msg_get(size, muse_core_client_get_msg(module));
+	void *jobj = muse_core_msg_json_object_new(muse_core_client_get_msg(module), NULL, &err);
+	if (!jobj || !muse_core_msg_json_object_get_value("size", jobj, &size, MUSE_TYPE_INT)) {
+		LOGE("failed to get msg object jobj:%p, err:%d", jobj, err);
+		ret = PLAYER_ERROR_INVALID_OPERATION;
+		goto DONE;
+	}
+
 	user_agent = (char *)g_try_new(char, size + 1);
 	if (user_agent) {
-		player_msg_get_string(user_agent, muse_core_client_get_msg(module));
-		ret = legacy_player_set_streaming_user_agent(muse_player->player_handle, user_agent, size);
+		if(muse_core_msg_json_object_get_value("user_agent", jobj, user_agent, MUSE_TYPE_STRING)) {
+			muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
+			ret = legacy_player_set_streaming_user_agent(muse_player->player_handle, user_agent, size);
+		} else {
+			LOGE("failed to get user_agent value from msg");
+			ret = PLAYER_ERROR_INVALID_OPERATION;
+		}
 		g_free(user_agent);
-	} else
+	} else {
 		ret = PLAYER_ERROR_INVALID_OPERATION;
+	}
+
+DONE:
+	if (jobj)
+		muse_core_msg_json_object_free(jobj);
 
 	player_msg_return(api, ret, module);
 
@@ -1907,6 +1978,7 @@ int player_disp_push_media_stream(muse_module_h module)
 	int ret = MEDIA_FORMAT_ERROR_NONE;
 	muse_player_handle_s *muse_player = NULL;
 	muse_player_api_e api = MUSE_PLAYER_API_PUSH_MEDIA_STREAM;
+	muse_core_msg_parse_err_e err = MUSE_MSG_PARSE_ERROR_NONE;
 	player_push_media_msg_type push_media;
 	char *push_media_msg = (char *)&push_media;
 	tbm_bo bo = NULL;
@@ -1914,7 +1986,9 @@ int player_disp_push_media_stream(muse_module_h module)
 	char *buf = NULL;
 
 	muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
-	if (!player_msg_get_array(push_media_msg, muse_core_client_get_msg(module))) {
+	void *jobj = muse_core_msg_json_object_new(muse_core_client_get_msg(module), NULL, &err);
+	if (!jobj || !muse_core_msg_json_object_get_value("push_media_msg", jobj, push_media_msg, MUSE_TYPE_ARRAY)) {
+		LOGE("failed to get msg object. jobj:%p, err:%d", jobj, err);
 		ret = PLAYER_ERROR_INVALID_OPERATION;
 		goto push_media_stream_exit1;
 	}
@@ -1939,7 +2013,12 @@ int player_disp_push_media_stream(muse_module_h module)
 			ret = PLAYER_ERROR_OUT_OF_MEMORY;
 			goto push_media_stream_exit1;
 		}
-		player_msg_get_array(buf, muse_core_client_get_msg(module));
+		if(!muse_core_msg_json_object_get_value("buf", jobj, buf, MUSE_TYPE_ARRAY))
+		{
+			LOGE("failed to get buf from msg.");
+			ret = PLAYER_ERROR_INVALID_OPERATION;
+			goto push_media_stream_exit2;
+		}
 	} else if (push_media.buf_type == PUSH_MEDIA_BUF_TYPE_RAW) {
 		buf = muse_core_ipc_get_data(module);
 	}
@@ -1956,6 +2035,8 @@ push_media_stream_exit2:
 	else if (push_media.buf_type == PUSH_MEDIA_BUF_TYPE_RAW && buf)
 		muse_core_ipc_delete_data(buf);
 push_media_stream_exit1:
+	if (jobj)
+		muse_core_msg_json_object_free(jobj);
 	player_msg_return(api, ret, module);
 	return ret;
 }
@@ -2029,14 +2110,17 @@ int player_disp_set_callback(muse_module_h module)
 	int ret = PLAYER_ERROR_NONE;
 	muse_player_handle_s *muse_player = NULL;
 	muse_player_event_e type;
-	int set;
+	int set = 0;
+	bool ret_val = TRUE;
 
-	muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
-	player_msg_get(type, muse_core_client_get_msg(module));
-	player_msg_get(set, muse_core_client_get_msg(module));
-
-	if (type < MUSE_PLAYER_EVENT_TYPE_NUM && set_callback_func[type] != NULL)
-		set_callback_func[type] (muse_player->player_handle, module, set);
+	player_msg_get2(muse_core_client_get_msg(module), type, INT, set, INT, ret_val);
+	if (ret_val) {
+		muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
+		if (type < MUSE_PLAYER_EVENT_TYPE_NUM && set_callback_func[type] != NULL)
+			set_callback_func[type] (muse_player->player_handle, module, set);
+	} else {
+		ret = PLAYER_ERROR_INVALID_OPERATION;
+	}
 
 	return ret;
 }
@@ -2074,21 +2158,15 @@ int player_disp_set_media_stream_buffer_max_size(muse_module_h module)
 	muse_player_api_e api = MUSE_PLAYER_API_SET_MEDIA_STREAM_BUFFER_MAX_SIZE;
 	player_stream_type_e type;
 	unsigned long long max_size;
-	/* unsigned upper_max_size, lower_max_size; */
+	bool ret_val = TRUE;
 
-	muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
-	player_msg_get(type, muse_core_client_get_msg(module));
-#if 0
-	player_msg_get(upper_max_size, muse_core_client_get_msg(module));
-	player_msg_get(lower_max_size, muse_core_client_get_msg(module));
-
-	max_size = (((unsigned long long)upper_max_size << 32) & 0xffffffff00000000)
-		| (lower_max_size & 0xffffffff);
-#else
-	player_msg_get_type(max_size, muse_core_client_get_msg(module), INT64);
-#endif
-
-	ret = legacy_player_set_media_stream_buffer_max_size(muse_player->player_handle, type, max_size);
+	player_msg_get2(muse_core_client_get_msg(module), type, INT, max_size, INT64, ret_val);
+	if (ret_val) {
+		muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
+		ret = legacy_player_set_media_stream_buffer_max_size(muse_player->player_handle, type, max_size);
+	} else {
+		ret = PLAYER_ERROR_INVALID_OPERATION;
+	}
 
 	player_msg_return(api, ret, module);
 
@@ -2110,16 +2188,10 @@ int player_disp_get_media_stream_buffer_max_size(muse_module_h module)
 
 	ret = legacy_player_get_media_stream_buffer_max_size(muse_player->player_handle, type, &max_size);
 	if (ret == PLAYER_ERROR_NONE) {
-#if 0
-		upper_max_size = (unsigned)((max_size >> 32) & 0xffffffff);
-		lower_max_size = (unsigned)(max_size & 0xffffffff);
-		player_msg_return2(api, ret, module, INT, upper_max_size, INT, lower_max_size);
-#else
 		player_msg_return1(api, ret, module, INT64, max_size);
-#endif
-	} else
+	} else {
 		player_msg_return(api, ret, module);
-
+	}
 	return ret;
 }
 
@@ -2129,14 +2201,16 @@ int player_disp_set_media_stream_buffer_min_threshold(muse_module_h module)
 	muse_player_handle_s *muse_player = NULL;
 	muse_player_api_e api = MUSE_PLAYER_API_SET_MEDIA_STREAM_BUFFER_MIN_THRESHOLD;
 	player_stream_type_e type;
-	unsigned percent;
+	unsigned percent = 0;
+	bool ret_val = TRUE;
 
-	muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
-	player_msg_get(type, muse_core_client_get_msg(module));
-	player_msg_get(percent, muse_core_client_get_msg(module));
-
-	ret = legacy_player_set_media_stream_buffer_min_threshold(muse_player->player_handle, type, percent);
-
+	player_msg_get2(muse_core_client_get_msg(module), type, INT, percent, INT, ret_val);
+	if (ret_val) {
+		muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
+		ret = legacy_player_set_media_stream_buffer_min_threshold(muse_player->player_handle, type, percent);
+	} else {
+		ret = PLAYER_ERROR_INVALID_OPERATION;
+	}
 	player_msg_return(api, ret, module);
 
 	return ret;
@@ -2226,13 +2300,16 @@ int player_disp_select_track(muse_module_h module)
 	muse_player_handle_s *muse_player = NULL;
 	muse_player_api_e api = MUSE_PLAYER_API_SELECT_TRACK;
 	player_stream_type_e type;
-	int index;
+	int index = 0;
+	bool ret_val = TRUE;
 
-	muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
-	player_msg_get(type, muse_core_client_get_msg(module));
-	player_msg_get(index, muse_core_client_get_msg(module));
-
-	ret = legacy_player_select_track(muse_player->player_handle, type, index);
+	player_msg_get2(muse_core_client_get_msg(module), type, INT, index, INT, ret_val);
+	if (ret_val) {
+		muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
+		ret = legacy_player_select_track(muse_player->player_handle, type, index);
+	} else {
+		ret = PLAYER_ERROR_INVALID_OPERATION;
+	}
 	player_msg_return(api, ret, module);
 
 	return ret;
@@ -2243,16 +2320,20 @@ int player_disp_get_track_language_code(muse_module_h module)
 	int ret = PLAYER_ERROR_NONE;
 	muse_player_handle_s *muse_player = NULL;
 	muse_player_api_e api = MUSE_PLAYER_API_GET_TRACK_LANGUAGE_CODE;
-	player_stream_type_e type;
-	int index;
-	char *code;
+	player_stream_type_e type = PLAYER_STREAM_TYPE_DEFAULT;
+	int index = 0;
+	char *code = NULL;
 	const int code_len = 2;
+	bool ret_val = TRUE;
 
-	muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
-	player_msg_get(type, muse_core_client_get_msg(module));
-	player_msg_get(index, muse_core_client_get_msg(module));
+	player_msg_get2(muse_core_client_get_msg(module), type, INT, index, INT, ret_val);
+	if (ret_val) {
+		muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
+		ret = legacy_player_get_track_language_code(muse_player->player_handle, type, index, &code);
+	} else {
+		ret = PLAYER_ERROR_INVALID_OPERATION;
+	}
 
-	ret = legacy_player_get_track_language_code(muse_player->player_handle, type, index, &code);
 	if (ret == PLAYER_ERROR_NONE)
 		player_msg_return_array(api, ret, module, code, code_len, sizeof(char));
 	else
@@ -2284,15 +2365,18 @@ int player_disp_set_pcm_spec(muse_module_h module)
 	muse_player_handle_s *muse_player = NULL;
 	muse_player_api_e api = MUSE_PLAYER_API_SET_PCM_SPEC;
 	char format[MUSE_URI_MAX_LENGTH] = { 0, };
-	int samplerate;
-	int channel;
+	int samplerate = 0;
+	int channel = 0;
+	bool ret_val = TRUE;
 
-	muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
-	player_msg_get_string(format, muse_core_client_get_msg(module));
-	player_msg_get(samplerate, muse_core_client_get_msg(module));
-	player_msg_get(channel, muse_core_client_get_msg(module));
+	player_msg_get2_string(muse_core_client_get_msg(module), samplerate, INT, channel, INT, format, ret_val);
 
-	ret = legacy_player_set_pcm_spec(muse_player->player_handle, format, samplerate, channel);
+	if (ret_val) {
+		muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
+		ret = legacy_player_set_pcm_spec(muse_player->player_handle, format, samplerate, channel);
+	} else {
+		ret = PLAYER_ERROR_INVALID_OPERATION;
+	}
 
 	player_msg_return(api, ret, module);
 
