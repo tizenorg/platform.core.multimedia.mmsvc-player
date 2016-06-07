@@ -38,12 +38,13 @@
  * see ../api.list
  * see ../make_api.py
  */
-static tbm_key _create_export_data (muse_player_handle_s *muse_player, void *data, int size)
+static tbm_key _create_export_data (muse_player_handle_s *muse_player, void *data, int size, void *ext_data, int ext_size)
 {
 	muse_player_export_data_s *export_data = NULL;
 	tbm_bo bo = NULL;
 	tbm_key key = INVALID_TBM_KEY;
 	tbm_bo_handle thandle;
+	int bo_size = size + ext_size;
 
 	LOGD("ENTER");
 
@@ -64,7 +65,7 @@ static tbm_key _create_export_data (muse_player_handle_s *muse_player, void *dat
 	}
 
 	/* alloc and map the bo */
-	bo = tbm_bo_alloc(muse_player->bufmgr, size, TBM_BO_DEFAULT);
+	bo = tbm_bo_alloc(muse_player->bufmgr, bo_size, TBM_BO_DEFAULT);
 	if (!bo) {
 		LOGE("TBM get error : tbm_bo_alloc return NULL");
 		goto ERROR;
@@ -77,7 +78,11 @@ static tbm_key _create_export_data (muse_player_handle_s *muse_player, void *dat
 	}
 
 	/* copy data to bo and export key */
-	memcpy(thandle.ptr, data, size);
+	if (ext_size > 0 && ext_data != NULL) {
+		memcpy(thandle.ptr, ext_data, ext_size);
+	}
+	memcpy(thandle.ptr+ext_size, data, size);
+
 	tbm_bo_unmap(bo);
 
 	key = tbm_bo_export(bo);
@@ -86,7 +91,7 @@ static tbm_key _create_export_data (muse_player_handle_s *muse_player, void *dat
 		goto ERROR;
 	}
 
-	LOGD("bo %p, vaddr %p, size %d, key %d", bo, thandle.ptr, size, key);
+	LOGD("bo %p, vaddr %p, size %d(%d, %d), key %d", bo, thandle.ptr, bo_size, ext_size, size, key);
 
 	/* set bo info */
 	export_data->key = (int)key;
@@ -280,7 +285,7 @@ static void _capture_video_cb(unsigned char *data, int width, int height, unsign
 		return;
 	}
 
-	key = _create_export_data(muse_player, (void *)data, size);
+	key = _create_export_data(muse_player, (void *)data, size, NULL, 0);
 	if (key == 0) {
 		LOGE("failed to create export data");
 		return;
@@ -773,14 +778,14 @@ static void _audio_frame_decoded_cb(player_audio_raw_data_s * audio_frame, void 
 		return;
 	}
 
-	key = _create_export_data(muse_player, data, size);
+	key = _create_export_data(muse_player, data, size, audio_frame, sizeof(player_audio_raw_data_s));
 	if (key == 0) {
 		LOGE("failed to create export data");
 		return;
 	}
 
 	/* send message */
-	player_msg_event2_array(api, ev, module, INT, key, INT, size, audio_frame, sizeof(player_audio_raw_data_s), sizeof(char));
+	player_msg_event1(api, ev, module, INT, key);
 	return;
 }
 
@@ -1604,7 +1609,7 @@ int player_disp_get_album_art(muse_module_h module)
 	}
 
 	if ((album_art != NULL) && (size > 0)) {
-		key = _create_export_data(muse_player, album_art, size);
+		key = _create_export_data(muse_player, album_art, size, NULL, 0);
 		if (key == 0) {
 			LOGE("failed to create export data");
 			ret = PLAYER_ERROR_INVALID_OPERATION;
