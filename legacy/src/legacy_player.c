@@ -1030,7 +1030,7 @@ static MMDisplaySurfaceType __player_convet_display_type(player_display_type_e t
 	switch (type) {
 	case PLAYER_DISPLAY_TYPE_OVERLAY:
 		return MM_DISPLAY_SURFACE_OVERLAY;
-#ifdef TIZEN_MOBILE
+#ifdef EVAS_RENDERER_SUPPORT
 	case PLAYER_DISPLAY_TYPE_EVAS:
 		return MM_DISPLAY_SURFACE_REMOTE;
 #endif
@@ -1542,7 +1542,7 @@ int legacy_player_start(player_h player)
 	int ret;
 	if (handle->state == PLAYER_STATE_READY || handle->state == PLAYER_STATE_PAUSED) {
 		if (handle->display_type == PLAYER_DISPLAY_TYPE_OVERLAY
-#ifdef TIZEN_MOBILE
+#ifdef EVAS_RENDERER_SUPPORT
 			|| handle->display_type == PLAYER_DISPLAY_TYPE_EVAS
 #endif
 			) {
@@ -1588,7 +1588,7 @@ int legacy_player_stop(player_h player)
 		int ret = mm_player_stop(handle->mm_handle);
 
 		if (handle->display_type == PLAYER_DISPLAY_TYPE_OVERLAY
-#ifdef TIZEN_MOBILE
+#ifdef EVAS_RENDERER_SUPPORT
 			|| handle->display_type == PLAYER_DISPLAY_TYPE_EVAS
 #endif
 			) {
@@ -1842,7 +1842,7 @@ int legacy_player_set_display(player_h player, player_display_type_e type, playe
 				set_handle = &(handle->display_handle);
 #endif
 			}
-#ifdef TIZEN_MOBILE
+#ifdef EVAS_RENDERER_SUPPORT
 			else if (type == PLAYER_DISPLAY_TYPE_EVAS && !strcmp(object_type, "image")) {
 				/* evas object surface */
 				LOGI("evas surface type");
@@ -3134,7 +3134,7 @@ int legacy_player_set_display_wl_for_mused(player_h player, player_display_type_
 			handle->display_handle = (void *)(uintptr_t)wl_surface_id;
 			set_handle = &(handle->display_handle);
 			mmClientType = MM_DISPLAY_SURFACE_OVERLAY;
-#ifdef TIZEN_MOBILE
+#ifdef EVAS_RENDERER_SUPPORT
 		} else if (type == PLAYER_DISPLAY_TYPE_EVAS) {
 			LOGI("Evas surface type");
 			set_handle = &(handle->display_handle);

@@ -3,7 +3,7 @@
 
 Name:       mmsvc-player
 Summary:    A Media Player module for muse server
-Version:    0.2.13
+Version:    0.2.14
 Release:    0
 Group:      Multimedia/Libraries
 License:    Apache-2.0
@@ -62,12 +62,7 @@ export FFLAGS="$FFLAGS -DTIZEN_DEBUG_ENABLE"
 %endif
 export CFLAGS+=" -DPLAYER_ASM_COMPATIBILITY"
 MAJORVER=`echo %{version} | awk 'BEGIN {FS="."}{print $1}'`
-%cmake . -DFULLVER=%{version} -DMAJORVER=${MAJORVER} \
-%if "%{?profile}" == "wearable"
-	-DTIZEN_WEARABLE=YES \
-    %else
-    -DTIZEN_MOBILE=YES \
-    %endif
+%cmake . -DCMAKE_INSTALL_PREFIX=%{_prefix} -DFULLVER=%{version} -DMAJORVER=${MAJORVER} \
 %if %{with wayland}
     -DWAYLAND_SUPPORT=On \
 %else
@@ -78,8 +73,11 @@ MAJORVER=`echo %{version} | awk 'BEGIN {FS="."}{print $1}'`
 %else
     -DX11_SUPPORT=Off \
 %endif
-    -DCMAKE_INSTALL_PREFIX=/usr -DFULLVER=%{version} -DMAJORVER=${MAJORVER} \
-    -DCMAKE_INSTALL_PREFIX=/usr -DFULLVER=%{version} -DMAJORVER=${MAJORVER}
+%if "%{?profile}" == "tv" || "%{?profile}" == "wearable"
+    -DEVAS_RENDERER_SUPPORT=Off
+%else
+    -DEVAS_RENDERER_SUPPORT=On
+%endif
 
 make %{?jobs:-j%jobs}
 
