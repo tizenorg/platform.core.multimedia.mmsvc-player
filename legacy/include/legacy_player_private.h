@@ -78,9 +78,7 @@ typedef struct _player_s{
 	MMHandleType mm_handle;
 	const void* user_cb[MUSE_PLAYER_EVENT_TYPE_NUM];
 	void* user_data[MUSE_PLAYER_EVENT_TYPE_NUM];
-#ifdef HAVE_WAYLAND
 	void* wl_display;
-#endif
 	void* display_handle;
 	player_display_type_e display_type;
 	int state;
@@ -110,12 +108,8 @@ bool __player_state_validate(player_s * handle, player_state_e threshold);
 /*
 * define for lagacy API for mused
 */
-#ifdef HAVE_WAYLAND
 int legacy_player_set_display_wl_for_mused(player_h player, player_display_type_e type, unsigned int wl_surface_id, int x, int y, int w, int h);
 int legacy_player_resize_video_render_rect(player_h player, int x, int y, int w, int h);
-#else
-int legacy_player_set_display_for_mused(player_h player, player_display_type_e type, unsigned int xhandle);
-#endif
 int legacy_player_set_audio_policy_info_for_mused(player_h player, char *stream_type, int stream_index);
 int legacy_player_sound_register(player_h player, int pid);
 int legacy_player_get_timeout_for_muse(player_h player, int *timeout);

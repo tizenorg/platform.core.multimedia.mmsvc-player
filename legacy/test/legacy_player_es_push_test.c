@@ -21,10 +21,8 @@
 #include <legacy_player_internal.h>
 #include <glib.h>
 #include <appcore-efl.h>
-#ifdef HAVE_WAYLAND
 #include <Ecore.h>
 #include <Ecore_Wayland.h>
-#endif
 
 #define KEY_END "XF86Stop"
 
@@ -121,9 +119,7 @@ static Evas_Object *create_win(const char *name)
 		g_print("window size :%d,%d", w, h);
 		evas_object_resize(eo, w, h);
 		elm_win_autodel_set(eo, EINA_TRUE);
-#ifdef HAVE_WAYLAND
 		elm_win_alpha_set(eo, EINA_TRUE);
-#endif
 	}
 	return eo;
 }

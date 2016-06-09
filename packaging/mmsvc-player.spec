@@ -1,9 +1,6 @@
-%bcond_with wayland
-%bcond_with x
-
 Name:       mmsvc-player
 Summary:    A Media Player module for muse server
-Version:    0.2.14
+Version:    0.2.15
 Release:    0
 Group:      Multimedia/Libraries
 License:    Apache-2.0
@@ -20,12 +17,7 @@ BuildRequires:  pkgconfig(appcore-efl)
 BuildRequires:  pkgconfig(elementary)
 BuildRequires:  pkgconfig(ecore)
 BuildRequires:  pkgconfig(evas)
-%if %{with x}
-BuildRequires:  pkgconfig(ecore-x)
-%endif
-%if %{with wayland}
 BuildRequires:  pkgconfig(ecore-wayland)
-%endif
 BuildRequires:  pkgconfig(capi-media-tool)
 BuildRequires:  pkgconfig(json-c)
 BuildRequires:  pkgconfig(libtbm)
@@ -63,16 +55,6 @@ export FFLAGS="$FFLAGS -DTIZEN_DEBUG_ENABLE"
 export CFLAGS+=" -DPLAYER_ASM_COMPATIBILITY"
 MAJORVER=`echo %{version} | awk 'BEGIN {FS="."}{print $1}'`
 %cmake . -DCMAKE_INSTALL_PREFIX=%{_prefix} -DFULLVER=%{version} -DMAJORVER=${MAJORVER} \
-%if %{with wayland}
-    -DWAYLAND_SUPPORT=On \
-%else
-    -DWAYLAND_SUPPORT=Off \
-%endif
-%if %{with x}
-    -DX11_SUPPORT=On \
-%else
-    -DX11_SUPPORT=Off \
-%endif
 %if "%{?profile}" == "tv" || "%{?profile}" == "wearable"
     -DEVAS_RENDERER_SUPPORT=Off
 %else
