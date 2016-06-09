@@ -21,13 +21,8 @@
 #include <dlfcn.h>
 #include <appcore-efl.h>
 #include <Elementary.h>
-#ifdef HAVE_X11
-#include <Ecore_X.h>
-#endif
-#ifdef HAVE_WAYLAND
 #include <Ecore.h>
 #include <Ecore_Wayland.h>
-#endif
 #define PACKAGE "player_test"
 #define MAX_STRING_LEN 2048
 #define MMTS_SAMPLELIST_INI_DEFAULT_PATH "/opt/etc/mmts_filelist.ini"
@@ -81,7 +76,7 @@ enum {
 #define MAX_HANDLE 20
 
 /* for video display */
-Evas_Object *g_xid;
+Evas_Object *g_win_id;
 Evas_Object *g_eo_win;
 Evas_Object *g_eo[MAX_HANDLE] = {0, };
 
@@ -92,11 +87,6 @@ struct appdata {
 	Evas_Object *win;
 	Evas_Object *bg;
 	Evas_Object *rect;
-#ifdef HAVE_X11
-	Ecore_X_Window xid;
-#elif HAVE_WAYLAND
-	unsigned int xid;
-#endif
 	Evas_Object *layout_main;	/* layout widget based on EDJ */
 	/* add more variables here */
 };
@@ -138,9 +128,7 @@ static Evas_Object *create_win(const char *name)
 		g_print("window size :%d,%d", w, h);
 		evas_object_resize(eo, w, h);
 		elm_win_autodel_set(eo, EINA_TRUE);
-#ifdef HAVE_WAYLAND
 		elm_win_alpha_set(eo, EINA_TRUE);
-#endif
 	}
 	return eo;
 }
@@ -193,7 +181,7 @@ static int app_create(void *data)
 	g_eo_win = win;
 	ad->bg = create_bg(ad->win);
 	ad->rect = create_render_rect(ad->win);
-	g_xid = ad->win;
+	g_win_id = ad->win;
 	/* Create evas image object for EVAS surface */
 	g_eo[0] = create_image_object(ad->win);
 	evas_object_image_size_set(g_eo[0], 500, 500);
@@ -656,7 +644,7 @@ static void _player_prepare(bool async)
 		legacy_player_set_subtitle_updated_cb(g_player[0], subtitle_updated_cb, (void *)g_player[0]);
 	}
 	if (g_current_surface_type == PLAYER_DISPLAY_TYPE_OVERLAY) {
-		legacy_player_set_display(g_player[0], g_current_surface_type, GET_DISPLAY(g_xid));
+		legacy_player_set_display(g_player[0], g_current_surface_type, GET_DISPLAY(g_win_id));
 		legacy_player_set_buffering_cb(g_player[0], buffering_cb, (void *)g_player[0]);
 		legacy_player_set_completed_cb(g_player[0], completed_cb, (void *)g_player[0]);
 		legacy_player_set_interrupted_cb(g_player[0], interrupted_cb, (void *)g_player[0]);
@@ -1140,8 +1128,8 @@ static void change_surface(int option)
 			reset_display();
 
 			if (surface_type == PLAYER_DISPLAY_TYPE_OVERLAY) {
-				g_xid = g_eo_win;
-				ret = legacy_player_set_display(g_player[0], surface_type, GET_DISPLAY(g_xid));
+				g_win_id = g_eo_win;
+				ret = legacy_player_set_display(g_player[0], surface_type, GET_DISPLAY(g_win_id));
 			} else {
 				int i = 0;
 				for (i = 0; i < g_handle_num; i++) {

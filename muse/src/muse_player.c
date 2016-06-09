@@ -1324,27 +1324,12 @@ int player_disp_set_display(muse_module_h module)
 	int ret = PLAYER_ERROR_NONE;
 	muse_player_api_e api = MUSE_PLAYER_API_SET_DISPLAY;
 	muse_player_handle_s *muse_player = NULL;
-#ifdef HAVE_WAYLAND
 	wl_win_msg_type wl_win;
 	char *wl_win_msg = (char *)&wl_win;
-#else
-	bool ret_val = TRUE;
-	int type = 0;
-	unsigned int xhandle = 0;
-#endif
 
 	muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
-#ifdef HAVE_WAYLAND
 	player_msg_get_array(wl_win_msg, muse_core_client_get_msg(module));
 	ret = legacy_player_set_display_wl_for_mused(muse_player->player_handle, wl_win.type, wl_win.wl_surface_id, wl_win.wl_window_x, wl_win.wl_window_y, wl_win.wl_window_width, wl_win.wl_window_height);
-#else
-	player_msg_get2(muse_core_client_get_msg(module), type, INT, xhandle, INT, ret_val);
-	if (ret_val) {
-		ret = legacy_player_set_display_for_mused(muse_player->player_handle, type, xhandle);
-	} else {
-		ret = PLAYER_ERROR_INVALID_OPERATION;
-	}
-#endif
 	player_msg_return(api, ret, module);
 
 	return ret;
@@ -1468,7 +1453,6 @@ int player_disp_is_display_visible(muse_module_h module)
 	return ret;
 }
 
-#ifdef HAVE_WAYLAND
 int player_disp_resize_video_render_rect(muse_module_h module)	/* private */
 {
 	int ret = PLAYER_ERROR_NONE;
@@ -1488,7 +1472,6 @@ int player_disp_resize_video_render_rect(muse_module_h module)	/* private */
 	return ret;
 
 }
-#endif
 
 int player_disp_get_content_info(muse_module_h module)
 {
