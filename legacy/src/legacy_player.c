@@ -381,11 +381,14 @@ int _player_media_packet_finalize(media_packet_h pkt, int error_code, void *user
 	int ret = 0;
 	void *internal_buffer = NULL;
 	tbm_surface_h tsurf = NULL;
+	player_s *handle = NULL;
 
 	if (pkt == NULL || user_data == NULL) {
 		LOGE("invalid parameter buffer %p, user_data %p", pkt, user_data);
 		return MEDIA_PACKET_FINALIZE;
 	}
+
+	handle = (player_s *)user_data;
 
 	ret = media_packet_get_extra(pkt, &internal_buffer);
 	if (ret != MEDIA_PACKET_ERROR_NONE) {
@@ -403,6 +406,19 @@ int _player_media_packet_finalize(media_packet_h pkt, int error_code, void *user
 	}
 
 	if (tsurf) {
+#define NUM_OF_SW_CODEC_BO 1
+		int bo_num = 0;
+		tbm_bo bo = NULL;
+
+		bo_num = tbm_surface_internal_get_num_bos(tsurf);
+		if (bo_num == NUM_OF_SW_CODEC_BO) {
+			bo = tbm_surface_internal_get_bo(tsurf, 0);
+			if (bo) {
+				mm_player_release_video_stream_bo(handle->mm_handle, bo);
+			} else {
+				LOGE("bo is NULL");
+			}
+		}
 		tbm_surface_destroy(tsurf);
 		tsurf = NULL;
 	}

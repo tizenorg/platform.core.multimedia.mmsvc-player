@@ -33,6 +33,7 @@ typedef struct {
 	GList *packet_list;
 	GList *data_list;
 	GMutex list_lock;
+	int total_size_of_buffers;
 	int extra_size_of_buffers;
 } muse_player_handle_s;
 
