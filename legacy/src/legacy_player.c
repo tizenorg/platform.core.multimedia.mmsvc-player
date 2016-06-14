@@ -1543,7 +1543,19 @@ int legacy_player_start(player_h player)
 #ifdef EVAS_RENDERER_SUPPORT
 			|| handle->display_type == PLAYER_DISPLAY_TYPE_EVAS
 #endif
-			) {
+			)
+		{
+			/* Apps can set display_rotation before creating videosink */
+			/* Content which have orientation need to set display_rotation because player can get orientation from msg tag */
+			int rotation;
+			ret = mm_player_get_attribute(handle->mm_handle, NULL, MM_PLAYER_VIDEO_ROTATION, &rotation, (char *)NULL);
+			if (ret != MM_ERROR_NONE)
+				return __player_convert_error_code(ret, (char *)__FUNCTION__);
+
+			ret = mm_player_set_attribute(handle->mm_handle, NULL, MM_PLAYER_VIDEO_ROTATION, rotation, (char *)NULL);
+				if (ret != MM_ERROR_NONE)
+					return __player_convert_error_code(ret, (char *)__FUNCTION__);
+
 			if (handle->is_display_visible)
 				ret = mm_player_set_attribute(handle->mm_handle, NULL, "display_visible", 1, (char *)NULL);
 		}
@@ -3234,4 +3246,3 @@ int legacy_player_get_num_of_video_out_buffers(player_h player, int *num, int *e
 
 	return PLAYER_ERROR_NONE;
 }
-
