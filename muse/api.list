@@ -76,3 +76,4 @@ set_next_uri
 get_next_uri
 set_gapless
 is_gapless
+get_media_packet_video_frame_pool_size
