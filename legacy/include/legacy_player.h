@@ -1142,7 +1142,7 @@ int legacy_player_set_display_mode(player_h player, player_display_mode_e mode);
 int legacy_player_get_display_mode(player_h player, player_display_mode_e *mode);
 
 /**
- * @brief Sets the visibility of the x surface video display
+ * @brief Sets the visibility of the video surface display
  * @since_tizen 2.3
  * @param[in] player   The handle to the media player
  * @param[in] visible The visibility of the display (@c true = visible, @c false = non-visible )
@@ -1156,7 +1156,7 @@ int legacy_player_get_display_mode(player_h player, player_display_mode_e *mode)
 int legacy_player_set_display_visible(player_h player, bool visible);
 
 /**
- * @brief Gets the visibility of the x surface video display.
+ * @brief Gets the visibility of the video surface display.
  * @since_tizen 2.3
  * @param[in] player The handle to the media player
  * @param[out] visible The current visibility of the display (@c true = visible, @c false = non-visible )

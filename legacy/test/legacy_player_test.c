@@ -1196,73 +1196,32 @@ static void get_display_visible(bool * visible)
 
 static void set_display_dst_roi(int x, int y, int w, int h)
 {
-#if 0
-	if (legacy_player_set_x11_display_dst_roi(g_player[0], x, y, w, h) != PLAYER_ERROR_NONE)
-		g_print("failed to player_set_x11_display_dst_roi\n");
-	else
-		g_print("                                                            ==> [Player_Test] set X11 Display DST ROI (x:%d, y:%d, w:%d, h:%d)\n", x, y, w, h);
-#endif
+
 }
 
 static void get_display_dst_roi()
 {
-#if 0
-	int x = 0;
-	int y = 0;
-	int w = 0;
-	int h = 0;
 
-	if (legacy_player_get_x11_display_dst_roi(g_player[0], &x, &y, &w, &h) != PLAYER_ERROR_NONE)
-		g_print("failed to legacy_player_get_x11_display_dst_roi\n");
-	else
-		g_print("                                                            ==> [Player_Test] got X11 Display DST ROI (x:%d, y:%d, w:%d, h:%d)\n", x, y, w, h);
-#endif
 }
 
 static void set_display_roi_mode(int mode)
 {
-#if 0
-	if (legacy_player_set_x11_display_roi_mode(g_player[0], (player_display_roi_mode_e) mode) != PLAYER_ERROR_NONE)
-		g_print("failed to legacy_player_set_x11_display_roi_mode\n");
-	else
-		g_print("                                                            ==> [Player_Test] set X11 Display ROI mode (%d)\n", mode);
-#endif
+
 }
 
 static void get_display_roi_mode()
 {
-#if 0
-	player_display_roi_mode_e mode;
-	if (legacy_player_get_x11_display_roi_mode(g_player[0], &mode) != PLAYER_ERROR_NONE)
-		g_print("failed to legacy_player_get_x11_display_roi_mode\n");
-	else
-		g_print("                                                            ==> [Player_Test] got X11 Display ROI mode (%d)\n", mode);
-#endif
+
 }
 
 static void set_display_src_crop(int x, int y, int w, int h)
 {
-#if 0
-	if (legacy_player_set_x11_display_src_crop(g_player[0], x, y, w, h) != PLAYER_ERROR_NONE)
-		g_print("failed to legacy_player_set_x11_display_src_crop\n");
-	else
-		g_print("                                                            ==> [Player_Test] set X11 Display SRC CROP (x:%d, y:%d, w:%d, h:%d)\n", x, y, w, h);
-#endif
+
 }
 
 static void get_display_src_crop()
 {
-#if 0
-	int x = 0;
-	int y = 0;
-	int w = 0;
-	int h = 0;
 
-	if (legacy_player_get_x11_display_src_crop(g_player[0], &x, &y, &w, &h) != PLAYER_ERROR_NONE)
-		g_print("failed to legacy_player_get_x11_display_src_crop\n");
-	else
-		g_print("                                                            ==> [Player_Test] got X11 Display SRC CROP (x:%d, y:%d, w:%d, h:%d)\n", x, y, w, h);
-#endif
 }
 
 static void input_subtitle_filename(char *subtitle_filename)
@@ -1566,9 +1525,9 @@ void display_sub_basic()
 	g_print("[display] v. Set display visible\t");
 	g_print("w. Get display visible\n");
 	g_print("[display] ds. Change display surface type\n");
-	g_print("[x display] r. Set display mode\t");
+	g_print("[overlay display] r. Set display mode\t");
 	g_print("s. Get display mode\n");
-	g_print("[x display] t. Set display Rotation\t");
+	g_print("[overlay display] t. Set display Rotation\t");
 	g_print("[Track] tl. Get Track language info(single only)\n");
 	g_print("[subtitle] A. Set(or change) subtitle path\n");
 	g_print("[subtitle] ss. Select(or change) subtitle track\n");
