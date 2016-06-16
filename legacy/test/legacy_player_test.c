@@ -64,9 +64,6 @@ enum {
 	CURRENT_STATUS_DISPLAY_MODE,
 	CURRENT_STATUS_DISPLAY_ROTATION,
 	CURRENT_STATUS_DISPLAY_VISIBLE,
-	CURRENT_STATUS_DISPLAY_ROI_MODE,
-	CURRENT_STATUS_DISPLAY_DST_ROI,
-	CURRENT_STATUS_DISPLAY_SRC_CROP,
 	CURRENT_STATUS_SUBTITLE_FILENAME,
 	CURRENT_STATUS_AUDIO_EQUALIZER,
 	CURRENT_STATUS_PLAYBACK_RATE,
@@ -1194,77 +1191,6 @@ static void get_display_visible(bool * visible)
 	g_print("                                                            ==> [Player_Test] X11 Display Visible = %d\n", *visible);
 }
 
-static void set_display_dst_roi(int x, int y, int w, int h)
-{
-#if 0
-	if (legacy_player_set_x11_display_dst_roi(g_player[0], x, y, w, h) != PLAYER_ERROR_NONE)
-		g_print("failed to player_set_x11_display_dst_roi\n");
-	else
-		g_print("                                                            ==> [Player_Test] set X11 Display DST ROI (x:%d, y:%d, w:%d, h:%d)\n", x, y, w, h);
-#endif
-}
-
-static void get_display_dst_roi()
-{
-#if 0
-	int x = 0;
-	int y = 0;
-	int w = 0;
-	int h = 0;
-
-	if (legacy_player_get_x11_display_dst_roi(g_player[0], &x, &y, &w, &h) != PLAYER_ERROR_NONE)
-		g_print("failed to legacy_player_get_x11_display_dst_roi\n");
-	else
-		g_print("                                                            ==> [Player_Test] got X11 Display DST ROI (x:%d, y:%d, w:%d, h:%d)\n", x, y, w, h);
-#endif
-}
-
-static void set_display_roi_mode(int mode)
-{
-#if 0
-	if (legacy_player_set_x11_display_roi_mode(g_player[0], (player_display_roi_mode_e) mode) != PLAYER_ERROR_NONE)
-		g_print("failed to legacy_player_set_x11_display_roi_mode\n");
-	else
-		g_print("                                                            ==> [Player_Test] set X11 Display ROI mode (%d)\n", mode);
-#endif
-}
-
-static void get_display_roi_mode()
-{
-#if 0
-	player_display_roi_mode_e mode;
-	if (legacy_player_get_x11_display_roi_mode(g_player[0], &mode) != PLAYER_ERROR_NONE)
-		g_print("failed to legacy_player_get_x11_display_roi_mode\n");
-	else
-		g_print("                                                            ==> [Player_Test] got X11 Display ROI mode (%d)\n", mode);
-#endif
-}
-
-static void set_display_src_crop(int x, int y, int w, int h)
-{
-#if 0
-	if (legacy_player_set_x11_display_src_crop(g_player[0], x, y, w, h) != PLAYER_ERROR_NONE)
-		g_print("failed to legacy_player_set_x11_display_src_crop\n");
-	else
-		g_print("                                                            ==> [Player_Test] set X11 Display SRC CROP (x:%d, y:%d, w:%d, h:%d)\n", x, y, w, h);
-#endif
-}
-
-static void get_display_src_crop()
-{
-#if 0
-	int x = 0;
-	int y = 0;
-	int w = 0;
-	int h = 0;
-
-	if (legacy_player_get_x11_display_src_crop(g_player[0], &x, &y, &w, &h) != PLAYER_ERROR_NONE)
-		g_print("failed to legacy_player_get_x11_display_src_crop\n");
-	else
-		g_print("                                                            ==> [Player_Test] got X11 Display SRC CROP (x:%d, y:%d, w:%d, h:%d)\n", x, y, w, h);
-#endif
-}
-
 static void input_subtitle_filename(char *subtitle_filename)
 {
 	int len = strlen(subtitle_filename);
@@ -1459,18 +1385,6 @@ void _interpret_main_menu(char *cmd)
 		} else if (strncmp(cmd, "w", 1) == 0) {
 			bool visible;
 			get_display_visible(&visible);
-		} else if (strncmp(cmd, "x", 1) == 0) {
-			g_menu_state = CURRENT_STATUS_DISPLAY_DST_ROI;
-		} else if (strncmp(cmd, "y", 1) == 0) {
-			get_display_dst_roi();
-		} else if (strncmp(cmd, "M", 1) == 0) {
-			g_menu_state = CURRENT_STATUS_DISPLAY_ROI_MODE;
-		} else if (strncmp(cmd, "N", 1) == 0) {
-			get_display_roi_mode();
-		} else if (strncmp(cmd, "F", 1) == 0) {
-			g_menu_state = CURRENT_STATUS_DISPLAY_SRC_CROP;
-		} else if (strncmp(cmd, "G", 1) == 0) {
-			get_display_src_crop();
 		} else if (strncmp(cmd, "A", 1) == 0) {
 			g_menu_state = CURRENT_STATUS_SUBTITLE_FILENAME;
 		} else if (strncmp(cmd, "C", 1) == 0) {
@@ -1566,9 +1480,9 @@ void display_sub_basic()
 	g_print("[display] v. Set display visible\t");
 	g_print("w. Get display visible\n");
 	g_print("[display] ds. Change display surface type\n");
-	g_print("[x display] r. Set display mode\t");
+	g_print("[overlay display] r. Set display mode\t");
 	g_print("s. Get display mode\n");
-	g_print("[x display] t. Set display Rotation\t");
+	g_print("[overlay display] t. Set display Rotation\t");
 	g_print("[Track] tl. Get Track language info(single only)\n");
 	g_print("[subtitle] A. Set(or change) subtitle path\n");
 	g_print("[subtitle] ss. Select(or change) subtitle track\n");
@@ -1603,17 +1517,11 @@ static void displaymenu()
 	} else if (g_menu_state == CURRENT_STATUS_DISPLAY_SURFACE_CHANGE) {
 		g_print("*** input display surface type.(0: X surface, 1: EVAS surface) \n");
 	} else if (g_menu_state == CURRENT_STATUS_DISPLAY_MODE) {
-		g_print("*** input display mode value.(0: LETTER BOX, 1: ORIGIN SIZE, 2: FULL_SCREEN, 3: CROPPED_FULL, 4: ORIGIN_OR_LETTER, 5: ROI) \n");
+		g_print("*** input display mode value.(0: LETTER BOX, 1: ORIGIN SIZE, 2: FULL_SCREEN, 3: CROPPED_FULL, 4: ORIGIN_OR_LETTER) \n");
 	} else if (g_menu_state == CURRENT_STATUS_DISPLAY_ROTATION) {
 		g_print("*** input display rotation value.(0: NONE, 1: 90, 2: 180, 3: 270, 4:F LIP_HORZ, 5: FLIP_VERT ) \n");
 	} else if (g_menu_state == CURRENT_STATUS_DISPLAY_VISIBLE) {
 		g_print("*** input display visible value.(0: HIDE, 1: SHOW) \n");
-	} else if (g_menu_state == CURRENT_STATUS_DISPLAY_ROI_MODE) {
-		g_print("*** input display roi mode.(0: FULL_SCREEN, 1: LETTER BOX)\n");
-	} else if (g_menu_state == CURRENT_STATUS_DISPLAY_DST_ROI) {
-		g_print("*** input display roi value sequentially.(x, y, w, h)\n");
-	} else if (g_menu_state == CURRENT_STATUS_DISPLAY_SRC_CROP) {
-		g_print("*** input display source crop value sequentially.(x, y, w, h)\n");
 	} else if (g_menu_state == CURRENT_STATUS_SUBTITLE_FILENAME) {
 		g_print(" *** input  subtitle file path.\n");
 	} else if (g_menu_state == CURRENT_STATUS_AUDIO_EQUALIZER) {
@@ -1750,79 +1658,6 @@ static void interpret(char *cmd)
 		{
 			int visible = atoi(cmd);
 			set_display_visible(visible);
-			reset_menu_state();
-		}
-		break;
-	case CURRENT_STATUS_DISPLAY_DST_ROI:
-		{
-			int value = atoi(cmd);
-			static int roi_x = 0;
-			static int roi_y = 0;
-			static int roi_w = 0;
-			static int roi_h = 0;
-			static int cnt = 0;
-			switch (cnt) {
-			case 0:
-				roi_x = value;
-				cnt++;
-				break;
-			case 1:
-				roi_y = value;
-				cnt++;
-				break;
-			case 2:
-				roi_w = value;
-				cnt++;
-				break;
-			case 3:
-				cnt = 0;
-				roi_h = value;
-				set_display_dst_roi(roi_x, roi_y, roi_w, roi_h);
-				roi_x = roi_y = roi_w = roi_h = 0;
-				reset_menu_state();
-				break;
-			default:
-				break;
-			}
-		}
-		break;
-	case CURRENT_STATUS_DISPLAY_SRC_CROP:
-		{
-			int value = atoi(cmd);
-			static int crop_x = 0;
-			static int crop_y = 0;
-			static int crop_w = 0;
-			static int crop_h = 0;
-			static int crop_cnt = 0;
-			switch (crop_cnt) {
-			case 0:
-				crop_x = value;
-				crop_cnt++;
-				break;
-			case 1:
-				crop_y = value;
-				crop_cnt++;
-				break;
-			case 2:
-				crop_w = value;
-				crop_cnt++;
-				break;
-			case 3:
-				crop_cnt = 0;
-				crop_h = value;
-				set_display_src_crop(crop_x, crop_y, crop_w, crop_h);
-				crop_x = crop_y = crop_w = crop_h = 0;
-				reset_menu_state();
-				break;
-			default:
-				break;
-			}
-		}
-		break;
-	case CURRENT_STATUS_DISPLAY_ROI_MODE:
-		{
-			int value = atoi(cmd);
-			set_display_roi_mode(value);
 			reset_menu_state();
 		}
 		break;
