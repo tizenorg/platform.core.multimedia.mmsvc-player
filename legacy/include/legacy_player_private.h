@@ -114,7 +114,7 @@ int legacy_player_set_audio_policy_info_for_mused(player_h player, char *stream_
 int legacy_player_sound_register(player_h player, int pid);
 int legacy_player_get_timeout_for_muse(player_h player, int *timeout);
 int legacy_player_get_num_of_video_out_buffers(player_h player, int *num, int *extra_num);
-
+int legacy_player_set_temp_file_path(player_h player, const char *file_path);
 
 #ifdef __cplusplus
 }

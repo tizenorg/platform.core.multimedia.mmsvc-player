@@ -20,6 +20,7 @@
 #include "muse_player.h"
 #include "muse_player_api.h" /* generated during build, ref ../make_api.py */
 #include "muse_player_private.h"
+#include "muse_player_msg.h"
 #include "legacy_player.h"
 
 static int player_cmd_shutdown(muse_module_h module)
@@ -61,10 +62,23 @@ static int player_cmd_shutdown(muse_module_h module)
 	return PLAYER_ERROR_NONE;
 }
 
+static int player_cmd_resouce_not_available(muse_module_h module)
+{
+	int ret = PLAYER_ERROR_RESOURCE_LIMIT;
+	muse_player_api_e api = MUSE_PLAYER_API_CREATE;
+	LOGD("return PLAYER_ERROR_RESOURCE_LIMIT");
+
+	player_msg_return(api, ret, module);
+
+	return PLAYER_ERROR_NONE;
+}
+
 int (*cmd_dispatcher[MUSE_MODULE_COMMAND_MAX])(muse_module_h module) = {
 	NULL,	/* MUSE_MODULE_COMMAND_INITIALIZE */
 	player_cmd_shutdown,	/* MUSE_MODULE_COMMAND_SHUTDOWN */
 	NULL,	/* MUSE_MODULE_COMMAND_DEBUG_INFO_DUMP */
+	NULL,	/* MUSE_MODULE_COMMAND_CREATE_SERVER_ACK */
+	player_cmd_resouce_not_available,	/* MUSE_MODULE_COMMAND_RESOURCE_NOT_AVAILABLE */
 };
 
 /**
