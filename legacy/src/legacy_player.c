@@ -2615,8 +2615,10 @@ int legacy_player_unset_media_packet_video_frame_decoded_cb(player_h player)
 {
 	PLAYER_INSTANCE_CHECK(player);
 	player_s *handle = (player_s *)player;
+
 	handle->user_cb[MUSE_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME] = NULL;
 	handle->user_data[MUSE_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME] = NULL;
+
 	LOGI("Event type : %d ", MUSE_PLAYER_EVENT_TYPE_MEDIA_PACKET_VIDEO_FRAME);
 
 	int ret = mm_player_set_video_stream_callback(handle->mm_handle, NULL, NULL);
@@ -3261,4 +3263,19 @@ int legacy_player_get_num_of_video_out_buffers(player_h player, int *num, int *e
 		return __player_convert_error_code(ret, (char *)__FUNCTION__);
 
 	return PLAYER_ERROR_NONE;
+}
+
+int legacy_player_set_file_buffering_path(player_h player, const char *file_path)
+{
+	PLAYER_INSTANCE_CHECK(player);
+	PLAYER_NULL_ARG_CHECK(file_path);
+	player_s *handle = (player_s *)player;
+	PLAYER_STATE_CHECK(handle, PLAYER_STATE_IDLE);
+
+	int ret = mm_player_set_file_buffering_path(handle->mm_handle, file_path);
+
+	if (ret != MM_ERROR_NONE)
+		return __player_convert_error_code(ret, (char *)__FUNCTION__);
+	else
+		return PLAYER_ERROR_NONE;
 }

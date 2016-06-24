@@ -962,10 +962,15 @@ int player_disp_set_uri(muse_module_h module)
 
 	muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
 	player_msg_get_string(uri, muse_core_client_get_msg(module));
-
 	ret = legacy_player_set_uri(muse_player->player_handle, uri);
 
 	player_msg_return(api, ret, module);
+
+	const char* file_buffering_path = muse_core_client_get_directory_path();
+
+	LOGD("file buffering path : %s", file_buffering_path);
+	if (file_buffering_path)
+		legacy_player_set_file_buffering_path(muse_player->player_handle, file_buffering_path);
 
 	return ret;
 }
