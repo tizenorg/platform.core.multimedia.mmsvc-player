@@ -962,10 +962,15 @@ int player_disp_set_uri(muse_module_h module)
 
 	muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
 	player_msg_get_string(uri, muse_core_client_get_msg(module));
-
 	ret = legacy_player_set_uri(muse_player->player_handle, uri);
 
 	player_msg_return(api, ret, module);
+
+	const char* temp_file_path = muse_core_client_get_directory_path();
+
+	LOGD("temp file path : %s", temp_file_path);
+	if (temp_file_path)
+		legacy_player_set_temp_file_path(muse_player->player_handle, temp_file_path);
 
 	return ret;
 }
