@@ -277,8 +277,10 @@ int _player_get_tbm_surface_format(int in_format, uint32_t *out_format)
 
 	switch (in_format) {
 	case MM_PIXEL_FORMAT_NV12:
-	case MM_PIXEL_FORMAT_NV12T:
 		*out_format = TBM_FORMAT_NV12;
+		break;
+	case MM_PIXEL_FORMAT_NV12T:
+		*out_format = TBM_FORMAT_NV12MT;
 		break;
 	case MM_PIXEL_FORMAT_NV16:
 		*out_format = TBM_FORMAT_NV16;
@@ -331,8 +333,10 @@ int _player_get_media_packet_mimetype(int in_format, media_format_mimetype_e *mi
 
 	switch (in_format) {
 	case MM_PIXEL_FORMAT_NV12:
-	case MM_PIXEL_FORMAT_NV12T:
 		*mimetype = MEDIA_FORMAT_NV12;
+		break;
+	case MM_PIXEL_FORMAT_NV12T:
+		*mimetype = MEDIA_FORMAT_NV12T;
 		break;
 	case MM_PIXEL_FORMAT_NV16:
 		*mimetype = MEDIA_FORMAT_NV16;
