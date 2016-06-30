@@ -33,7 +33,7 @@
 #include <tbm_bufmgr.h>
 #include <tbm_surface_internal.h>
 #include <mm_sound.h>
-#ifdef PLAYER_ASM_COMPATIBILITY
+#ifdef TIZEN_FEATURE_ASM
 #include <mm_session.h>
 #include <mm_session_private.h>
 #endif
@@ -1424,7 +1424,7 @@ int legacy_player_get_volume(player_h player, float *left, float *right)
 		return PLAYER_ERROR_NONE;
 	}
 }
-#ifdef PLAYER_ASM_COMPATIBILITY
+#ifdef TIZEN_FEATURE_ASM
 int legacy_player_set_sound_type(player_h player, sound_type_e type)
 {
 	PLAYER_INSTANCE_CHECK(player);
