@@ -1146,7 +1146,7 @@ int player_disp_set_sound_type(muse_module_h module)
 
 	muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
 	player_msg_get(type, muse_core_client_get_msg(module));
-#ifdef PLAYER_ASM_COMPATIBILITY
+#ifdef TIZEN_FEATURE_ASM
 	ret = legacy_player_set_sound_type(muse_player->player_handle, (sound_type_e)type);
 #endif
 	player_msg_return(api, ret, module);

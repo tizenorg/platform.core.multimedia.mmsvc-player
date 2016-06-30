@@ -33,7 +33,7 @@
 #include <tbm_bufmgr.h>
 #include <tbm_surface_internal.h>
 #include <mm_sound.h>
-#ifdef PLAYER_ASM_COMPATIBILITY
+#ifdef TIZEN_FEATURE_ASM
 #include <mm_session.h>
 #include <mm_session_private.h>
 #endif
@@ -1044,7 +1044,7 @@ static MMDisplaySurfaceType __player_convet_display_type(player_display_type_e t
 	switch (type) {
 	case PLAYER_DISPLAY_TYPE_OVERLAY:
 		return MM_DISPLAY_SURFACE_OVERLAY;
-#ifdef EVAS_RENDERER_SUPPORT
+#ifdef TIZEN_FEATURE_EVAS_RENDERER
 	case PLAYER_DISPLAY_TYPE_EVAS:
 		return MM_DISPLAY_SURFACE_REMOTE;
 #endif
@@ -1424,7 +1424,7 @@ int legacy_player_get_volume(player_h player, float *left, float *right)
 		return PLAYER_ERROR_NONE;
 	}
 }
-#ifdef PLAYER_ASM_COMPATIBILITY
+#ifdef TIZEN_FEATURE_ASM
 int legacy_player_set_sound_type(player_h player, sound_type_e type)
 {
 	PLAYER_INSTANCE_CHECK(player);
@@ -1556,7 +1556,7 @@ int legacy_player_start(player_h player)
 	int ret;
 	if (handle->state == PLAYER_STATE_READY || handle->state == PLAYER_STATE_PAUSED) {
 		if (handle->display_type == PLAYER_DISPLAY_TYPE_OVERLAY
-#ifdef EVAS_RENDERER_SUPPORT
+#ifdef TIZEN_FEATURE_EVAS_RENDERER
 			|| handle->display_type == PLAYER_DISPLAY_TYPE_EVAS
 #endif
 			)
@@ -1614,7 +1614,7 @@ int legacy_player_stop(player_h player)
 		int ret = mm_player_stop(handle->mm_handle);
 
 		if (handle->display_type == PLAYER_DISPLAY_TYPE_OVERLAY
-#ifdef EVAS_RENDERER_SUPPORT
+#ifdef TIZEN_FEATURE_EVAS_RENDERER
 			|| handle->display_type == PLAYER_DISPLAY_TYPE_EVAS
 #endif
 			) {
@@ -1858,7 +1858,7 @@ int legacy_player_set_display(player_h player, player_display_type_e type, playe
 				handle->wl_display = (void *)ecore_wl_display_get();
 				set_wl_display = handle->wl_display;
 			}
-#ifdef EVAS_RENDERER_SUPPORT
+#ifdef TIZEN_FEATURE_EVAS_RENDERER
 			else if (type == PLAYER_DISPLAY_TYPE_EVAS && !strcmp(object_type, "image")) {
 				/* evas object surface */
 				LOGI("evas surface type");
@@ -3147,7 +3147,7 @@ int legacy_player_set_display_wl_for_mused(player_h player, player_display_type_
 			handle->display_handle = (void *)(uintptr_t)wl_surface_id;
 			set_handle = &(handle->display_handle);
 			mmClientType = MM_DISPLAY_SURFACE_OVERLAY;
-#ifdef EVAS_RENDERER_SUPPORT
+#ifdef TIZEN_FEATURE_EVAS_RENDERER
 		} else if (type == PLAYER_DISPLAY_TYPE_EVAS) {
 			LOGI("Evas surface type");
 			set_handle = &(handle->display_handle);

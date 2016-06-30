@@ -1,6 +1,6 @@
 Name:       mmsvc-player
 Summary:    A Media Player module for muse server
-Version:    0.2.17
+Version:    0.2.18
 Release:    0
 Group:      Multimedia/Libraries
 License:    Apache-2.0
@@ -52,13 +52,13 @@ export CFLAGS="$CFLAGS -DTIZEN_DEBUG_ENABLE"
 export CXXFLAGS="$CXXFLAGS -DTIZEN_DEBUG_ENABLE"
 export FFLAGS="$FFLAGS -DTIZEN_DEBUG_ENABLE"
 %endif
-export CFLAGS+=" -DPLAYER_ASM_COMPATIBILITY"
+export CFLAGS+=" -DTIZEN_FEATURE_ASM"
 MAJORVER=`echo %{version} | awk 'BEGIN {FS="."}{print $1}'`
 %cmake . -DCMAKE_INSTALL_PREFIX=%{_prefix} -DFULLVER=%{version} -DMAJORVER=${MAJORVER} \
 %if "%{?profile}" == "tv" || "%{?profile}" == "wearable"
-    -DEVAS_RENDERER_SUPPORT=Off
+    -DTIZEN_FEATURE_EVAS_RENDERER=Off
 %else
-    -DEVAS_RENDERER_SUPPORT=On
+    -DTIZEN_FEATURE_EVAS_RENDERER=On
 %endif
 
 make %{?jobs:-j%jobs}
