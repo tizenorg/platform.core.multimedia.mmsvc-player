@@ -1095,7 +1095,7 @@ static void change_surface(int option)
 		surface_type = PLAYER_DISPLAY_TYPE_OVERLAY;
 		g_print("change surface type to X\n");
 		break;
-#ifdef EVAS_RENDERER_SUPPORT
+#ifdef TIZEN_FEATURE_EVAS_RENDERER
 	case 1:
 		/* EVAS surface */
 		surface_type = PLAYER_DISPLAY_TYPE_EVAS;

@@ -118,7 +118,7 @@ typedef enum {
  */
 typedef enum {
     PLAYER_DISPLAY_TYPE_OVERLAY = 0,    /**< Overlay surface display */
-#ifdef EVAS_RENDERER_SUPPORT
+#ifdef TIZEN_FEATURE_EVAS_RENDERER
     PLAYER_DISPLAY_TYPE_EVAS,           /**< Evas image object surface display */
 #endif
     PLAYER_DISPLAY_TYPE_NONE,           /**< This disposes off buffers */
