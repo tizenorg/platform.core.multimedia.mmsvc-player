@@ -857,6 +857,9 @@ int player_disp_destroy(muse_module_h module)
 
 	muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
 
+	/* decoder buffer need to be released first to destroy pipeline */
+	_remove_export_media_packet(module);
+
 	ret = legacy_player_destroy(muse_player->player_handle);
 
 	if (muse_player->audio_format) {
@@ -869,7 +872,6 @@ int player_disp_destroy(muse_module_h module)
 	}
 
 	_remove_export_data(module, 0, TRUE);
-	_remove_export_media_packet(module);
 	g_mutex_clear(&muse_player->list_lock);
 
 	muse_player->bufmgr = NULL;
@@ -943,10 +945,13 @@ int player_disp_unprepare(muse_module_h module)
 
 	muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
 
+	/* decoder buffer need to be released first to destroy pipeline */
+	ret = legacy_player_unset_media_packet_video_frame_decoded_cb(muse_player->player_handle);
+	_remove_export_media_packet(module);
+
 	ret = legacy_player_unprepare(muse_player->player_handle);
 
 	_remove_export_data(module, 0, TRUE);
-	_remove_export_media_packet(module);
 
 	player_msg_return(api, ret, module);
 
