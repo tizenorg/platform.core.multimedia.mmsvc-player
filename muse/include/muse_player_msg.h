@@ -775,6 +775,21 @@ typedef struct {
 		muse_core_msg_json_factory_free(__sndMsg__); \
 	}while(0)
 
+/**
+ * @brief Create and send return message.
+ * @remarks Does NOT guarantee thread safe.
+ * @param[in] module mused module information
+ */
+#define player_msg_create_ack(module) \
+	do {	\
+		char *__sndMsg__; \
+		__sndMsg__ = muse_core_msg_json_factory_new(MUSE_PLAYER_CB_CREATE_ACK, \
+				0); \
+		muse_core_ipc_send_msg(muse_core_client_get_msg_fd(module), __sndMsg__); \
+		muse_core_msg_json_factory_free(__sndMsg__); \
+	} while (0)
+
+
 
 #ifdef __cplusplus
 }

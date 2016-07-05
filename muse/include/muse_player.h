@@ -47,6 +47,7 @@ typedef enum {
 
 typedef enum {
 	MUSE_PLAYER_CB_EVENT = MUSE_PLAYER_HEAD_GAP(MUSE_PLAYER_API_MAX),
+	MUSE_PLAYER_CB_CREATE_ACK,
 	MUSE_PLAYER_CB_MAX
 } muse_player_cb_e;
 

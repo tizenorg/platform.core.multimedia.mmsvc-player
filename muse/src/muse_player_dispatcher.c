@@ -62,6 +62,13 @@ static int player_cmd_shutdown(muse_module_h module)
 	return PLAYER_ERROR_NONE;
 }
 
+static int player_cmd_create_server_ack(muse_module_h module)
+{
+	LOGD("ENTER");
+	player_msg_create_ack(module);
+	return PLAYER_ERROR_NONE;
+}
+
 static int player_cmd_resouce_not_available(muse_module_h module)
 {
 	int ret = PLAYER_ERROR_RESOURCE_LIMIT;
@@ -77,7 +84,7 @@ int (*cmd_dispatcher[MUSE_MODULE_COMMAND_MAX])(muse_module_h module) = {
 	NULL,	/* MUSE_MODULE_COMMAND_INITIALIZE */
 	player_cmd_shutdown,	/* MUSE_MODULE_COMMAND_SHUTDOWN */
 	NULL,	/* MUSE_MODULE_COMMAND_DEBUG_INFO_DUMP */
-	NULL,	/* MUSE_MODULE_COMMAND_CREATE_SERVER_ACK */
+	player_cmd_create_server_ack,	/* MUSE_MODULE_COMMAND_CREATE_SERVER_ACK */
 	player_cmd_resouce_not_available,	/* MUSE_MODULE_COMMAND_RESOURCE_NOT_AVAILABLE */
 };
 
