@@ -85,7 +85,6 @@ typedef enum {
     PLAYER_ERROR_PERMISSION_DENIED  = TIZEN_ERROR_PERMISSION_DENIED,        /**< Permission denied */
     PLAYER_ERROR_SERVICE_DISCONNECTED = PLAYER_ERROR_CLASS | 0x0d,          /**< Socket connection lost (Since 3.0) */
     PLAYER_ERROR_BUFFER_SPACE         = TIZEN_ERROR_BUFFER_SPACE,           /**< No buffer space available (Since 3.0)*/
-
 } player_error_e;
 
 /**
