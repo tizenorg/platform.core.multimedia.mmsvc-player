@@ -1443,7 +1443,7 @@ int legacy_player_set_sound_type(player_h player, sound_type_e type)
 	int session_type = 0;
 	int session_flags = 0;
 
-	ret = mm_player_get_client_pid (handle->mm_handle, &pid);
+	ret = mm_player_get_client_pid(handle->mm_handle, &pid);
 	if (ret != MM_ERROR_NONE) {
 		return __player_convert_error_code(ret, (char *)__FUNCTION__);
 	}
@@ -1457,7 +1457,7 @@ int legacy_player_set_sound_type(player_h player, sound_type_e type)
 			return PLAYER_ERROR_SOUND_POLICY;
 	} else if (ret == MM_ERROR_INVALID_HANDLE) { /* if there is no session */
 		/* convert volume_type to stream_type */
-		switch(type) {
+		switch (type) {
 		case SOUND_TYPE_SYSTEM:
 			stream_type = "system";
 			break;
@@ -1563,18 +1563,7 @@ int legacy_player_start(player_h player)
 #ifdef TIZEN_FEATURE_EVAS_RENDERER
 			|| handle->display_type == PLAYER_DISPLAY_TYPE_EVAS
 #endif
-			)
-		{
-			/* Apps can set display_rotation before creating videosink */
-			/* Content which have orientation need to set display_rotation because player can get orientation from msg tag */
-			int rotation;
-			ret = mm_player_get_attribute(handle->mm_handle, NULL, MM_PLAYER_VIDEO_ROTATION, &rotation, (char *)NULL);
-			if (ret != MM_ERROR_NONE)
-				return __player_convert_error_code(ret, (char *)__FUNCTION__);
-
-			ret = mm_player_set_attribute(handle->mm_handle, NULL, MM_PLAYER_VIDEO_ROTATION, rotation, (char *)NULL);
-				if (ret != MM_ERROR_NONE)
-					return __player_convert_error_code(ret, (char *)__FUNCTION__);
+			) {
 
 			if (handle->is_display_visible)
 				ret = mm_player_set_attribute(handle->mm_handle, NULL, "display_visible", 1, (char *)NULL);
@@ -1671,8 +1660,7 @@ int legacy_player_set_play_position(player_h player, int millisecond, bool accur
 		return PLAYER_ERROR_INVALID_STATE;
 	}
 
-	if (handle->user_cb[MUSE_PLAYER_EVENT_TYPE_SEEK] && handle->is_media_stream == FALSE)
-	{
+	if (handle->user_cb[MUSE_PLAYER_EVENT_TYPE_SEEK] && handle->is_media_stream == FALSE) {
 		LOGE("[%s] PLAYER_ERROR_SEEK_FAILED temp (0x%08x) : seeking... we can't do any more ", __FUNCTION__, PLAYER_ERROR_SEEK_FAILED);
 		return PLAYER_ERROR_SEEK_FAILED;
 	} else {
