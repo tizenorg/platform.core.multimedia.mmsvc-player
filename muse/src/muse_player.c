@@ -1658,7 +1658,7 @@ int player_disp_audio_effect_set_equalizer_all_bands(muse_module_h module)
 		goto DONE;
 	}
 
-	band_levels = (int *)g_try_new(int, length);
+	band_levels = (int *)g_try_new0(int, length);
 	if (band_levels) {
 		if(muse_core_msg_json_object_get_value("band_levels", jobj, band_levels, MUSE_TYPE_ARRAY)) {
 			muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
@@ -1864,7 +1864,7 @@ int player_disp_set_streaming_cookie(muse_module_h module)
 		goto DONE;
 	}
 
-	cookie = (char *)g_try_new(char, size + 1);
+	cookie = (char *)g_try_new0(char, size + 1);
 	if (cookie) {
 		if(muse_core_msg_json_object_get_value("cookie", jobj, cookie, MUSE_TYPE_STRING)) {
 			muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);
@@ -1903,7 +1903,7 @@ int player_disp_set_streaming_user_agent(muse_module_h module)
 		goto DONE;
 	}
 
-	user_agent = (char *)g_try_new(char, size + 1);
+	user_agent = (char *)g_try_new0(char, size + 1);
 	if (user_agent) {
 		if(muse_core_msg_json_object_get_value("user_agent", jobj, user_agent, MUSE_TYPE_STRING)) {
 			muse_player = (muse_player_handle_s *)muse_core_ipc_get_handle(module);

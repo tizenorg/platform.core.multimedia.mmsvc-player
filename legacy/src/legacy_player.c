@@ -1081,7 +1081,7 @@ int legacy_player_create(player_h *player)
 		handle->state = PLAYER_STATE_NONE;
 		free(handle);
 		handle = NULL;
-		return PLAYER_ERROR_INVALID_OPERATION;
+		return __player_convert_error_code(ret, (char *)__FUNCTION__);
 	} else {
 		*player = (player_h)handle;
 		handle->state = PLAYER_STATE_IDLE;
