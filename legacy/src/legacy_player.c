@@ -3106,7 +3106,6 @@ int legacy_player_set_display_wl_for_mused(player_h player, player_display_type_
 	void *set_handle = NULL;
 	MMDisplaySurfaceType mmType = __player_convet_display_type(type);
 	MMDisplaySurfaceType mmClientType = MM_DISPLAY_SURFACE_NULL;
-	MMPlayerPipelineType mmPipelineType = MM_PLAYER_PIPELINE_SERVER;
 
 	int ret;
 	if (!__player_state_validate(handle, PLAYER_STATE_IDLE)) {
@@ -3155,7 +3154,7 @@ int legacy_player_set_display_wl_for_mused(player_h player, player_display_type_
 	if (handle->display_type == PLAYER_DISPLAY_TYPE_NONE || type == handle->display_type) {
 		/* first time or same type */
 		LOGW("first time or same type");
-		ret = mm_player_set_attribute(handle->mm_handle, NULL, "display_surface_type", mmType, "display_surface_client_type", mmClientType, "display_overlay", set_handle, sizeof(wl_surface_id), "pipeline_type", mmPipelineType, NULL);
+		ret = mm_player_set_attribute(handle->mm_handle, NULL, "display_surface_type", mmType, "display_surface_client_type", mmClientType, "display_overlay", set_handle, sizeof(wl_surface_id), NULL);
 
 		if (ret != MM_ERROR_NONE) {
 			handle->display_handle = temp;
