@@ -3105,7 +3105,6 @@ int legacy_player_set_display_wl_for_mused(player_h player, player_display_type_
 	player_s *handle = (player_s *)player;
 	void *set_handle = NULL;
 	MMDisplaySurfaceType mmType = __player_convet_display_type(type);
-	MMDisplaySurfaceType mmClientType = MM_DISPLAY_SURFACE_NULL;
 
 	int ret;
 	if (!__player_state_validate(handle, PLAYER_STATE_IDLE)) {
@@ -3137,12 +3136,10 @@ int legacy_player_set_display_wl_for_mused(player_h player, player_display_type_
 			LOGI("wl_surface_id %d", wl_surface_id);
 			handle->display_handle = (void *)(uintptr_t)wl_surface_id;
 			set_handle = &(handle->display_handle);
-			mmClientType = MM_DISPLAY_SURFACE_OVERLAY;
 #ifdef TIZEN_FEATURE_EVAS_RENDERER
 		} else if (type == PLAYER_DISPLAY_TYPE_EVAS) {
 			LOGI("Evas surface type");
 			set_handle = &(handle->display_handle);
-			mmClientType = MM_DISPLAY_SURFACE_REMOTE;
 #endif
 		} else {
 			LOGE("invalid surface type");
@@ -3154,7 +3151,7 @@ int legacy_player_set_display_wl_for_mused(player_h player, player_display_type_
 	if (handle->display_type == PLAYER_DISPLAY_TYPE_NONE || type == handle->display_type) {
 		/* first time or same type */
 		LOGW("first time or same type");
-		ret = mm_player_set_attribute(handle->mm_handle, NULL, "display_surface_type", mmType, "display_surface_client_type", mmClientType, "display_overlay", set_handle, sizeof(wl_surface_id), NULL);
+		ret = mm_player_set_attribute(handle->mm_handle, NULL, "display_surface_type", mmType, "display_overlay", set_handle, sizeof(wl_surface_id), NULL);
 
 		if (ret != MM_ERROR_NONE) {
 			handle->display_handle = temp;
